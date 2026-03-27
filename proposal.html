@@ -1,0 +1,2412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GreenLight by Medivis — Business Proposal & Market Opportunity</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --emerald-700: #059669;
+    --emerald-500: #10B981;
+    --emerald-300: #34D399;
+    --emerald-50: #ECFDF5;
+    --emerald-100: #D1FAE5;
+    --sky-500: #0EA5E9;
+    --sky-400: #38BDF8;
+    --sky-50: #F0F9FF;
+    --coral-500: #F43F5E;
+    --coral-400: #FB7185;
+    --coral-50: #FFF1F2;
+    --amber-500: #F59E0B;
+    --amber-400: #FBBF24;
+    --amber-50: #FFFBEB;
+    --purple-500: #8B5CF6;
+    --purple-50: #F5F3FF;
+    --teal-500: #14B8A6;
+    --teal-50: #F0FDFA;
+    --text-dark: #1a1a2e;
+    --text-body: #475569;
+    --text-muted: #64748b;
+    --text-light: #94a3b8;
+    --bg-light: #F8FAFC;
+    --bg-mid: #F1F5F9;
+    --bg-border: #E2E8F0;
+  }
+
+  @page {
+    size: A4;
+    margin: 0;
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 10px;
+    line-height: 1.5;
+    color: var(--text-body);
+    background: #E2E8F0;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  h1, h2, h3, h4, h5 {
+    font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+    color: var(--text-dark);
+    line-height: 1.25;
+  }
+
+  h1 { font-size: 28px; font-weight: 800; letter-spacing: -0.5px; }
+  h2 { font-size: 20px; font-weight: 700; margin-bottom: 6px; letter-spacing: -0.3px; }
+  h3 { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+  h4 { font-size: 12px; font-weight: 600; margin-bottom: 3px; }
+
+  .num {
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* Page */
+  .page {
+    width: 210mm;
+    height: 297mm;
+    margin: 20px auto;
+    background: #fff;
+    position: relative;
+    overflow: hidden;
+    page-break-after: always;
+    padding: 18mm 22mm 16mm 22mm;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+  }
+
+  @media print {
+    body { background: #fff; }
+    .page { margin: 0; box-shadow: none; }
+  }
+
+  /* Cover — uses a table layout so Puppeteer renders all three rows */
+  .cover {
+    padding: 0;
+    background: linear-gradient(145deg, #022c22 0%, #064e3b 30%, #065f46 50%, #047857 75%, #059669 100%);
+    color: #fff;
+    display: table;
+    width: 210mm;
+    height: 297mm;
+    table-layout: fixed;
+  }
+  .cover-row { display: table-row; }
+  .cover-cell { display: table-cell; vertical-align: middle; padding: 0 28mm; }
+  .cover-cell-top { display: table-cell; vertical-align: top; padding: 20mm 28mm 0; height: 1px; }
+  .cover-cell-bot { display: table-cell; vertical-align: bottom; padding: 0 28mm 8mm; height: 1px; }
+
+  .cover-classification {
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.5);
+    margin-bottom: 20px;
+  }
+
+  .cover-logo {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 30px;
+    font-weight: 300;
+    margin-bottom: 24px;
+    color: var(--emerald-300);
+  }
+  .cover-logo strong {
+    font-weight: 800;
+    color: #fff;
+  }
+
+  .cover h1 {
+    font-size: 34px;
+    font-weight: 800;
+    color: #fff;
+    margin-bottom: 12px;
+    line-height: 1.15;
+    max-width: 440px;
+  }
+
+  .cover-subtitle {
+    font-size: 14px;
+    color: rgba(255,255,255,0.7);
+    font-weight: 400;
+    max-width: 420px;
+    line-height: 1.55;
+  }
+
+  .cover-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .cover-stat {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 10px;
+    padding: 16px 14px;
+  }
+  .cover-stat .stat-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--emerald-300);
+    display: block;
+    margin-bottom: 4px;
+  }
+  .cover-stat .stat-label {
+    font-size: 8.5px;
+    color: rgba(255,255,255,0.55);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    line-height: 1.3;
+  }
+
+  .cover-footer-row {
+    display: table-row;
+    height: 1px;
+  }
+  .cover-footer {
+    display: table-cell;
+    vertical-align: bottom;
+    padding: 0 28mm 6mm;
+    border-top: 1px solid rgba(255,255,255,0.1);
+    font-size: 9px;
+    color: rgba(255,255,255,0.45);
+  }
+  .cover-footer-inner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 10px;
+    border-top: 1px solid rgba(255,255,255,0.08);
+  }
+
+  /* Accent Bars */
+  .accent-bar {
+    height: 4px;
+    background: linear-gradient(90deg, var(--emerald-700), var(--emerald-500), var(--emerald-300));
+    border-radius: 2px;
+    margin-bottom: 20px;
+  }
+  .accent-line {
+    height: 2px;
+    width: 48px;
+    background: linear-gradient(90deg, var(--emerald-700), var(--emerald-300));
+    border-radius: 1px;
+    margin-bottom: 12px;
+  }
+
+  /* Section Headers */
+  .section-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--emerald-700);
+    margin-bottom: 2px;
+    letter-spacing: 1px;
+  }
+  .section-desc {
+    font-size: 10.5px;
+    color: var(--text-muted);
+    margin-bottom: 16px;
+    line-height: 1.6;
+  }
+
+  /* Tables */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 9px;
+    margin-bottom: 14px;
+  }
+  th {
+    background: var(--emerald-50);
+    color: var(--emerald-700);
+    font-weight: 600;
+    text-align: left;
+    padding: 7px 10px;
+    font-size: 8.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 2px solid var(--emerald-300);
+  }
+  td {
+    padding: 7px 10px;
+    border-bottom: 1px solid var(--bg-border);
+    color: var(--text-body);
+    vertical-align: top;
+  }
+  tr:last-child td { border-bottom: none; }
+  td.num, th.num {
+    font-family: 'JetBrains Mono', monospace;
+    text-align: right;
+  }
+  tr.total-row td {
+    font-weight: 700;
+    color: var(--text-dark);
+    border-top: 2px solid var(--emerald-500);
+    background: var(--emerald-50);
+  }
+
+  /* Stat Cards */
+  .stat-grid {
+    display: grid;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .stat-grid.cols-4 { grid-template-columns: repeat(4, 1fr); }
+  .stat-grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
+  .stat-grid.cols-2 { grid-template-columns: repeat(2, 1fr); }
+
+  .stat-card {
+    background: var(--bg-light);
+    border: 1px solid var(--bg-border);
+    border-radius: 8px;
+    padding: 14px;
+    text-align: center;
+  }
+  .stat-card .stat-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text-dark);
+    display: block;
+    margin-bottom: 4px;
+    line-height: 1.1;
+  }
+  .stat-card .stat-label {
+    font-size: 8px;
+    color: var(--text-muted);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    line-height: 1.3;
+  }
+  .stat-card.accent {
+    background: linear-gradient(135deg, var(--emerald-50), #d1fae5);
+    border-color: var(--emerald-300);
+  }
+  .stat-card.accent .stat-num { color: var(--emerald-700); }
+  .stat-card.green { background: var(--emerald-50); border-color: var(--emerald-300); }
+  .stat-card.green .stat-num { color: var(--emerald-700); }
+  .stat-card.red { background: var(--coral-50); border-color: var(--coral-400); }
+  .stat-card.red .stat-num { color: var(--coral-500); }
+  .stat-card.blue { background: var(--sky-50); border-color: var(--sky-400); }
+  .stat-card.blue .stat-num { color: var(--sky-500); }
+  .stat-card.amber { background: var(--amber-50); border-color: var(--amber-400); }
+  .stat-card.amber .stat-num { color: var(--amber-500); }
+
+  /* Chart Box */
+  .chart-box {
+    background: var(--bg-light);
+    border: 1px solid var(--bg-border);
+    border-radius: 8px;
+    padding: 14px;
+    margin-bottom: 14px;
+  }
+  .chart-title {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text-dark);
+    margin-bottom: 10px;
+  }
+
+  /* Callouts */
+  .callout {
+    background: var(--emerald-50);
+    border-left: 4px solid var(--emerald-500);
+    border-radius: 0 8px 8px 0;
+    padding: 14px 16px;
+    margin-bottom: 14px;
+    font-size: 9.5px;
+    line-height: 1.65;
+    color: var(--text-body);
+  }
+  .callout strong { color: var(--text-dark); }
+  .callout-green {
+    background: var(--emerald-50);
+    border-left: 4px solid var(--emerald-500);
+    border-radius: 0 8px 8px 0;
+    padding: 14px 16px;
+    margin-bottom: 14px;
+    font-size: 9.5px;
+    line-height: 1.65;
+    color: var(--text-body);
+  }
+  .callout-green strong { color: var(--emerald-700); }
+  .callout-red {
+    background: var(--coral-50);
+    border-left: 4px solid var(--coral-500);
+    border-radius: 0 8px 8px 0;
+    padding: 14px 16px;
+    margin-bottom: 14px;
+    font-size: 9.5px;
+    line-height: 1.65;
+    color: var(--text-body);
+  }
+  .callout-red strong { color: var(--coral-500); }
+
+  /* Columns */
+  .cols {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 14px;
+  }
+  .cols-3-2 {
+    display: grid;
+    grid-template-columns: 3fr 2fr;
+    gap: 16px;
+    margin-bottom: 14px;
+  }
+  .cols-2-3 {
+    display: grid;
+    grid-template-columns: 2fr 3fr;
+    gap: 16px;
+    margin-bottom: 14px;
+  }
+
+  /* Page Footer */
+  .page-footer {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 10px 22mm;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 8px;
+    color: var(--text-light);
+    border-top: 1px solid var(--bg-border);
+  }
+  .page-footer .footer-logo {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 10px;
+    font-weight: 300;
+    color: var(--text-light);
+  }
+  .page-footer .footer-logo strong {
+    font-weight: 700;
+    color: var(--emerald-500);
+  }
+  .page-footer .footer-page {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8px;
+    color: var(--text-light);
+  }
+
+  /* TOC */
+  .toc-list {
+    list-style: none;
+    margin-bottom: 14px;
+  }
+  .toc-item {
+    display: flex;
+    align-items: baseline;
+    padding: 9px 0;
+    border-bottom: 1px solid var(--bg-border);
+  }
+  .toc-item:last-child { border-bottom: none; }
+  .toc-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--emerald-700);
+    width: 36px;
+    flex-shrink: 0;
+  }
+  .toc-title {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--text-dark);
+    flex: 1;
+  }
+  .toc-page {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-muted);
+    margin-left: 12px;
+  }
+
+  /* Bar Chart Rows */
+  .bar-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 6px;
+    font-size: 8.5px;
+  }
+  .bar-label {
+    width: 110px;
+    flex-shrink: 0;
+    font-weight: 500;
+    color: var(--text-body);
+    font-size: 8px;
+  }
+  .bar-track {
+    flex: 1;
+    height: 16px;
+    background: var(--bg-mid);
+    border-radius: 4px;
+    overflow: hidden;
+    margin: 0 8px;
+  }
+  .bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding-right: 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 7px;
+    font-weight: 600;
+    color: #fff;
+    min-width: 24px;
+  }
+  .bar-fill.emerald { background: linear-gradient(90deg, var(--emerald-700), var(--emerald-500)); }
+  .bar-fill.rose { background: linear-gradient(90deg, var(--coral-500), var(--coral-400)); }
+  .bar-fill.sky { background: linear-gradient(90deg, var(--sky-500), var(--sky-400)); }
+  .bar-fill.amber { background: linear-gradient(90deg, var(--amber-500), var(--amber-400)); }
+  .bar-fill.purple { background: linear-gradient(90deg, #7C3AED, var(--purple-500)); }
+  .bar-fill.teal { background: linear-gradient(90deg, #0D9488, var(--teal-500)); }
+
+  .bar-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8px;
+    font-weight: 600;
+    color: var(--text-muted);
+    width: 30px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  /* Financial Total */
+  .fin-total {
+    background: linear-gradient(135deg, var(--emerald-50), #d1fae5);
+    border: 2px solid var(--emerald-500);
+    border-radius: 8px;
+    padding: 12px 16px;
+    text-align: center;
+    margin-bottom: 14px;
+  }
+  .fin-total .stat-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--emerald-700);
+  }
+  .fin-total .stat-label {
+    font-size: 9px;
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+
+  /* Tags */
+  .tag {
+    display: inline-block;
+    font-size: 7.5px;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 4px;
+    margin-right: 4px;
+    margin-top: 4px;
+    letter-spacing: 0.2px;
+  }
+  .tag-emerald { background: var(--emerald-50); color: var(--emerald-700); border: 1px solid #a7f3d0; }
+  .tag-sky { background: var(--sky-50); color: #0369A1; border: 1px solid #bae6fd; }
+  .tag-amber { background: var(--amber-50); color: #B45309; border: 1px solid #fde68a; }
+  .tag-rose { background: var(--coral-50); color: #BE123C; border: 1px solid #fecdd3; }
+  .tag-purple { background: var(--purple-50); color: #6D28D9; border: 1px solid #ddd6fe; }
+  .tag-teal { background: var(--teal-50); color: #0F766E; border: 1px solid #99f6e4; }
+
+  /* Feature Cards */
+  .feature-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .feature-card {
+    border-radius: 8px;
+    padding: 14px;
+    border: 1px solid var(--bg-border);
+    background: #fff;
+  }
+  .feature-card h4 {
+    font-size: 11px;
+    margin-bottom: 4px;
+  }
+  .feature-card p {
+    font-size: 8.5px;
+    line-height: 1.5;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+  }
+  .feature-card.fc-emerald { border-left: 3px solid var(--emerald-500); background: var(--emerald-50); }
+  .feature-card.fc-emerald h4 { color: var(--emerald-700); }
+  .feature-card.fc-sky { border-left: 3px solid var(--sky-500); background: var(--sky-50); }
+  .feature-card.fc-sky h4 { color: #0369A1; }
+  .feature-card.fc-amber { border-left: 3px solid var(--amber-500); background: var(--amber-50); }
+  .feature-card.fc-amber h4 { color: #B45309; }
+  .feature-card.fc-rose { border-left: 3px solid var(--coral-500); background: var(--coral-50); }
+  .feature-card.fc-rose h4 { color: #BE123C; }
+  .feature-card.fc-purple { border-left: 3px solid var(--purple-500); background: var(--purple-50); }
+  .feature-card.fc-purple h4 { color: #6D28D9; }
+  .feature-card.fc-teal { border-left: 3px solid var(--teal-500); background: var(--teal-50); }
+  .feature-card.fc-teal h4 { color: #0F766E; }
+
+  /* Phases */
+  .phase-box {
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-bottom: 10px;
+    border: 1px solid var(--bg-border);
+    background: var(--bg-light);
+  }
+  .phase-box h4 {
+    font-size: 10.5px;
+    color: var(--emerald-700);
+    margin-bottom: 4px;
+  }
+  .phase-box ul {
+    font-size: 8.5px;
+    line-height: 1.55;
+    padding-left: 14px;
+    color: var(--text-body);
+  }
+  .phase-box .milestone {
+    font-size: 8px;
+    font-weight: 600;
+    color: var(--emerald-700);
+    margin-top: 4px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  /* Gantt */
+  .gantt-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 4px;
+    font-size: 7.5px;
+  }
+  .gantt-label {
+    width: 80px;
+    flex-shrink: 0;
+    font-weight: 500;
+    color: var(--text-body);
+    text-align: right;
+    padding-right: 8px;
+  }
+  .gantt-track {
+    flex: 1;
+    height: 14px;
+    position: relative;
+    border-left: 1px solid var(--bg-border);
+  }
+  .gantt-bar {
+    position: absolute;
+    height: 10px;
+    top: 2px;
+    border-radius: 3px;
+    opacity: 0.85;
+  }
+
+  /* Name cards */
+  .name-card {
+    border: 1px solid var(--bg-border);
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-bottom: 8px;
+    background: var(--bg-light);
+  }
+  .name-card h4 {
+    font-size: 12px;
+    color: var(--text-dark);
+    margin-bottom: 2px;
+  }
+  .name-card .tagline {
+    font-size: 9px;
+    color: var(--text-muted);
+    font-style: italic;
+    margin-bottom: 4px;
+  }
+  .name-card .pros-cons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    font-size: 8.5px;
+  }
+  .name-card .pro { color: var(--emerald-700); }
+  .name-card .con { color: var(--coral-500); }
+
+  /* Utility */
+  .mb-4 { margin-bottom: 4px; }
+  .mb-8 { margin-bottom: 8px; }
+  .mb-12 { margin-bottom: 12px; }
+  .mb-14 { margin-bottom: 14px; }
+  .mb-16 { margin-bottom: 16px; }
+  .mb-20 { margin-bottom: 20px; }
+  .text-sm { font-size: 9px; }
+  .text-xs { font-size: 8px; }
+  .text-muted { color: var(--text-muted); }
+  .font-semibold { font-weight: 600; }
+  .font-bold { font-weight: 700; }
+  .text-emerald { color: var(--emerald-700); }
+
+  /* Lists */
+  ul.feature-list {
+    list-style: none;
+    padding: 0;
+    font-size: 9px;
+    line-height: 1.6;
+  }
+  ul.feature-list li {
+    padding: 3px 0;
+    padding-left: 14px;
+    position: relative;
+  }
+  ul.feature-list li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 8px;
+    width: 6px;
+    height: 6px;
+    background: var(--emerald-500);
+    border-radius: 50%;
+  }
+  ul.check-list {
+    list-style: none;
+    padding: 0;
+    font-size: 9px;
+    line-height: 1.6;
+  }
+  ul.check-list li {
+    padding: 2px 0 2px 16px;
+    position: relative;
+  }
+  ul.check-list li::before {
+    content: '\2713';
+    position: absolute;
+    left: 0;
+    color: var(--emerald-500);
+    font-weight: 700;
+  }
+
+  /* Canvas sizing */
+  .chart-canvas-wrap {
+    position: relative;
+    width: 100%;
+  }
+  .chart-canvas-wrap canvas {
+    width: 100% !important;
+  }
+</style>
+</head>
+<body>
+
+<!-- ============================================================ -->
+<!-- PAGE 1: COVER -->
+<!-- ============================================================ -->
+<div class="cover" style="page-break-after:always;">
+  <div class="cover-row">
+    <div class="cover-cell-top">
+      <div class="cover-classification">CONFIDENTIAL &mdash; FOR DISCUSSION ONLY</div>
+    </div>
+  </div>
+  <div class="cover-row">
+    <div class="cover-cell">
+      <div class="cover-logo">green<strong>light</strong> <span style="font-size:12px;font-weight:400;color:rgba(255,255,255,0.4);letter-spacing:0.04em;">by Medivis</span></div>
+      <h1>Business Proposal &amp;<br>Market Opportunity</h1>
+      <div class="cover-subtitle">AI-Powered Prior Authorization for Imaging, Surgery &amp; Procedures</div>
+    </div>
+  </div>
+  <div class="cover-row">
+    <div class="cover-cell-bot">
+      <div class="cover-stats">
+        <div class="cover-stat">
+          <span class="stat-num">$35B</span>
+          <span class="stat-label">PA Admin Spend</span>
+        </div>
+        <div class="cover-stat">
+          <span class="stat-num">25-30%</span>
+          <span class="stat-label">Imaging Denial Rate</span>
+        </div>
+        <div class="cover-stat">
+          <span class="stat-num">200M+</span>
+          <span class="stat-label">Annual PA Requests</span>
+        </div>
+        <div class="cover-stat">
+          <span class="stat-num">$7.1B+</span>
+          <span class="stat-label">Revenue TAM</span>
+        </div>
+      </div>
+      <div class="cover-footer-inner">
+        <span>Prepared: March 2026</span>
+        <span>Classification: Confidential &mdash; Version 1.0</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 2: TABLE OF CONTENTS -->
+<!-- ============================================================ -->
+<div class="page">
+  <div class="accent-bar"></div>
+  <div class="section-num">CONTENTS</div>
+  <h2 style="margin-bottom: 24px;">Table of Contents</h2>
+
+  <ul class="toc-list">
+    <li class="toc-item"><span class="toc-num">01</span><span class="toc-title">Executive Summary</span><span class="toc-page">03</span></li>
+    <li class="toc-item"><span class="toc-num">02</span><span class="toc-title">Market Problem: The Prior Authorization Crisis</span><span class="toc-page">04</span></li>
+    <li class="toc-item"><span class="toc-num">03</span><span class="toc-title">Imaging, Surgery &amp; Procedures: The Unserved Niche</span><span class="toc-page">05</span></li>
+    <li class="toc-item"><span class="toc-num">04</span><span class="toc-title">Product: The GreenLight by Medivis Platform</span><span class="toc-page">06</span></li>
+    <li class="toc-item"><span class="toc-num">05</span><span class="toc-title">Total Addressable Market (TAM/SAM/SOM)</span><span class="toc-page">07</span></li>
+    <li class="toc-item"><span class="toc-num">06</span><span class="toc-title">Competitive Landscape</span><span class="toc-page">08</span></li>
+    <li class="toc-item"><span class="toc-num">07</span><span class="toc-title">Business Model &amp; Pricing</span><span class="toc-page">09</span></li>
+    <li class="toc-item"><span class="toc-num">08</span><span class="toc-title">Financial Model: 5-Year Projections</span><span class="toc-page">10</span></li>
+    <li class="toc-item"><span class="toc-num">09</span><span class="toc-title">Implementation Strategy &amp; Timeline</span><span class="toc-page">11</span></li>
+    <li class="toc-item"><span class="toc-num">10</span><span class="toc-title">Go-to-Market Strategy</span><span class="toc-page">12</span></li>
+    <li class="toc-item"><span class="toc-num">11</span><span class="toc-title">Risk Analysis &amp; Mitigation</span><span class="toc-page">13</span></li>
+    <li class="toc-item"><span class="toc-num">12</span><span class="toc-title">Technical Architecture</span><span class="toc-page">14</span></li>
+    <li class="toc-item"><span class="toc-num">13</span><span class="toc-title">Clinical Data Strategy: Payer Rules &amp; Criteria Sources</span><span class="toc-page">15</span></li>
+    <li class="toc-item"><span class="toc-num" style="color:var(--text-muted);">&bull;</span><span class="toc-title" style="color:var(--text-muted);">Platform Naming Considerations</span><span class="toc-page">17</span></li>
+  </ul>
+
+  <div class="page-footer">
+    <span class="footer-logo">green<strong>light</strong> <span style="font-size:7px;color:var(--text-light);font-weight:400;">by Medivis</span></span>
+    <span class="footer-page">02</span>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 3: EXECUTIVE SUMMARY -->
+<!-- ============================================================ -->
+<div class="page">
+  <div class="accent-bar"></div>
+  <div class="section-num">SECTION 01</div>
+  <h2>Executive Summary</h2>
+  <div class="accent-line"></div>
+
+  <div class="callout" style="margin-bottom: 12px;">
+    <strong>Core Thesis:</strong> Prior authorization is the single largest administrative burden in healthcare, costing $35 billion annually. Imaging and procedures face the worst of it &mdash; 25-30% denial rates, 91% of radiology encounters requiring PA, and $2M+ in annual revenue leakage per imaging center. Yet no dominant vertical solution exists for this segment. GreenLight by Medivis automates the entire PA lifecycle for imaging, surgery, and procedures &mdash; reducing processing time from days to seconds, cutting denials by 75%, and recovering millions in lost revenue.
+  </div>
+
+  <div class="stat-grid cols-4 mb-12">
+    <div class="stat-card accent">
+      <span class="stat-num">$35B</span>
+      <span class="stat-label">Annual PA Admin Costs</span>
+    </div>
+    <div class="stat-card green">
+      <span class="stat-num">91%</span>
+      <span class="stat-label">Radiology Encounters<br>Requiring PA</span>
+    </div>
+    <div class="stat-card blue">
+      <span class="stat-num">200M+</span>
+      <span class="stat-label">PA Requests Processed<br>Annually (US)</span>
+    </div>
+    <div class="stat-card accent">
+      <span class="stat-num">$7.1B+</span>
+      <span class="stat-label">GreenLight by Medivis Revenue TAM</span>
+    </div>
+  </div>
+
+  <h3 class="mb-4">What We're Building</h3>
+  <p class="text-sm mb-12" style="line-height:1.65;">GreenLight by Medivis is an AI-native platform purpose-built to automate prior authorization for imaging (MRI, CT, PET, ultrasound), surgical procedures, and medical procedures. Unlike horizontal PA solutions that treat all service types the same, GreenLight is specialized for the unique complexities of imaging and procedural PA &mdash; including RBM navigation (EviCore, Carelon, NIA), ACR Appropriateness Criteria matching, PACS/RIS integration, and surgical scheduling coordination.</p>
+
+  <h3 class="mb-4">Business Model</h3>
+  <p class="text-sm mb-12" style="line-height:1.65;">Per-transaction pricing: <strong class="num">$8</strong> per automated PA. A hospital processing <strong class="num">15,000</strong> PAs/month pays <strong class="num">$1.44M</strong>/year while saving <strong class="num">$2M+</strong> in staff costs and <strong class="num">$1M+</strong> in recovered revenue from prevented denials. Performance guarantee: if GreenLight by Medivis doesn't deliver measurable savings, clients pay nothing.</p>
+
+  <h3 class="mb-8">5-Year Trajectory</h3>
+  <table>
+    <thead>
+      <tr>
+        <th></th>
+        <th class="num">Year 1</th>
+        <th class="num">Year 2</th>
+        <th class="num">Year 3</th>
+        <th class="num">Year 4</th>
+        <th class="num">Year 5</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>ARR</strong></td>
+        <td class="num">$2.1M</td>
+        <td class="num">$12.5M</td>
+        <td class="num">$42M</td>
+        <td class="num">$108M</td>
+        <td class="num">$245M</td>
+      </tr>
+      <tr>
+        <td><strong>Customers</strong></td>
+        <td class="num">15</td>
+        <td class="num">65</td>
+        <td class="num">180</td>
+        <td class="num">420</td>
+        <td class="num">850</td>
+      </tr>
+      <tr>
+        <td><strong>PA Volume/Month</strong></td>
+        <td class="num">45K</td>
+        <td class="num">260K</td>
+        <td class="num">875K</td>
+        <td class="num">2.25M</td>
+        <td class="num">5.1M</td>
+      </tr>
+      <tr>
+        <td><strong>Exit Valuation</strong></td>
+        <td class="num">&mdash;</td>
+        <td class="num">&mdash;</td>
+        <td class="num">Series B</td>
+        <td class="num">IPO-ready</td>
+        <td class="num">$3-5B</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="page-footer">
+    <span class="footer-logo">green<strong>light</strong> <span style="font-size:7px;color:var(--text-light);font-weight:400;">by Medivis</span></span>
+    <span class="footer-page">03</span>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 4: MARKET PROBLEM -->
+<!-- ============================================================ -->
+<div class="page">
+  <div class="accent-bar"></div>
+  <div class="section-num">SECTION 02</div>
+  <h2>Market Problem: The Prior Authorization Crisis</h2>
+  <div class="section-desc">Prior authorization has become the most hated process in healthcare. It delays care, increases costs, and drives clinician burnout at unprecedented rates.</div>
+
+  <div class="cols-3-2">
+    <div>
+      <div class="chart-box">
+        <div class="chart-title">Medicare Advantage PA Volume (2019&ndash;2024)</div>
+        <div class="chart-canvas-wrap" style="height:160px;">
+          <canvas id="chartMAVolume" height="160"></canvas>
+        </div>
+      </div>
+
+      <div class="stat-grid cols-3 mb-12">
+        <div class="stat-card red">
+          <span class="stat-num">$11K</span>
+          <span class="stat-label">Per Clinician/Year<br>Direct PA Costs</span>
+        </div>
+        <div class="stat-card amber">
+          <span class="stat-num">$118</span>
+          <span class="stat-label">Per Denied Claim<br>Rework Expense</span>
+        </div>
+        <div class="stat-card red">
+          <span class="stat-num">78%</span>
+          <span class="stat-label">Patients Abandon<br>Care Due to PA Delays</span>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="stat-card accent mb-8" style="text-align:left; padding: 12px;">
+        <span class="stat-num" style="font-size:16px;">$82.7B</span>
+        <span class="stat-label" style="font-size:8px;">Total medical admin transaction costs (2023), up 50% from $55B in 2022</span>
+      </div>
+      <div class="stat-card blue mb-8" style="text-align:left; padding: 12px;">
+        <span class="stat-num" style="font-size:16px;">39-45</span>
+        <span class="stat-label" style="font-size:8px;">Prior auths per physician per week</span>
+      </div>
+      <div class="stat-card amber mb-8" style="text-align:left; padding: 12px;">
+        <span class="stat-num" style="font-size:16px;">16.4 hrs/wk</span>
+        <span class="stat-label" style="font-size:8px;">Staff time on PA per physician</span>
+      </div>
+      <div class="stat-card red mb-8" style="text-align:left; padding: 12px;">
+        <span class="stat-num" style="font-size:16px;">94%</span>
+        <span class="stat-label" style="font-size:8px;">Of physicians say PA delays care</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout-red">
+    <strong>The system is broken:</strong> 200+ million PA requests per year. Average turnaround of 5 days. 25-30% denial rates for imaging. 80.7% of Medicare Advantage appeals are overturned &mdash; proving most denials are inappropriate. Physicians report that prior authorization is the single largest driver of burnout.
+  </div>
+
+  <div class="page-footer">
+    <span class="footer-logo">green<strong>light</strong> <span style="font-size:7px;color:var(--text-light);font-weight:400;">by Medivis</span></span>
+    <span class="footer-page">04</span>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 5: THE NICHE -->
+<!-- ============================================================ -->
+<div class="page">
+  <div class="accent-bar"></div>
+  <div class="section-num">SECTION 03</div>
+  <h2>Imaging, Surgery &amp; Procedures: The Unserved Niche</h2>
+  <div class="section-desc">While pharmacy PA is largely solved (SureScripts processes 30.5B transactions with 18-second approvals), medical PA for imaging and procedures remains stuck in the dark ages. This is the whitespace.</div>
+
+  <h3 class="mb-8">Why This Niche?</h3>
+  <div class="cols mb-14">
+    <div style="background: var(--coral-50); border-radius: 8px; padding: 14px; border: 1px solid #fecdd3;">
+      <h4 style="color: var(--coral-500); margin-bottom: 6px;">The Burden</h4>
+      <ul class="feature-list" style="font-size:8.5px;">
+        <li>Diagnostic radiology: <strong class="num">91%</strong> of encounters require PA</li>
+        <li>Radiation oncology: <strong class="num">97%</strong></li>
+        <li>Cardiology: <strong class="num">93%</strong></li>
+        <li>Neurosurgery: <strong class="num">90%</strong></li>
+        <li>Imaging denial rates: <strong class="num">25-30%</strong> vs <strong class="num">7.7%</strong> overall MA average</li>
+        <li>MRI spine denials exceed <strong class="num">30%</strong> for some insurers</li>
+      </ul>
+    </div>
+    <div style="background: var(--sky-50); border-radius: 8px; padding: 14px; border: 1px solid #bae6fd;">
+      <h4 style="color: #0369A1; margin-bottom: 6px;">The Complexity</h4>
+      <ul class="feature-list" style="font-size:8.5px;">
+        <li>Multiple RBMs (EviCore, Carelon, NIA) with different portals and rules</li>
+        <li>Payers switch RBMs without notice</li>
+        <li>Clinical criteria matching (ACR, MCG, InterQual)</li>
+        <li>PACS/RIS integration requirements</li>
+        <li>Multi-step procedure coordination (biopsy after imaging)</li>
+        <li>Site-of-service optimization</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3 class="mb-8">Revenue Impact by Facility Type</h3>
+  <table class="mb-14">
+    <thead>
+      <tr>
+        <th>Facility Type</th>
+        <th class="num">Annual PA Vol</th>
+        <th class="num">Denial Rate</th>
+        <th class="num">Revenue at Risk</th>
+        <th class="num">Annual Leakage</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Outpatient Imaging Center</td>
+        <td class="num">8,000-12,000</td>
+        <td class="num">25-30%</td>
+        <td class="num">$12-15M</td>
+        <td class="num">$1.5-2M</td>
+      </tr>
+      <tr>
+        <td>Ambulatory Surgery Center</td>
+        <td class="num">3,000-6,000</td>
+        <td class="num">18-22%</td>
+        <td class="num">$15-25M</td>
+        <td class="num">$1-2.5M</td>
+      </tr>
+      <tr>
+        <td>Hospital Radiology Dept</td>
+        <td class="num">15,000-30,000</td>
+        <td class="num">20-28%</td>
+        <td class="num">$30-60M</td>
+        <td class="num">$3-8M</td>
+      </tr>
+      <tr>
+        <td>Multi-Hospital System</td>
+        <td class="num">50,000-150,000</td>
+        <td class="num">22-28%</td>
+        <td class="num">$100-300M</td>
+        <td class="num">$10-30M</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout-green">
+    <strong>The key insight:</strong> No dominant vertical solution exists for imaging and procedural PA. Cohere Health is payer-side and horizontal. Waystar is provider-side but horizontal. SureScripts dominates pharmacy but not medical PA. EviCore, Carelon, and NIA are the problem, not the solution. GreenLight by Medivis fills this whitespace with a purpose-built platform.
+  </div>
+
+  <div class="page-footer">
+    <span class="footer-logo">green<strong>light</strong> <span style="font-size:7px;color:var(--text-light);font-weight:400;">by Medivis</span></span>
+    <span class="footer-page">05</span>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 6: PRODUCT -->
+<!-- ============================================================ -->
+<div class="page">
+  <div class="accent-bar"></div>
+  <div class="section-num">SECTION 04</div>
+  <h2>Product: The GreenLight by Medivis Platform</h2>
+  <div class="section-desc">Six integrated capabilities that automate the entire prior authorization lifecycle for imaging, surgery, and procedures.</div>
+
+  <div class="feature-grid" style="grid-template-columns: 1fr 1fr; grid-template-rows: auto auto auto;">
+    <div class="feature-card fc-emerald">
+      <h4>1. Intelligent Submission</h4>
+      <p>Auto-builds PA requests with complete clinical documentation. Matches indications to payer-specific guidelines. Reduces submission time from 20 minutes to 45 seconds.</p>
+      <div><span class="tag tag-emerald">20 min &rarr; 45 sec</span><span class="tag tag-emerald">Auto-documentation</span></div>
+    </div>
+    <div class="feature-card fc-sky">
+      <h4>2. Real-Time Eligibility</h4>
+      <p>PA requirement detection at point of order. FHIR CRD integration checks coverage requirements before the clinician finishes placing the order.</p>
+      <div><span class="tag tag-sky">600+ payer rules</span><span class="tag tag-sky">Point-of-order</span></div>
+    </div>
+    <div class="feature-card fc-amber">
+      <h4>3. Denial Prevention</h4>
+      <p>Pre-submission AI audit against historical denial patterns. Flags missing documentation, incorrect codes, and guideline mismatches before the PA is sent.</p>
+      <div><span class="tag tag-amber">75% denial reduction</span><span class="tag tag-amber">Pre-submission</span></div>
+    </div>
+    <div class="feature-card fc-rose">
+      <h4>4. Appeal Automation</h4>
+      <p>Auto-generates peer-to-peer prep packages and formal appeal letters with clinical evidence. Leverages 80.7% MA appeal overturn rate.</p>
+      <div><span class="tag tag-rose">80.7% win rate</span><span class="tag tag-rose">Auto-escalation</span></div>
+    </div>
+    <div class="feature-card fc-purple">
+      <h4>5. Unified Dashboard</h4>
+      <p>Single view across all payers and RBMs. Real-time status tracking, analytics, and bottleneck identification across the entire PA portfolio.</p>
+      <div><span class="tag tag-purple">Multi-RBM</span><span class="tag tag-purple">Real-time status</span></div>
+    </div>
+    <div class="feature-card fc-teal">
+      <h4>6. Scheduling Sync</h4>
+      <p>Connects PA status directly to imaging and OR scheduling systems. Eliminates scheduling conflicts from pending authorizations.</p>
+      <div><span class="tag tag-teal">Zero conflicts</span><span class="tag tag-teal">OR/imaging sync</span></div>
+    </div>
+  </div>
+
+  <div class="callout">
+    <strong>End-to-end automation:</strong> GreenLight by Medivis handles the full PA lifecycle &mdash; from requirement detection at point of order, through intelligent submission, real-time tracking, denial prevention, appeal automation, and scheduling coordination. No manual handoffs. No portal-hopping. No fax machines.
+  </div>
+
+  <div class="page-footer">
+    <span class="footer-logo">green<strong>light</strong> <span style="font-size:7px;color:var(--text-light);font-weight:400;">by Medivis</span></span>
+    <span class="footer-page">06</span>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 7: TAM -->
+<!-- ============================================================ -->
+<div class="page">
+  <div class="accent-bar"></div>
+  <div class="section-num">SECTION 05</div>
+  <h2>Total Addressable Market</h2>
+  <div class="section-desc">A massive, underserved market with clear paths to $245M ARR within five years.</div>
+
+  <div class="cols mb-14">
+    <div>
+      <h3 class="mb-8">TAM / SAM / SOM</h3>
+      <div class="stat-card accent mb-8" style="text-align:left; padding:12px;">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <span style="font-size:8px; font-weight:600; color:var(--emerald-700); text-transform:uppercase; letter-spacing:1px;">TAM</span>
+            <span class="stat-num" style="font-size:22px; display:block;">$7.1B+</span>
+          </div>
+          <span class="stat-label" style="text-align:right; max-width:140px;">$35B total PA admin spend. $8/transaction on 200M+ transactions.</span>
+        </div>
+      </div>
+      <div class="stat-card blue mb-8" style="text-align:left; padding:12px;">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <span style="font-size:8px; font-weight:600; color:var(--sky-500); text-transform:uppercase; letter-spacing:1px;">SAM</span>
+            <span class="stat-num" style="font-size:22px; display:block; color:var(--sky-500);">$3.2B</span>
+          </div>
+          <span class="stat-label" style="text-align:right; max-width:140px;">Imaging, surgery, procedures = ~45% of all medical PAs</span>
+        </div>
+      </div>
+      <div class="stat-card green mb-8" style="text-align:left; padding:12px;">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <span style="font-size:8px; font-weight:600; color:var(--emerald-700); text-transform:uppercase; letter-spacing:1px;">SOM (Year 5)</span>
+            <span class="stat-num" style="font-size:22px; display:block;">$245M</span>
+          </div>
+          <span class="stat-label" style="text-align:right; max-width:140px;">5.1M PAs/month &times; $6 avg &times; 12 months targeting</span>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="chart-box" style="height:100%;">
+        <div class="chart-title">Market Distribution by Facility Type</div>
+        <div class="chart-canvas-wrap" style="height:200px;">
+          <canvas id="chartTAMPie" height="200"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h3 class="mb-8">US Healthcare Facilities &mdash; Imaging &amp; Procedure PA Market</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>Facility Type</th>
+        <th class="num">Count</th>
+        <th class="num">Avg Monthly PA Vol</th>
+        <th class="num">Total Market PAs/Year</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Freestanding Imaging Centers</td>
+        <td class="num">6,800+</td>
+        <td class="num">800</td>
+        <td class="num">65M</td>
+      </tr>
+      <tr>
+        <td>Ambulatory Surgery Centers</td>
+        <td class="num">6,100+</td>
+        <td class="num">400</td>
+        <td class="num">29M</td>
+      </tr>
+      <tr>
+        <td>Hospital Radiology Depts</td>
+        <td class="num">6,090</td>
+        <td class="num">2,000</td>
+        <td class="num">146M</td>
+      </tr>
+      <tr>
+        <td>Specialty Practices (Cardio, Neuro, Ortho)</td>
+        <td class="num">45,000+</td>
+        <td class="num">200</td>
+        <td class="num">108M</td>
+      </tr>
+      <tr class="total-row">
+        <td><strong>Total</strong></td>
+        <td class="num"></td>
+        <td class="num"></td>
+        <td class="num">348M</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="page-footer">
+    <span class="footer-logo">green<strong>light</strong> <span style="font-size:7px;color:var(--text-light);font-weight:400;">by Medivis</span></span>
+    <span class="footer-page">07</span>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 8: COMPETITIVE LANDSCAPE -->
+<!-- ============================================================ -->
+<div class="page">
+  <div class="accent-bar"></div>
+  <div class="section-num">SECTION 06</div>
+  <h2>Competitive Landscape</h2>
+  <div class="section-desc">The PA automation market is fragmented and horizontal. No player dominates the imaging and procedure vertical.</div>
+
+  <h3 class="mb-8">Tier Analysis</h3>
+  <table class="mb-14" style="font-size: 8.5px;">
+    <thead>
+      <tr>
+        <th>Company</th>
+        <th>Focus</th>
+        <th>Type</th>
+        <th>Funding</th>
+        <th>Weakness</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Cohere Health</strong></td>
+        <td>All PA (payer-side)</td>
+        <td>Horizontal</td>
+        <td class="num">$200M</td>
+        <td>Payer-side; not imaging-specific</td>
+      </tr>
+      <tr>
+        <td><strong>Waystar</strong></td>
+        <td>Revenue cycle + PA</td>
+        <td>Horizontal</td>
+        <td class="num">Public ($4.7B)</td>
+        <td>Broad RCM, PA is secondary</td>
+      </tr>
+      <tr>
+        <td><strong>Availity</strong></td>
+        <td>Clearinghouse + PA</td>
+        <td>Network</td>
+        <td>Private</td>
+        <td>Portal-based, not AI-native</td>
+      </tr>
+      <tr>
+        <td><strong>Infinitus</strong></td>
+        <td>Voice AI for PA calls</td>
+        <td>Point solution</td>
+        <td class="num">$103M</td>
+        <td>Follow-up only, not end-to-end</td>
+      </tr>
+      <tr>
+        <td><strong>Myndshft/DrFirst</strong></td>
+        <td>Real-time PA</td>
+        <td>Horizontal</td>
+        <td>Acquired</td>
+        <td>Generic rules, not imaging-specialized</td>
+      </tr>
+      <tr>
+        <td><strong>EviCore</strong></td>
+        <td>Radiology benefit mgmt</td>
+        <td>RBM (incumbent)</td>
+        <td>Evernorth/Cigna</td>
+        <td>IS the bottleneck, not the solution</td>
+      </tr>
+      <tr>
+        <td><strong>Carelon</strong></td>
+        <td>Specialty benefit mgmt</td>
+        <td>RBM (incumbent)</td>
+        <td>Elevance</td>
+        <td>Same &mdash; creates the problem</td>
+      </tr>
+      <tr>
+        <td><strong>SureScripts</strong></td>
+        <td>Pharmacy PA</td>
+        <td>Pharmacy only</td>
+        <td>Private</td>
+        <td>Does not serve medical/imaging PA</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout-green">
+    <strong>GreenLight by Medivis Differentiation:</strong><br>
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 4px 16px; margin-top: 6px;">
+      <div><strong>1. Imaging-native intelligence:</strong> Purpose-built for imaging modalities and surgical procedures, not a generic PA workflow tool</div>
+      <div><strong>2. RBM navigation layer:</strong> Automates interactions with EviCore, Carelon, NIA &mdash; the specific bottleneck for imaging</div>
+      <div><strong>3. ACR criteria matching:</strong> Built-in clinical decision support using ACR Appropriateness Criteria</div>
+      <div><strong>4. PACS/RIS integration:</strong> Connects to imaging-specific systems, not just EHR</div>
+      <div><strong>5. Scheduling coordination:</strong> Links PA status directly to OR and imaging appointment workflows</div>
+      <div><strong>6. Per-transaction pricing:</strong> Transparent $8/PA vs. opaque PMPM or enterprise contracts</div>
+    </div>
+  </div>
+
+  <div class="page-footer">
+    <span class="footer-logo">green<strong>light</strong> <span style="font-size:7px;color:var(--text-light);font-weight:400;">by Medivis</span></span>
+    <span class="footer-page">08</span>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 9: BUSINESS MODEL & PRICING -->
+<!-- ============================================================ -->
+<div class="page">
+  <div class="accent-bar"></div>
+  <div class="section-num">SECTION 07</div>
+  <h2>Business Model &amp; Pricing</h2>
+  <div class="section-desc">A transparent, value-aligned pricing model that scales with customer success.</div>
+
+  <div class="cols mb-14">
+    <div>
+      <h3 class="mb-8">Per-Transaction Model</h3>
+      <ul class="check-list" style="font-size: 9.5px; line-height: 1.7;">
+        <li><strong class="num">$8</strong> per automated PA transaction</li>
+        <li>Performance guarantee: <strong>$0</strong> if no measurable savings</li>
+        <li>No upfront costs, no annual contracts required</li>
+        <li>Volume discounts for <strong class="num">10,000+</strong> PAs/month</li>
+      </ul>
+    </div>
+    <div>
+      <div class="callout" style="margin-bottom:0;">
+        <strong>Why per-transaction wins:</strong> Unlike PMPM pricing, per-transaction aligns cost directly with value. Clients pay only for PAs we actually process. No shelf-ware risk. No wasted spend on unused licenses. The more value GreenLight by Medivis delivers, the more both parties benefit.
+      </div>
+    </div>
+  </div>
+
+  <h3 class="mb-8">Example Scenarios</h3>
+  <table class="mb-14">
+    <thead>
+      <tr>
+        <th>Scenario</th>
+        <th class="num">Monthly Vol</th>
+        <th class="num">Annual Cost</th>
+        <th class="num">Savings Generated</th>
+        <th class="num">Net Benefit</th>
+        <th class="num">ROI</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Imaging Center (5 radiologists)</td>
+        <td class="num">800</td>
+        <td class="num">$76,800</td>
+        <td class="num">$380,000</td>
+        <td class="num" style="color:var(--emerald-700); font-weight:600;">$303,200</td>
+        <td class="num" style="color:var(--emerald-700); font-weight:600;">3.9x</td>
+      </tr>
+      <tr>
+        <td>Surgical Center (15 surgeons)</td>
+        <td class="num">2,400</td>
+        <td class="num">$230,400</td>
+        <td class="num">$920,000</td>
+        <td class="num" style="color:var(--emerald-700); font-weight:600;">$689,600</td>
+        <td class="num" style="color:var(--emerald-700); font-weight:600;">3.0x</td>
+      </tr>
+      <tr>
+        <td>Hospital System (100 providers)</td>
+        <td class="num">15,000</td>
+        <td class="num">$1,440,000</td>
+        <td class="num">$3,200,000</td>
+        <td class="num" style="color:var(--emerald-700); font-weight:600;">$1,760,000</td>
+        <td class="num" style="color:var(--emerald-700); font-weight:600;">1.2x</td>
+      </tr>
+      <tr>
+        <td>Multi-Hospital Network (500 providers)</td>
+        <td class="num">50,000</td>
+        <td class="num">$4,800,000</td>
+        <td class="num">$12,500,000</td>
+        <td class="num" style="color:var(--emerald-700); font-weight:600;">$7,700,000</td>
+        <td class="num" style="color:var(--emerald-700); font-weight:600;">1.6x</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3 class="mb-8">Revenue Scaling Visualization</h3>
+  <div class="bar-row">
+    <span class="bar-label">Imaging Center</span>
+    <div class="bar-track"><div class="bar-fill emerald" style="width: 5%;">$77K</div></div>
+    <span class="bar-value">$303K</span>
+  </div>
+  <div class="bar-row">
+    <span class="bar-label">Surgical Center</span>
+    <div class="bar-track"><div class="bar-fill emerald" style="width: 12%;">$230K</div></div>
+    <span class="bar-value">$690K</span>
+  </div>
+  <div class="bar-row">
+    <span class="bar-label">Hospital System</span>
+    <div class="bar-track"><div class="bar-fill emerald" style="width: 40%;">$1.44M</div></div>
+    <span class="bar-value">$1.76M</span>
+  </div>
+  <div class="bar-row">
+    <span class="bar-label">Multi-Hospital</span>
+    <div class="bar-track"><div class="bar-fill emerald" style="width: 100%;">$4.8M</div></div>
+    <span class="bar-value">$7.7M</span>
+  </div>
+
+  <div class="page-footer">
+    <span class="footer-logo">green<strong>light</strong> <span style="font-size:7px;color:var(--text-light);font-weight:400;">by Medivis</span></span>
+    <span class="footer-page">09</span>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 10: FINANCIAL MODEL -->
+<!-- ============================================================ -->
+<div class="page">
+  <div class="accent-bar"></div>
+  <div class="section-num">SECTION 08</div>
+  <h2>Financial Model: 5-Year ARR Projections</h2>
+  <div class="accent-line"></div>
+
+  <table class="mb-12" style="font-size: 8.5px;">
+    <thead>
+      <tr>
+        <th>Metric</th>
+        <th class="num">Year 1</th>
+        <th class="num">Year 2</th>
+        <th class="num">Year 3</th>
+        <th class="num">Year 4</th>
+        <th class="num">Year 5</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>New Customers</td>
+        <td class="num">15</td>
+        <td class="num">50</td>
+        <td class="num">115</td>
+        <td class="num">240</td>
+        <td class="num">430</td>
+      </tr>
+      <tr>
+        <td>Total Customers</td>
+        <td class="num">15</td>
+        <td class="num">65</td>
+        <td class="num">180</td>
+        <td class="num">420</td>
+        <td class="num">850</td>
+      </tr>
+      <tr>
+        <td>Avg Monthly PA/Customer</td>
+        <td class="num">3,000</td>
+        <td class="num">4,000</td>
+        <td class="num">4,860</td>
+        <td class="num">5,360</td>
+        <td class="num">6,000</td>
+      </tr>
+      <tr>
+        <td>Total Monthly PA Volume</td>
+        <td class="num">45,000</td>
+        <td class="num">260,000</td>
+        <td class="num">875,000</td>
+        <td class="num">2,250,000</td>
+        <td class="num">5,100,000</td>
+      </tr>
+      <tr>
+        <td>Revenue/PA</td>
+        <td class="num">$8.00</td>
+        <td class="num">$7.50</td>
+        <td class="num">$7.00</td>
+        <td class="num">$6.50</td>
+        <td class="num">$6.00</td>
+      </tr>
+      <tr>
+        <td>Monthly Revenue</td>
+        <td class="num">$360K</td>
+        <td class="num">$1.95M</td>
+        <td class="num">$6.13M</td>
+        <td class="num">$14.63M</td>
+        <td class="num">$30.6M</td>
+      </tr>
+      <tr style="background: var(--emerald-50);">
+        <td><strong>ARR</strong></td>
+        <td class="num" style="font-weight:700; color:var(--emerald-700);">$2.1M*</td>
+        <td class="num" style="font-weight:700; color:var(--emerald-700);">$12.5M</td>
+        <td class="num" style="font-weight:700; color:var(--emerald-700);">$42M</td>
+        <td class="num" style="font-weight:700; color:var(--emerald-700);">$108M</td>
+        <td class="num" style="font-weight:700; color:var(--emerald-700);">$245M</td>
+      </tr>
+      <tr>
+        <td>Gross Margin</td>
+        <td class="num">65%</td>
+        <td class="num">72%</td>
+        <td class="num">78%</td>
+        <td class="num">82%</td>
+        <td class="num">85%</td>
+      </tr>
+      <tr>
+        <td>Net Revenue Retention</td>
+        <td class="num">120%</td>
+        <td class="num">130%</td>
+        <td class="num">135%</td>
+        <td class="num">130%</td>
+        <td class="num">125%</td>
+      </tr>
+    </tbody>
+  </table>
+  <p class="text-xs text-muted mb-12">*Year 1 ARR is annualized run-rate at month 12</p>
+
+  <div class="cols mb-14">
+    <div>
+      <div class="chart-box">
+        <div class="chart-title">ARR Growth (Year 1&ndash;5)</div>
+        <div class="chart-canvas-wrap" style="height:155px;">
+          <canvas id="chartARR" height="155"></canvas>
+        </div>
+      </div>
+    </div>
+    <div>
+      <h3 class="mb-8">Unit Economics</h3>
+      <table style="font-size: 8.5px;">
+        <thead>
+          <tr>
+            <th>Metric</th>
+            <th class="num">Year 1</th>
+            <th class="num">Year 5</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>CAC</td>
+            <td class="num">$45,000</td>
+            <td class="num">$25,000</td>
+          </tr>
+          <tr>
+            <td>ACV</td>
+            <td class="num">$140,000</td>
+            <td class="num">$288,000</td>
+          </tr>
+          <tr>
+            <td>LTV/CAC Ratio</td>
+            <td class="num" style="color:var(--emerald-700); font-weight:600;">3.1x</td>
+            <td class="num" style="color:var(--emerald-700); font-weight:600;">11.5x</td>
+          </tr>
+          <tr>
+            <td>Payback Period</td>
+            <td class="num">4 months</td>
+            <td class="num">1.5 months</td>
+          </tr>
+          <tr>
+            <td>Gross Margin</td>
+            <td class="num">65%</td>
+            <td class="num">85%</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="fin-total">
+    <span class="stat-num">$245M</span>
+    <span class="stat-label" style="display:block; margin-top:2px;">Year 5 ARR Target &mdash; 850 Customers &mdash; 5.1M Monthly PAs</span>
+  </div>
+
+  <div class="page-footer">
+    <span class="footer-logo">green<strong>light</strong> <span style="font-size:7px;color:var(--text-light);font-weight:400;">by Medivis</span></span>
+    <span class="footer-page">10</span>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 11: IMPLEMENTATION STRATEGY -->
+<!-- ============================================================ -->
+<div class="page">
+  <div class="accent-bar"></div>
+  <div class="section-num">SECTION 09</div>
+  <h2>Implementation Strategy &amp; Timeline</h2>
+  <div class="accent-line"></div>
+
+  <div class="cols mb-12">
+    <div>
+      <div class="phase-box">
+        <h4>Phase 1: Foundation (Months 1&ndash;6)</h4>
+        <ul>
+          <li>Build core PA submission engine</li>
+          <li>Integrate FHIR CRD/DTR/PAS specifications</li>
+          <li>Connect to top 5 payers (UHC, Anthem, Aetna, Cigna, Humana)</li>
+          <li>Integrate with top 3 RBMs (EviCore, Carelon, NIA)</li>
+          <li>Deploy at 3&ndash;5 beta customers (imaging centers)</li>
+        </ul>
+        <div class="milestone">&#9670; Milestone: First fully automated PA submission</div>
+      </div>
+      <div class="phase-box">
+        <h4>Phase 2: Expansion (Months 7&ndash;12)</h4>
+        <ul>
+          <li>Expand payer/RBM coverage to top 20 payers (85% market coverage)</li>
+          <li>Add denial prevention AI engine</li>
+          <li>Build appeal automation workflow</li>
+          <li>Epic FHIR integration</li>
+          <li>Launch scheduling sync module</li>
+          <li>Scale to 15 customers</li>
+        </ul>
+        <div class="milestone">&#9670; Milestone: $2.1M ARR run-rate</div>
+      </div>
+    </div>
+    <div>
+      <div class="phase-box">
+        <h4>Phase 3: Scale (Months 13&ndash;24)</h4>
+        <ul>
+          <li>Add surgical center and hospital system modules</li>
+          <li>Build PACS/RIS direct integration</li>
+          <li>Expand to 65 customers</li>
+          <li>Launch self-service onboarding for smaller facilities</li>
+        </ul>
+        <div class="milestone">&#9670; Milestone: $12.5M ARR</div>
+      </div>
+      <div class="phase-box">
+        <h4>Phase 4: Market Leadership (Months 25&ndash;36)</h4>
+        <ul>
+          <li>National payer coverage (95%+ of commercial lives)</li>
+          <li>Launch payer-side analytics product (secondary revenue stream)</li>
+          <li>Strategic partnerships with EHR vendors</li>
+        </ul>
+        <div class="milestone">&#9670; Milestone: $42M ARR, Series B raise</div>
+      </div>
+    </div>
+  </div>
+
+  <h3 class="mb-8">Development Gantt Chart</h3>
+  <div style="background:var(--bg-light); border:1px solid var(--bg-border); border-radius:8px; padding:14px;">
+    <!-- Month headers -->
+    <div class="gantt-row" style="margin-bottom:6px;">
+      <span class="gantt-label" style="font-weight:600; font-size:7px; color:var(--text-muted);">WORKSTREAM</span>
+      <div class="gantt-track" style="display:flex; border-left:none;">
+        <span style="flex:1; text-align:center; font-size:6.5px; color:var(--text-light); font-family:'JetBrains Mono',monospace;">M1</span>
+        <span style="flex:1; text-align:center; font-size:6.5px; color:var(--text-light); font-family:'JetBrains Mono',monospace;">M3</span>
+        <span style="flex:1; text-align:center; font-size:6.5px; color:var(--text-light); font-family:'JetBrains Mono',monospace;">M5</span>
+        <span style="flex:1; text-align:center; font-size:6.5px; color:var(--text-light); font-family:'JetBrains Mono',monospace;">M7</span>
+        <span style="flex:1; text-align:center; font-size:6.5px; color:var(--text-light); font-family:'JetBrains Mono',monospace;">M9</span>
+        <span style="flex:1; text-align:center; font-size:6.5px; color:var(--text-light); font-family:'JetBrains Mono',monospace;">M11</span>
+        <span style="flex:1; text-align:center; font-size:6.5px; color:var(--text-light); font-family:'JetBrains Mono',monospace;">M13</span>
+        <span style="flex:1; text-align:center; font-size:6.5px; color:var(--text-light); font-family:'JetBrains Mono',monospace;">M15</span>
+        <span style="flex:1; text-align:center; font-size:6.5px; color:var(--text-light); font-family:'JetBrains Mono',monospace;">M17</span>
+        <span style="flex:1; text-align:center; font-size:6.5px; color:var(--text-light); font-family:'JetBrains Mono',monospace;">M19</span>
+      </div>
+    </div>
+    <!-- Core Engine: M1-4 -->
+    <div class="gantt-row">
+      <span class="gantt-label">Core Engine</span>
+      <div class="gantt-track"><div class="gantt-bar" style="left:0%; width:20%; background:linear-gradient(90deg,var(--emerald-700),var(--emerald-500)); border-radius:3px;"></div></div>
+    </div>
+    <!-- Payer Integration: M2-8 -->
+    <div class="gantt-row">
+      <span class="gantt-label">Payer Integration</span>
+      <div class="gantt-track"><div class="gantt-bar" style="left:5%; width:35%; background:linear-gradient(90deg,var(--sky-500),var(--sky-400)); border-radius:3px;"></div></div>
+    </div>
+    <!-- RBM Integration: M3-9 -->
+    <div class="gantt-row">
+      <span class="gantt-label">RBM Integration</span>
+      <div class="gantt-track"><div class="gantt-bar" style="left:10%; width:35%; background:linear-gradient(90deg,var(--amber-500),var(--amber-400)); border-radius:3px;"></div></div>
+    </div>
+    <!-- Beta Launch: M5-6 -->
+    <div class="gantt-row">
+      <span class="gantt-label">Beta Launch</span>
+      <div class="gantt-track"><div class="gantt-bar" style="left:20%; width:10%; background:linear-gradient(90deg,var(--emerald-700),var(--emerald-500)); border-radius:3px;"></div></div>
+    </div>
+    <!-- Denial AI: M7-10 -->
+    <div class="gantt-row">
+      <span class="gantt-label">Denial AI</span>
+      <div class="gantt-track"><div class="gantt-bar" style="left:30%; width:20%; background:linear-gradient(90deg,var(--coral-500),var(--coral-400)); border-radius:3px;"></div></div>
+    </div>
+    <!-- Appeal Engine: M8-11 -->
+    <div class="gantt-row">
+      <span class="gantt-label">Appeal Engine</span>
+      <div class="gantt-track"><div class="gantt-bar" style="left:35%; width:20%; background:linear-gradient(90deg,#7C3AED,var(--purple-500)); border-radius:3px;"></div></div>
+    </div>
+    <!-- Epic FHIR: M6-12 -->
+    <div class="gantt-row">
+      <span class="gantt-label">Epic FHIR</span>
+      <div class="gantt-track"><div class="gantt-bar" style="left:25%; width:35%; background:linear-gradient(90deg,var(--sky-500),var(--sky-400)); border-radius:3px;"></div></div>
+    </div>
+    <!-- Surgical Module: M13-18 -->
+    <div class="gantt-row">
+      <span class="gantt-label">Surgical Module</span>
+      <div class="gantt-track"><div class="gantt-bar" style="left:60%; width:30%; background:linear-gradient(90deg,#0D9488,var(--teal-500)); border-radius:3px;"></div></div>
+    </div>
+    <!-- Self-Service: M15-20 -->
+    <div class="gantt-row">
+      <span class="gantt-label">Self-Service</span>
+      <div class="gantt-track"><div class="gantt-bar" style="left:70%; width:30%; background:linear-gradient(90deg,var(--emerald-700),var(--emerald-500)); border-radius:3px;"></div></div>
+    </div>
+  </div>
+
+  <div class="page-footer">
+    <span class="footer-logo">green<strong>light</strong> <span style="font-size:7px;color:var(--text-light);font-weight:400;">by Medivis</span></span>
+    <span class="footer-page">11</span>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 12: GO-TO-MARKET -->
+<!-- ============================================================ -->
+<div class="page">
+  <div class="accent-bar"></div>
+  <div class="section-num">SECTION 10</div>
+  <h2>Go-to-Market Strategy</h2>
+  <div class="section-desc">Land in imaging centers, expand to surgical centers and hospital systems, then capture the long tail of specialty practices.</div>
+
+  <h3 class="mb-8">Target Segments (Prioritized)</h3>
+  <div class="stat-grid cols-4 mb-14" style="gap:8px;">
+    <div class="stat-card accent" style="text-align:left; padding:10px 12px;">
+      <span style="font-size:8px; font-weight:700; color:var(--emerald-700);">PRIORITY 1</span>
+      <h4 style="font-size:10px; margin: 4px 0 2px;">Freestanding Imaging Centers</h4>
+      <p style="font-size:7.5px; color:var(--text-muted); line-height:1.4; margin:0;">6,800+ in US. Highest pain, fastest decisions, highest imaging PA volume per provider.</p>
+    </div>
+    <div class="stat-card blue" style="text-align:left; padding:10px 12px;">
+      <span style="font-size:8px; font-weight:700; color:var(--sky-500);">PRIORITY 2</span>
+      <h4 style="font-size:10px; margin: 4px 0 2px;">Ambulatory Surgery Centers</h4>
+      <p style="font-size:7.5px; color:var(--text-muted); line-height:1.4; margin:0;">6,100+. High-value procedures, PA delays directly impact OR utilization.</p>
+    </div>
+    <div class="stat-card amber" style="text-align:left; padding:10px 12px;">
+      <span style="font-size:8px; font-weight:700; color:var(--amber-500);">PRIORITY 3</span>
+      <h4 style="font-size:10px; margin: 4px 0 2px;">Hospital Radiology Departments</h4>
+      <p style="font-size:7.5px; color:var(--text-muted); line-height:1.4; margin:0;">6,090. Largest volume, longest sales cycle, highest ACV.</p>
+    </div>
+    <div class="stat-card" style="text-align:left; padding:10px 12px; border-color:#ddd6fe; background:var(--purple-50);">
+      <span style="font-size:8px; font-weight:700; color:var(--purple-500);">PRIORITY 4</span>
+      <h4 style="font-size:10px; margin: 4px 0 2px;">Specialty Practices</h4>
+      <p style="font-size:7.5px; color:var(--text-muted); line-height:1.4; margin:0;">Cardiology, orthopedics, neurosurgery. High PA burden specialties.</p>
+    </div>
+  </div>
+
+  <div class="cols mb-14">
+    <div>
+      <h3 class="mb-8">GTM Motions</h3>
+      <ul class="feature-list" style="font-size:9px;">
+        <li><strong>Outbound:</strong> Target imaging center administrators and surgical center directors via personalized ROI analyses</li>
+        <li><strong>Content marketing:</strong> PA burden calculators, denial rate benchmarks, regulatory updates (CMS-0057)</li>
+        <li><strong>Channel partnerships:</strong> EHR vendors, clearinghouses, radiology groups (RadPartners, SimonMed, Akumin)</li>
+        <li><strong>Conference strategy:</strong> RSNA, RBMA, ASC Association, HIMSS</li>
+        <li><strong>Referral program:</strong> $5,000 per referred customer</li>
+      </ul>
+    </div>
+    <div>
+      <h3 class="mb-8">Sales Cycle by Segment</h3>
+      <div class="bar-row mb-4">
+        <span class="bar-label">Imaging Centers</span>
+        <div class="bar-track"><div class="bar-fill emerald" style="width: 33%;">30-60 days</div></div>
+      </div>
+      <div class="bar-row mb-4">
+        <span class="bar-label">Surgical Centers</span>
+        <div class="bar-track"><div class="bar-fill sky" style="width: 50%;">60-90 days</div></div>
+      </div>
+      <div class="bar-row mb-4">
+        <span class="bar-label">Hospital Systems</span>
+        <div class="bar-track"><div class="bar-fill amber" style="width: 100%;">90-180 days</div></div>
+      </div>
+
+      <div class="callout" style="margin-top:14px;">
+        <strong>Land-and-expand strategy:</strong> Start with a single department or location, prove ROI within 60 days, then expand across the health system. Average expansion from 1 to 4+ locations within 12 months.
+      </div>
+    </div>
+  </div>
+
+  <h3 class="mb-8">Year 1 GTM Timeline</h3>
+  <div class="stat-grid cols-4" style="gap:8px;">
+    <div style="background:var(--emerald-50); border-radius:8px; padding:10px; border:1px solid #a7f3d0; text-align:center;">
+      <div style="font-family:'JetBrains Mono',monospace; font-size:9px; font-weight:700; color:var(--emerald-700);">Q1</div>
+      <div style="font-size:8px; color:var(--text-body); margin-top:2px;">Beta launch, 3-5 customers, product-market fit validation</div>
+    </div>
+    <div style="background:var(--sky-50); border-radius:8px; padding:10px; border:1px solid #bae6fd; text-align:center;">
+      <div style="font-family:'JetBrains Mono',monospace; font-size:9px; font-weight:700; color:var(--sky-500);">Q2</div>
+      <div style="font-size:8px; color:var(--text-body); margin-top:2px;">First paid customers, case studies, initial conference presence</div>
+    </div>
+    <div style="background:var(--amber-50); border-radius:8px; padding:10px; border:1px solid #fde68a; text-align:center;">
+      <div style="font-family:'JetBrains Mono',monospace; font-size:9px; font-weight:700; color:var(--amber-500);">Q3</div>
+      <div style="font-size:8px; color:var(--text-body); margin-top:2px;">Scale outbound, channel partner recruitment, 10+ customers</div>
+    </div>
+    <div style="background:var(--purple-50); border-radius:8px; padding:10px; border:1px solid #ddd6fe; text-align:center;">
+      <div style="font-family:'JetBrains Mono',monospace; font-size:9px; font-weight:700; color:var(--purple-500);">Q4</div>
+      <div style="font-size:8px; color:var(--text-body); margin-top:2px;">15 customers, $2.1M ARR run-rate, Series A preparation</div>
+    </div>
+  </div>
+
+  <div class="page-footer">
+    <span class="footer-logo">green<strong>light</strong> <span style="font-size:7px;color:var(--text-light);font-weight:400;">by Medivis</span></span>
+    <span class="footer-page">12</span>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 13: RISK ANALYSIS -->
+<!-- ============================================================ -->
+<div class="page">
+  <div class="accent-bar"></div>
+  <div class="section-num">SECTION 11</div>
+  <h2>Risk Analysis &amp; Mitigation</h2>
+  <div class="section-desc">A clear-eyed assessment of risks and our strategies to address each one.</div>
+
+  <table style="font-size: 8.5px; margin-bottom: 16px;">
+    <thead>
+      <tr>
+        <th style="width:22%;">Risk</th>
+        <th style="width:10%;">Probability</th>
+        <th style="width:10%;">Impact</th>
+        <th>Mitigation</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Payer portal changes break automation</strong></td>
+        <td><span class="tag tag-rose">High</span></td>
+        <td><span class="tag tag-amber">Medium</span></td>
+        <td>Multi-method integration (API, FHIR, portal, fax); dedicated monitoring and rapid adaptation team</td>
+      </tr>
+      <tr>
+        <td><strong>CMS-0057 reduces PA burden overall</strong></td>
+        <td><span class="tag tag-amber">Medium</span></td>
+        <td><span class="tag tag-amber">Medium</span></td>
+        <td>Electronic mandate creates more automation opportunities, not fewer; positions GreenLight by Medivis as compliance solution</td>
+      </tr>
+      <tr>
+        <td><strong>EHR vendors build native PA tools</strong></td>
+        <td><span class="tag tag-amber">Medium</span></td>
+        <td><span class="tag tag-rose">High</span></td>
+        <td>Specialize deeper into imaging/procedure niche; EHR tools will be generic; partner vs. compete</td>
+      </tr>
+      <tr>
+        <td><strong>Large horizontal competitor enters niche</strong></td>
+        <td><span class="tag tag-amber">Medium</span></td>
+        <td><span class="tag tag-amber">Medium</span></td>
+        <td>First-mover advantage in imaging-specific intelligence; high switch costs once integrated with PACS/RIS</td>
+      </tr>
+      <tr>
+        <td><strong>Customer concentration in early years</strong></td>
+        <td><span class="tag tag-rose">High</span></td>
+        <td><span class="tag tag-rose">High</span></td>
+        <td>Diversify across facility types; enforce no single customer &gt; 15% of revenue; rapid customer acquisition</td>
+      </tr>
+      <tr>
+        <td><strong>HIPAA/security incident</strong></td>
+        <td><span class="tag tag-emerald">Low</span></td>
+        <td><span class="tag tag-rose" style="background:#fee2e2; color:#991B1B; border-color:#fca5a5;">Critical</span></td>
+        <td>SOC 2 Type II, HIPAA BAA, zero-retention LLM architecture, regular penetration testing, dedicated security team</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="cols mb-14">
+    <div>
+      <h3 class="mb-8">Risk Heatmap</h3>
+      <div style="background: var(--bg-light); border: 1px solid var(--bg-border); border-radius: 8px; padding: 14px;">
+        <div style="display:grid; grid-template-columns: auto 1fr 1fr 1fr; grid-template-rows: auto auto auto auto; gap: 3px; font-size: 7.5px;">
+          <div></div>
+          <div style="text-align:center; font-weight:600; color:var(--text-muted); padding:4px;">Low Impact</div>
+          <div style="text-align:center; font-weight:600; color:var(--text-muted); padding:4px;">Medium Impact</div>
+          <div style="text-align:center; font-weight:600; color:var(--text-muted); padding:4px;">High/Critical</div>
+          <div style="font-weight:600; color:var(--text-muted); padding:4px; text-align:right;">High Prob</div>
+          <div style="background:#fef9c3; border-radius:4px; padding:6px; text-align:center;"></div>
+          <div style="background:#fed7aa; border-radius:4px; padding:6px; text-align:center; font-size:7px;">Portal changes</div>
+          <div style="background:#fecaca; border-radius:4px; padding:6px; text-align:center; font-size:7px;">Customer conc.</div>
+          <div style="font-weight:600; color:var(--text-muted); padding:4px; text-align:right;">Med Prob</div>
+          <div style="background:#d1fae5; border-radius:4px; padding:6px; text-align:center;"></div>
+          <div style="background:#fef9c3; border-radius:4px; padding:6px; text-align:center; font-size:7px;">CMS-0057; Competitor</div>
+          <div style="background:#fed7aa; border-radius:4px; padding:6px; text-align:center; font-size:7px;">EHR native tools</div>
+          <div style="font-weight:600; color:var(--text-muted); padding:4px; text-align:right;">Low Prob</div>
+          <div style="background:#d1fae5; border-radius:4px; padding:6px; text-align:center;"></div>
+          <div style="background:#d1fae5; border-radius:4px; padding:6px; text-align:center;"></div>
+          <div style="background:#fecaca; border-radius:4px; padding:6px; text-align:center; font-size:7px;">HIPAA incident</div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <h3 class="mb-8">Regulatory Tailwinds</h3>
+      <div class="callout-green" style="margin-bottom:10px;">
+        <strong>CMS-0057 Final Rule (Jan 2026):</strong> Requires payers to implement electronic PA APIs. This is a massive tailwind &mdash; it mandates the infrastructure GreenLight by Medivis connects to, while still requiring specialized provider-side automation to fully leverage.
+      </div>
+      <div class="callout" style="margin-bottom:0;">
+        <strong>State-level PA reform:</strong> 30+ states have enacted or proposed PA reform legislation. Texas, Michigan, and Florida now require 48-hour turnaround for urgent PAs. Regulatory pressure is accelerating demand for automation.
+      </div>
+    </div>
+  </div>
+
+  <div class="page-footer">
+    <span class="footer-logo">green<strong>light</strong> <span style="font-size:7px;color:var(--text-light);font-weight:400;">by Medivis</span></span>
+    <span class="footer-page">13</span>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 14: TECHNICAL ARCHITECTURE -->
+<!-- ============================================================ -->
+<div class="page">
+  <div class="accent-bar"></div>
+  <div class="section-num">SECTION 12</div>
+  <h2>Technical Architecture</h2>
+  <div class="section-desc">Enterprise-grade, HIPAA-compliant, built for healthcare from day one.</div>
+
+  <h3 class="mb-8">Architecture Components</h3>
+  <table class="mb-14" style="font-size:8.5px;">
+    <thead>
+      <tr>
+        <th style="width:22%;">Component</th>
+        <th style="width:25%;">Technology</th>
+        <th>Why</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>AI/LLM Backend</strong></td>
+        <td>LLM via AWS Bedrock</td>
+        <td>BAA-eligible, HIPAA-compliant, zero data retention</td>
+      </tr>
+      <tr>
+        <td><strong>Agent Orchestration</strong></td>
+        <td>LangGraph</td>
+        <td>Graph-based, stateful, auditable PA workflows</td>
+      </tr>
+      <tr>
+        <td><strong>Durable Execution</strong></td>
+        <td>Temporal</td>
+        <td>Guarantees PA completion despite failures</td>
+      </tr>
+      <tr>
+        <td><strong>Integration Engine</strong></td>
+        <td>Mirth Connect</td>
+        <td>FHIR, HL7v2, X12 EDI translation</td>
+      </tr>
+      <tr>
+        <td><strong>Payer Connectivity</strong></td>
+        <td>Availity + Direct FHIR</td>
+        <td>Clearinghouse + Da Vinci PAS</td>
+      </tr>
+      <tr>
+        <td><strong>EHR Integration</strong></td>
+        <td>Epic FHIR, Oracle Health</td>
+        <td>CRD/DTR at point of order</td>
+      </tr>
+      <tr>
+        <td><strong>Imaging Integration</strong></td>
+        <td>PACS/RIS APIs</td>
+        <td>Direct radiology workflow connection</td>
+      </tr>
+      <tr>
+        <td><strong>Infrastructure</strong></td>
+        <td>AWS (GovCloud eligible)</td>
+        <td>FedRAMP path for government contracts</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="cols mb-14">
+    <div>
+      <h3 class="mb-8">FHIR Da Vinci Standards</h3>
+      <div style="background:var(--sky-50); border-radius:8px; padding:12px; border:1px solid #bae6fd; margin-bottom:8px;">
+        <h4 style="color:#0369A1; font-size:10px; margin-bottom:2px;">CRD &mdash; Coverage Requirements Discovery</h4>
+        <p style="font-size:8.5px; color:var(--text-body); line-height:1.5; margin:0;">Real-time "is PA required?" check at point of order. Intercepts the clinical workflow before time is wasted.</p>
+      </div>
+      <div style="background:var(--emerald-50); border-radius:8px; padding:12px; border:1px solid #a7f3d0; margin-bottom:8px;">
+        <h4 style="color:var(--emerald-700); font-size:10px; margin-bottom:2px;">DTR &mdash; Documentation Templates &amp; Rules</h4>
+        <p style="font-size:8.5px; color:var(--text-body); line-height:1.5; margin:0;">Auto-populate clinical data from EHR. Reduces manual data entry to near zero.</p>
+      </div>
+      <div style="background:var(--purple-50); border-radius:8px; padding:12px; border:1px solid #ddd6fe;">
+        <h4 style="color:#6D28D9; font-size:10px; margin-bottom:2px;">PAS &mdash; Prior Authorization Support</h4>
+        <p style="font-size:8.5px; color:var(--text-body); line-height:1.5; margin:0;">Submit and receive PA decisions electronically. Replaces fax, phone, and portal submissions.</p>
+      </div>
+    </div>
+    <div>
+      <h3 class="mb-8">Security &amp; Compliance</h3>
+      <div style="background:var(--bg-light); border:1px solid var(--bg-border); border-radius:8px; padding:14px;">
+        <ul class="check-list" style="font-size:9px; line-height:1.7;">
+          <li>HIPAA BAA with all subprocessors</li>
+          <li>SOC 2 Type II certification (target: Month 8)</li>
+          <li>Zero-retention LLM architecture (no PHI stored in model)</li>
+          <li>End-to-end encryption (TLS 1.3 in transit, AES-256 at rest)</li>
+          <li>Role-based access control (RBAC)</li>
+          <li>Audit logging for all PA transactions</li>
+          <li>Regular penetration testing (quarterly)</li>
+          <li>99.95% uptime SLA</li>
+        </ul>
+      </div>
+
+      <div class="stat-grid cols-2" style="gap:8px; margin-top:10px;">
+        <div class="stat-card accent" style="padding:10px;">
+          <span class="stat-num" style="font-size:16px;">99.95%</span>
+          <span class="stat-label">Uptime SLA</span>
+        </div>
+        <div class="stat-card blue" style="padding:10px;">
+          <span class="stat-num" style="font-size:16px;">&lt;200ms</span>
+          <span class="stat-label">API Response Time</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-footer">
+    <span class="footer-logo">green<strong>light</strong> <span style="font-size:7px;color:var(--text-light);font-weight:400;">by Medivis</span></span>
+    <span class="footer-page">14</span>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 15: CLINICAL DATA STRATEGY -->
+<!-- ============================================================ -->
+<div class="page">
+  <div class="accent-bar"></div>
+  <div class="section-num">SECTION 13</div>
+  <h2>Clinical Data Strategy: Payer Rules &amp; Criteria Sources</h2>
+  <div class="section-desc">The clinical rules engine is GreenLight's core IP. This section maps the authoritative data sources that power payer-specific PA determination, denial prevention, and appeal generation.</div>
+
+  <h3 class="mb-8">Tiered Data Acquisition Strategy</h3>
+
+  <div class="feature-grid" style="grid-template-columns: 1fr 1fr;">
+    <div class="feature-card fc-emerald">
+      <h4>Tier 1 &mdash; Public Clinical Standards (Free)</h4>
+      <p>Foundational clinical correctness layer. Available immediately, no licensing required.</p>
+      <ul class="feature-list" style="font-size:8px; margin-top:4px;">
+        <li><strong>ACR Appropriateness Criteria:</strong> ~200+ clinical conditions mapped to imaging modalities. Each topic rated 1&ndash;9 (usually appropriate / may be appropriate / usually not appropriate). Machine-readable via ACR API at acsearch.acr.org</li>
+        <li><strong>CMS NCDs &amp; LCDs:</strong> National &amp; Local Coverage Determinations define exactly what Medicare covers and what requires PA. Published in structured formats at cms.gov</li>
+        <li><strong>CMS Annual PA List:</strong> Medicare Advantage prior authorization requirements published annually &mdash; definitive source for MA plans</li>
+      </ul>
+      <div style="margin-top:6px;"><span class="tag tag-emerald">No cost</span><span class="tag tag-emerald">Immediate access</span><span class="tag tag-emerald">Machine-readable</span></div>
+    </div>
+    <div class="feature-card fc-sky">
+      <h4>Tier 2 &mdash; RBM Published Guidelines (Free)</h4>
+      <p>The actual criteria that determine approval/denial for most commercial plans. Published as PDFs, parseable with AI.</p>
+      <ul class="feature-list" style="font-size:8px; margin-top:4px;">
+        <li><strong>EviCore</strong> (Evernorth/Cigna): Clinical guidelines at evicore.com/provider, organized by specialty &mdash; radiology, cardiology, oncology, musculoskeletal</li>
+        <li><strong>Carelon</strong> (Elevance/Anthem): Clinical appropriateness guidelines at carelonmedicalbenefits.com &mdash; covers imaging, radiation therapy, sleep studies</li>
+        <li><strong>NIA / Evolent Health:</strong> National Imaging Associates guidelines on provider portal &mdash; primarily advanced imaging (MRI, CT, PET, nuclear medicine)</li>
+      </ul>
+      <div style="margin-top:6px;"><span class="tag tag-sky">No cost</span><span class="tag tag-sky">PDF parsing required</span><span class="tag tag-sky">Highest denial-prevention value</span></div>
+    </div>
+    <div class="feature-card fc-amber">
+      <h4>Tier 3 &mdash; Payer-Specific Policies (Free, Manual)</h4>
+      <p>Individual payer PA requirements by CPT code, plan type, and state. Scattered across provider portals.</p>
+      <ul class="feature-list" style="font-size:8px; margin-top:4px;">
+        <li><strong>UnitedHealthcare:</strong> uhcprovider.com &rarr; Prior Authorization &amp; Notification lookup tool</li>
+        <li><strong>Aetna:</strong> aetna.com/health-care-professionals &rarr; Precertification lists by plan</li>
+        <li><strong>Cigna:</strong> cignaforhcp.cigna.com &rarr; Coverage Policies searchable by CPT</li>
+        <li><strong>BCBS:</strong> Varies by state plan &mdash; each publishes a medical policy manual with PA requirements</li>
+        <li><strong>Humana, Anthem, Centene:</strong> Provider portals with PA lookup tools</li>
+      </ul>
+      <div style="margin-top:6px;"><span class="tag tag-amber">No cost</span><span class="tag tag-amber">High maintenance</span><span class="tag tag-amber">Changes without notice</span></div>
+    </div>
+    <div class="feature-card fc-purple">
+      <h4>Tier 4 &mdash; Licensed Clinical Criteria (Commercial)</h4>
+      <p>Industry-standard clinical decision support used by payers themselves to adjudicate PA requests.</p>
+      <ul class="feature-list" style="font-size:8px; margin-top:4px;">
+        <li><strong>InterQual (Cotiviti):</strong> Industry-standard criteria used by major payers. Structured, machine-readable criteria sets. Covers imaging appropriateness, surgical necessity, and level-of-care</li>
+        <li><strong>MCG (Milliman Care Guidelines):</strong> Used by ~2,700 hospitals and health plans. Covers imaging, surgical, and procedure appropriateness with evidence-based indications</li>
+      </ul>
+      <div style="margin-top:6px;"><span class="tag tag-purple">Commercial license</span><span class="tag tag-purple">Authoritative</span><span class="tag tag-purple">Machine-readable</span></div>
+    </div>
+  </div>
+
+  <div class="page-footer">
+    <span class="footer-logo">green<strong>light</strong> <span style="font-size:7px;color:var(--text-light);font-weight:400;">by Medivis</span></span>
+    <span class="footer-page">15</span>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 16: CLINICAL DATA STRATEGY (cont.) -->
+<!-- ============================================================ -->
+<div class="page">
+  <div class="accent-bar"></div>
+  <div class="section-num">SECTION 13 (CONT.)</div>
+  <h2>Clinical Data Strategy: Implementation Roadmap</h2>
+  <div class="accent-line"></div>
+
+  <h3 class="mb-8">Data Source Coverage Matrix</h3>
+  <table class="mb-14" style="font-size:8.5px;">
+    <thead>
+      <tr>
+        <th>Source</th>
+        <th>Coverage</th>
+        <th>Format</th>
+        <th>Cost</th>
+        <th>Update Frequency</th>
+        <th>Integration Priority</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>ACR Appropriateness Criteria</strong></td>
+        <td>~200 clinical topics, all imaging modalities</td>
+        <td>API + structured data</td>
+        <td class="num">Free</td>
+        <td>Annual</td>
+        <td><span class="tag tag-emerald">P0 &mdash; Launch</span></td>
+      </tr>
+      <tr>
+        <td><strong>CMS NCDs / LCDs</strong></td>
+        <td>All Medicare-covered services</td>
+        <td>Structured database</td>
+        <td class="num">Free</td>
+        <td>Quarterly</td>
+        <td><span class="tag tag-emerald">P0 &mdash; Launch</span></td>
+      </tr>
+      <tr>
+        <td><strong>EviCore Clinical Guidelines</strong></td>
+        <td>Radiology, cardio, oncology, MSK</td>
+        <td>PDF (AI-parseable)</td>
+        <td class="num">Free</td>
+        <td>Semi-annual</td>
+        <td><span class="tag tag-emerald">P0 &mdash; Launch</span></td>
+      </tr>
+      <tr>
+        <td><strong>Carelon Guidelines</strong></td>
+        <td>Imaging, radiation, sleep</td>
+        <td>PDF (AI-parseable)</td>
+        <td class="num">Free</td>
+        <td>Semi-annual</td>
+        <td><span class="tag tag-sky">P1 &mdash; Month 3</span></td>
+      </tr>
+      <tr>
+        <td><strong>NIA / Evolent Guidelines</strong></td>
+        <td>Advanced imaging (MRI, CT, PET)</td>
+        <td>PDF</td>
+        <td class="num">Free</td>
+        <td>Annual</td>
+        <td><span class="tag tag-sky">P1 &mdash; Month 3</span></td>
+      </tr>
+      <tr>
+        <td><strong>Payer PA Requirement Lists</strong></td>
+        <td>CPT-level PA requirements by plan</td>
+        <td>Portal / PDF / web scrape</td>
+        <td class="num">Free</td>
+        <td>Monthly (changes without notice)</td>
+        <td><span class="tag tag-sky">P1 &mdash; Month 3</span></td>
+      </tr>
+      <tr>
+        <td><strong>CAQH CORE / X12 278</strong></td>
+        <td>Electronic PA eligibility responses</td>
+        <td>EDI / API</td>
+        <td class="num">Partnership</td>
+        <td>Real-time</td>
+        <td><span class="tag tag-amber">P2 &mdash; Month 6</span></td>
+      </tr>
+      <tr>
+        <td><strong>Availity / Change Healthcare</strong></td>
+        <td>PA requirement data-as-a-service</td>
+        <td>API</td>
+        <td class="num">Commercial</td>
+        <td>Real-time</td>
+        <td><span class="tag tag-amber">P2 &mdash; Month 6</span></td>
+      </tr>
+      <tr>
+        <td><strong>InterQual (Cotiviti)</strong></td>
+        <td>Full clinical decision support</td>
+        <td>API / structured</td>
+        <td class="num">$$$ License</td>
+        <td>Quarterly</td>
+        <td><span class="tag tag-purple">P3 &mdash; Month 9</span></td>
+      </tr>
+      <tr>
+        <td><strong>MCG (Milliman)</strong></td>
+        <td>Full clinical decision support</td>
+        <td>API / structured</td>
+        <td class="num">$$$ License</td>
+        <td>Quarterly</td>
+        <td><span class="tag tag-purple">P3 &mdash; Month 9</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3 class="mb-8">Why This Is the Moat</h3>
+  <div class="cols mb-14">
+    <div>
+      <div class="callout-green">
+        <strong>The rules engine is the product.</strong> The platform UI and workflow automation are table stakes. The real value is knowing &mdash; for a specific payer, plan, state, CPT code, and clinical scenario &mdash; exactly what documentation is needed, what criteria must be met, and what language will get an approval. This knowledge compound over time as GreenLight processes more PAs and learns from outcomes.
+      </div>
+      <div class="callout" style="margin-top:10px;">
+        <strong>Keeping rules current is the moat.</strong> Payers change PA requirements frequently and often without notice. EviCore updates clinical guidelines semi-annually. State Medicaid programs change quarterly. Building a system that continuously monitors, parses, and ingests these changes &mdash; before they cause denials &mdash; is what separates GreenLight from horizontal PA tools.
+      </div>
+    </div>
+    <div>
+      <h4 style="font-size:10px; margin-bottom:8px;">Rules Engine Flywheel</h4>
+      <div style="background:var(--bg-light); border:1px solid var(--bg-border); border-radius:8px; padding:14px;">
+        <div style="text-align:center; font-size:8.5px; line-height:2.2;">
+          <div style="background:var(--emerald-50); border:1px solid #a7f3d0; border-radius:6px; padding:8px; margin-bottom:6px;">
+            <strong style="color:var(--emerald-700);">1. Ingest</strong><br>
+            <span style="color:var(--text-muted);">Parse ACR, RBM guidelines, payer policies</span>
+          </div>
+          <div style="color:var(--emerald-500); font-size:14px;">&darr;</div>
+          <div style="background:var(--sky-50); border:1px solid #bae6fd; border-radius:6px; padding:8px; margin-bottom:6px;">
+            <strong style="color:#0369A1;">2. Match</strong><br>
+            <span style="color:var(--text-muted);">Map clinical scenario to payer-specific criteria</span>
+          </div>
+          <div style="color:var(--emerald-500); font-size:14px;">&darr;</div>
+          <div style="background:var(--amber-50); border:1px solid #fde68a; border-radius:6px; padding:8px; margin-bottom:6px;">
+            <strong style="color:#B45309;">3. Submit</strong><br>
+            <span style="color:var(--text-muted);">Generate optimized PA with complete documentation</span>
+          </div>
+          <div style="color:var(--emerald-500); font-size:14px;">&darr;</div>
+          <div style="background:var(--purple-50); border:1px solid #ddd6fe; border-radius:6px; padding:8px; margin-bottom:6px;">
+            <strong style="color:#6D28D9;">4. Learn</strong><br>
+            <span style="color:var(--text-muted);">Track outcomes, refine criteria matching, identify rule changes</span>
+          </div>
+          <div style="color:var(--emerald-500); font-size:12px;">&uarr; &circlearrowright;</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-footer">
+    <span class="footer-logo">green<strong>light</strong> <span style="font-size:7px;color:var(--text-light);font-weight:400;">by Medivis</span></span>
+    <span class="footer-page">16</span>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 17: NAME ALTERNATIVES -->
+<!-- ============================================================ -->
+<div class="page" style="page-break-before:always;">
+  <div class="accent-bar"></div>
+  <div class="section-num">APPENDIX</div>
+  <h2>Platform Naming Considerations</h2>
+  <div class="section-desc">Five naming options evaluated for market positioning, memorability, and brand extensibility.</div>
+
+  <div class="name-card" style="border-left: 4px solid var(--emerald-500); background: var(--emerald-50);">
+    <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+      <div>
+        <h4 style="color:var(--emerald-700);">1. GreenLight by Medivis</h4>
+        <div class="tagline">"Get the green light for every authorization."</div>
+      </div>
+      <span class="tag tag-emerald" style="font-size:8px; margin:0;">RECOMMENDED</span>
+    </div>
+    <div class="pros-cons">
+      <div class="pro"><strong>Pros:</strong> Intuitive metaphor &mdash; "green light" = approval. Works as a verb ("GreenLight your MRI"). Memorable and distinctive. Strong brand color opportunity.</div>
+      <div class="con"><strong>Risks:</strong> May feel too casual for enterprise healthcare. Common phrase could present trademark challenges.</div>
+    </div>
+  </div>
+
+  <div class="name-card">
+    <h4>2. ClearPath Health</h4>
+    <div class="tagline">"Clearing the path through authorization."</div>
+    <div class="pros-cons">
+      <div class="pro"><strong>Pros:</strong> Professional, implies efficiency and obstacle removal. Easy to understand. Works well for enterprise sales.</div>
+      <div class="con"><strong>Risks:</strong> Generic sounding. Multiple companies use "ClearPath" across industries. Less distinctive.</div>
+    </div>
+  </div>
+
+  <div class="name-card">
+    <h4>3. Aperture Health</h4>
+    <div class="tagline">"Precision focus on authorization."</div>
+    <div class="pros-cons">
+      <div class="pro"><strong>Pros:</strong> Aperture = opening in optics/imaging. Perfect imaging reference. Sophisticated and unique. Strong visual brand potential.</div>
+      <div class="con"><strong>Risks:</strong> Portal video game association (Aperture Science). Not immediately obvious meaning to non-technical audience.</div>
+    </div>
+  </div>
+
+  <div class="name-card">
+    <h4>4. PriorIQ</h4>
+    <div class="tagline">"Intelligent prior authorization."</div>
+    <div class="pros-cons">
+      <div class="pro"><strong>Pros:</strong> Tech-forward, category-defining. Immediately communicates function. "IQ" implies intelligence/AI. Compact and memorable.</div>
+      <div class="con"><strong>Risks:</strong> Narrow &mdash; sounds like it only does PA (which is the intent, but limits future expansion). May feel cold.</div>
+    </div>
+  </div>
+
+  <div class="name-card">
+    <h4>5. SwiftAuth</h4>
+    <div class="tagline">"Authorization at the speed of care."</div>
+    <div class="pros-cons">
+      <div class="pro"><strong>Pros:</strong> Speed + authorization. Direct and action-oriented. Easy to remember. Clean URL availability likely.</div>
+      <div class="con"><strong>Risks:</strong> Sounds like a cybersecurity/authentication company (OAuth, AuthO). May confuse the market.</div>
+    </div>
+  </div>
+
+  <div class="callout" style="margin-top:8px;">
+    <strong>Recommendation:</strong> GreenLight by Medivis is the strongest choice. The "green light" metaphor is universally understood, emotionally positive, and directly maps to the core value proposition &mdash; getting authorization approvals. The "by Medivis" parent brand adds enterprise credibility and positions the platform within a broader healthcare technology portfolio. It works as both a noun ("the GreenLight platform") and a verb ("GreenLight your imaging orders"), giving it natural virality in clinical conversations.
+  </div>
+
+  <div class="page-footer">
+    <span class="footer-logo">green<strong>light</strong> <span style="font-size:7px;color:var(--text-light);font-weight:400;">by Medivis</span></span>
+    <span class="footer-page">17</span>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Chart defaults
+  Chart.defaults.font.family = "'Inter', sans-serif";
+  Chart.defaults.font.size = 10;
+  Chart.defaults.color = '#64748b';
+
+  // Chart 1: Medicare Advantage PA Volume
+  const ctx1 = document.getElementById('chartMAVolume');
+  if (ctx1) {
+    new Chart(ctx1.getContext('2d'), {
+      type: 'bar',
+      data: {
+        labels: ['2019', '2020', '2021', '2022', '2023', '2024'],
+        datasets: [{
+          label: 'PA Volume (Millions)',
+          data: [37.1, 39.5, 42.2, 46.0, 49.8, 53.0],
+          backgroundColor: [
+            'rgba(5,150,105,0.6)',
+            'rgba(5,150,105,0.65)',
+            'rgba(5,150,105,0.7)',
+            'rgba(5,150,105,0.75)',
+            'rgba(5,150,105,0.85)',
+            'rgba(5,150,105,1)',
+          ],
+          borderColor: '#059669',
+          borderWidth: 1,
+          borderRadius: 4,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                return context.parsed.y + 'M requests';
+              }
+            }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: false,
+            min: 30,
+            max: 58,
+            ticks: {
+              callback: function(value) { return value + 'M'; },
+              font: { family: "'JetBrains Mono', monospace", size: 8 }
+            },
+            grid: { color: '#E2E8F0' }
+          },
+          x: {
+            ticks: { font: { family: "'JetBrains Mono', monospace", size: 8 } },
+            grid: { display: false }
+          }
+        }
+      }
+    });
+  }
+
+  // Chart 2: TAM Pie
+  const ctx2 = document.getElementById('chartTAMPie');
+  if (ctx2) {
+    new Chart(ctx2.getContext('2d'), {
+      type: 'doughnut',
+      data: {
+        labels: ['Hospital Radiology (146M)', 'Specialty Practices (108M)', 'Imaging Centers (65M)', 'Surgery Centers (29M)'],
+        datasets: [{
+          data: [146, 108, 65, 29],
+          backgroundColor: ['#059669', '#0EA5E9', '#34D399', '#FBBF24'],
+          borderColor: '#fff',
+          borderWidth: 2,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: {
+              boxWidth: 10,
+              padding: 8,
+              font: { size: 8 }
+            }
+          }
+        },
+        cutout: '55%'
+      }
+    });
+  }
+
+  // Chart 3: ARR Growth
+  const ctx3 = document.getElementById('chartARR');
+  if (ctx3) {
+    new Chart(ctx3.getContext('2d'), {
+      type: 'bar',
+      data: {
+        labels: ['Year 1', 'Year 2', 'Year 3', 'Year 4', 'Year 5'],
+        datasets: [{
+          label: 'ARR ($M)',
+          data: [2.1, 12.5, 42, 108, 245],
+          backgroundColor: [
+            'rgba(5,150,105,0.6)',
+            'rgba(5,150,105,0.7)',
+            'rgba(5,150,105,0.8)',
+            'rgba(5,150,105,0.9)',
+            'rgba(5,150,105,1)',
+          ],
+          borderColor: '#059669',
+          borderWidth: 1,
+          borderRadius: 4,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                return '$' + context.parsed.y + 'M ARR';
+              }
+            }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              callback: function(value) { return '$' + value + 'M'; },
+              font: { family: "'JetBrains Mono', monospace", size: 8 }
+            },
+            grid: { color: '#E2E8F0' }
+          },
+          x: {
+            ticks: { font: { family: "'JetBrains Mono', monospace", size: 8 } },
+            grid: { display: false }
+          }
+        }
+      }
+    });
+  }
+});
+</script>
+
+</body>
+</html>

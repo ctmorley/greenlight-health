@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GreenLight by Medivis — AI-Powered Prior Authorization</title>
+<meta name="description" content="GreenLight by Medivis deploys AI agents that automate prior authorization for imaging, surgery, and procedures — turning days into seconds.">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      colors: {
+        dark: { 900:'#080C14', 800:'#0C1322', 700:'#111B30', 600:'#182440', 500:'#1E2D4A' },
+        emerald: { 600:'#059669', 500:'#10B981', 400:'#34D399', 300:'#6EE7B7' },
+        sky: { 600:'#0284C7', 500:'#0EA5E9', 400:'#38BDF8', 300:'#7DD3FC' },
+        coral: { 500:'#F43F5E', 400:'#FB7185' },
+        amber: { 500:'#F59E0B', 400:'#FBBF24' }
+      },
+      fontFamily: {
+        display: ['"Plus Jakarta Sans"', 'sans-serif'],
+        body: ['Inter', 'sans-serif'],
+        mono: ['"JetBrains Mono"', 'monospace']
+      }
+    }
+  }
+}
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Inter',sans-serif; background:#080C14; color:#e2e8f0; overflow-x:hidden; }
+  /* Grid overlay */
+  .grid-overlay {
+    position:fixed; inset:0; z-index:0; pointer-events:none;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
+    background-size:60px 60px;
+  }
+  /* Glass morphism */
+  .glass {
+    background:rgba(255,255,255,0.02);
+    border:1px solid rgba(255,255,255,0.06);
+    backdrop-filter:blur(12px);
+    -webkit-backdrop-filter:blur(12px);
+    border-radius:16px;
+    transition:all 0.3s ease;
+  }
+  .glass:hover {
+    background:rgba(255,255,255,0.04);
+    border-color:rgba(16,185,129,0.2);
+  }
+  /* Agent card top gradient line */
+  .agent-card { position:relative; overflow:hidden; }
+  .agent-card::before {
+    content:''; position:absolute; top:0; left:0; right:0; height:2px;
+    background:linear-gradient(90deg, transparent, var(--card-accent), transparent);
+    opacity:0; transition:opacity 0.3s ease;
+  }
+  .agent-card:hover::before { opacity:1; }
+  /* Savings glow */
+  .savings-glow {
+    text-shadow:0 0 40px rgba(16,185,129,0.4), 0 0 80px rgba(16,185,129,0.2);
+  }
+  /* Pulse CTA */
+  @keyframes pulse-cta {
+    0%,100% { box-shadow:0 0 0 0 rgba(16,185,129,0.4); }
+    50% { box-shadow:0 0 0 12px rgba(16,185,129,0); }
+  }
+  .pulse-cta { animation:pulse-cta 2.5s infinite; }
+  /* Scroll reveal */
+  .reveal {
+    opacity:0; transform:translateY(30px);
+    transition:opacity 0.7s ease, transform 0.7s ease;
+  }
+  .reveal.visible { opacity:1; transform:translateY(0); }
+  /* Gradient text */
+  .gradient-text {
+    background:linear-gradient(135deg, #10B981, #34D399, #6EE7B7);
+    -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+    background-clip:text;
+  }
+  /* Hero radial gradient */
+  .hero-glow {
+    position:absolute; width:800px; height:800px; border-radius:50%;
+    background:radial-gradient(circle, rgba(16,185,129,0.08) 0%, transparent 70%);
+    pointer-events:none;
+  }
+  /* Bar animation */
+  .bar-grow { transform-origin:bottom; animation:barGrow 1s ease-out forwards; }
+  @keyframes barGrow { from { transform:scaleY(0); } to { transform:scaleY(1); } }
+  /* Range slider styling */
+  input[type=range] {
+    -webkit-appearance:none; appearance:none; width:100%; height:6px;
+    background:rgba(255,255,255,0.08); border-radius:3px; outline:none;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance:none; appearance:none; width:20px; height:20px;
+    border-radius:50%; background:#10B981; cursor:pointer;
+    box-shadow:0 0 10px rgba(16,185,129,0.4);
+  }
+  input[type=range]::-moz-range-thumb {
+    width:20px; height:20px; border-radius:50%; background:#10B981;
+    cursor:pointer; border:none; box-shadow:0 0 10px rgba(16,185,129,0.4);
+  }
+  /* Counter badge */
+  .counter-badge {
+    display:inline-flex; align-items:center; gap:6px; padding:4px 12px;
+    background:rgba(16,185,129,0.1); border:1px solid rgba(16,185,129,0.2);
+    border-radius:999px; font-size:0.75rem; font-weight:600; color:#34D399;
+  }
+  /* Ping dot */
+  .ping-dot { position:relative; width:8px; height:8px; }
+  .ping-dot::before {
+    content:''; position:absolute; inset:0; border-radius:50%; background:#10B981;
+  }
+  .ping-dot::after {
+    content:''; position:absolute; inset:-3px; border-radius:50%; background:#10B981;
+    animation:ping 1.5s cubic-bezier(0,0,0.2,1) infinite; opacity:0;
+  }
+  @keyframes ping { 0%{transform:scale(1);opacity:0.6;} 100%{transform:scale(2.2);opacity:0;} }
+  /* Pricing glow card */
+  .glow-card {
+    box-shadow:0 0 40px rgba(16,185,129,0.1), 0 0 80px rgba(16,185,129,0.05);
+    border-color:rgba(16,185,129,0.3) !important;
+  }
+  /* Step connector */
+  .step-connector { position:relative; }
+  .step-connector::after {
+    content:''; position:absolute; top:50%; right:-24px; width:48px; height:2px;
+    background:linear-gradient(90deg, rgba(16,185,129,0.3), rgba(16,185,129,0.05));
+  }
+  @media(max-width:768px) { .step-connector::after { display:none; } }
+  /* Org button active */
+  .org-btn.active {
+    background:rgba(16,185,129,0.15) !important;
+    border-color:rgba(16,185,129,0.4) !important;
+    color:#34D399 !important;
+  }
+</style>
+</head>
+<body class="font-body antialiased">
+<div class="grid-overlay"></div>
+
+<!-- Navigation -->
+<nav class="fixed top-0 inset-x-0 z-50 border-b border-white/5" style="background:rgba(8,12,20,0.85);backdrop-filter:blur(16px);">
+  <div class="max-w-7xl mx-auto flex items-center justify-between px-6 py-4">
+    <a href="#" class="font-display font-800 text-white flex items-baseline gap-2"><span class="text-xl">green<span class="text-emerald-500">light</span></span><span class="text-[11px] text-slate-500 font-medium tracking-wide">by Medivis</span></a>
+    <div class="hidden md:flex items-center gap-8 text-sm text-slate-400">
+      <a href="#problem" class="hover:text-white transition">Problem</a>
+      <a href="#platform" class="hover:text-white transition">Platform</a>
+      <a href="#roi" class="hover:text-white transition">ROI Calculator</a>
+      <a href="#pricing" class="hover:text-white transition">Pricing</a>
+    </div>
+    <a href="#cta" class="hidden md:inline-flex px-5 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold transition">Get a Demo</a>
+  </div>
+</nav>
+
+<!-- Hero -->
+<section class="relative min-h-screen flex items-center pt-24 pb-16 overflow-hidden">
+  <div class="hero-glow" style="top:-200px;left:-200px;"></div>
+  <div class="hero-glow" style="bottom:-300px;right:-200px;opacity:0.5;"></div>
+  <div class="max-w-7xl mx-auto px-6 w-full relative z-10">
+    <div class="max-w-3xl">
+      <div class="counter-badge mb-6 reveal"><span class="ping-dot"></span>91% of radiology encounters require prior authorization</div>
+      <h1 class="font-display text-5xl md:text-7xl font-800 text-white leading-[1.08] mb-6 reveal">
+        Get the green light.<br><span class="gradient-text">Every time.</span>
+      </h1>
+      <p class="text-lg md:text-xl text-slate-400 leading-relaxed mb-10 max-w-2xl reveal">
+        Prior authorization denies or delays 25-30% of imaging requests. Physicians spend 16 hours/week battling paperwork. GreenLight by Medivis deploys AI agents that automate prior auth for imaging, surgery, and procedures — turning days into seconds.
+      </p>
+      <div class="flex flex-wrap gap-4 mb-16 reveal">
+        <a href="#roi" class="pulse-cta px-8 py-3.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold transition">Calculate Your Savings</a>
+        <a href="#platform" class="px-8 py-3.5 rounded-lg border border-white/10 hover:border-emerald-500/30 text-slate-300 hover:text-white font-semibold transition">See the Platform</a>
+      </div>
+    </div>
+    <!-- Stats row -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 reveal">
+      <div class="glass rounded-xl p-5 text-center">
+        <p class="font-mono text-3xl font-700 text-emerald-400 mb-1">$35B</p>
+        <p class="text-xs text-slate-500">Prior auth admin spend/year</p>
+      </div>
+      <div class="glass rounded-xl p-5 text-center">
+        <p class="font-mono text-3xl font-700 text-coral-400 mb-1">25-30%</p>
+        <p class="text-xs text-slate-500">Imaging denial rate</p>
+      </div>
+      <div class="glass rounded-xl p-5 text-center">
+        <p class="font-mono text-3xl font-700 text-white mb-1">16 hrs/wk</p>
+        <p class="text-xs text-slate-500">Staff time on PA per physician</p>
+      </div>
+      <div class="glass rounded-xl p-5 text-center">
+        <p class="font-mono text-3xl font-700 text-sky-400 mb-1">78%</p>
+        <p class="text-xs text-slate-500">Patients who abandon care</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Problem Section -->
+<section id="problem" class="relative py-24">
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="mb-12 reveal">
+      <p class="text-emerald-400 text-sm font-semibold tracking-wider uppercase mb-3">The Problem</p>
+      <h2 class="font-display text-4xl md:text-5xl font-800 text-white mb-4">The authorization wall.</h2>
+      <p class="text-slate-400 text-lg max-w-2xl">Imaging and procedures face the highest prior auth burden in medicine. Every denial delays care, loses revenue, and burns out staff.</p>
+    </div>
+    <div class="grid lg:grid-cols-2 gap-8 mb-12">
+      <!-- Chart -->
+      <div class="glass rounded-xl p-6 reveal">
+        <h3 class="font-display text-lg font-700 text-white mb-1">PA Volume Growth in Medicare Advantage</h3>
+        <p class="text-xs text-slate-500 mb-4">2019 - 2024 (millions of requests)</p>
+        <div class="relative" style="height:260px;"><canvas id="paChart"></canvas></div>
+      </div>
+      <!-- Stats cards -->
+      <div class="grid grid-cols-2 gap-4 reveal">
+        <div class="glass rounded-xl p-5">
+          <p class="font-mono text-2xl font-700 text-coral-400">$118</p>
+          <p class="text-xs text-slate-500 mt-1">Per denied imaging claim rework cost</p>
+        </div>
+        <div class="glass rounded-xl p-5">
+          <p class="font-mono text-2xl font-700 text-emerald-400">$2M</p>
+          <p class="text-xs text-slate-500 mt-1">Annual revenue leakage per imaging center</p>
+        </div>
+        <div class="glass rounded-xl p-5">
+          <p class="font-mono text-2xl font-700 text-white">5 days</p>
+          <p class="text-xs text-slate-500 mt-1">Average imaging PA turnaround</p>
+        </div>
+        <div class="glass rounded-xl p-5">
+          <p class="font-mono text-2xl font-700 text-sky-400">80.7%</p>
+          <p class="text-xs text-slate-500 mt-1">Of MA appeals overturned (denials are wrong)</p>
+        </div>
+      </div>
+    </div>
+    <!-- Cost breakdown row -->
+    <div class="grid md:grid-cols-3 gap-4 reveal">
+      <div class="glass rounded-xl p-6 text-center">
+        <p class="font-mono text-3xl font-700 text-white mb-1">$83B</p>
+        <p class="text-sm text-slate-500">Medical admin transactions (eligibility, claims, prior auth)</p>
+      </div>
+      <div class="glass rounded-xl p-6 text-center">
+        <p class="font-mono text-3xl font-700 text-white mb-1">200M+</p>
+        <p class="text-sm text-slate-500">Prior auth requests annually across all payers</p>
+      </div>
+      <div class="glass rounded-xl p-6 text-center">
+        <p class="font-mono text-3xl font-700 text-white mb-1">$11K</p>
+        <p class="text-sm text-slate-500">Per-clinician annual PA cost</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Platform Section -->
+<section id="platform" class="relative py-24">
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="mb-12 reveal">
+      <p class="text-emerald-400 text-sm font-semibold tracking-wider uppercase mb-3">The Platform</p>
+      <h2 class="font-display text-4xl md:text-5xl font-800 text-white mb-4">One platform. Every authorization.</h2>
+      <p class="text-slate-400 text-lg max-w-2xl">GreenLight by Medivis automates the entire prior authorization lifecycle for imaging, surgical, and procedural services.</p>
+    </div>
+    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+      <!-- Card 1 -->
+      <div class="glass agent-card rounded-xl p-6 reveal" style="--card-accent:#10B981;">
+        <div class="w-10 h-10 rounded-lg flex items-center justify-center mb-4" style="background:rgba(16,185,129,0.12);">
+          <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        </div>
+        <h3 class="font-display text-lg font-700 text-white mb-2">Intelligent Submission</h3>
+        <p class="text-sm text-slate-400 leading-relaxed mb-4">Automatically builds and submits prior auth requests with complete clinical documentation. Matches clinical indications to payer-specific guidelines (ACR, MCG, InterQual).</p>
+        <div class="flex flex-wrap gap-2">
+          <span class="text-xs px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">20 min &rarr; 45 seconds</span>
+          <span class="text-xs px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Auto-documentation</span>
+        </div>
+      </div>
+      <!-- Card 2 -->
+      <div class="glass agent-card rounded-xl p-6 reveal" style="--card-accent:#0EA5E9;">
+        <div class="w-10 h-10 rounded-lg flex items-center justify-center mb-4" style="background:rgba(14,165,233,0.12);">
+          <svg class="w-5 h-5 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+        </div>
+        <h3 class="font-display text-lg font-700 text-white mb-2">Real-Time Eligibility</h3>
+        <p class="text-sm text-slate-400 leading-relaxed mb-4">Instant PA requirement detection at the point of order. Knows which payers require auth for which imaging modalities and procedures before you schedule.</p>
+        <div class="flex flex-wrap gap-2">
+          <span class="text-xs px-2.5 py-1 rounded-full bg-sky-500/10 text-sky-400 border border-sky-500/20">FHIR CRD integrated</span>
+          <span class="text-xs px-2.5 py-1 rounded-full bg-sky-500/10 text-sky-400 border border-sky-500/20">600+ payer rules</span>
+        </div>
+      </div>
+      <!-- Card 3 -->
+      <div class="glass agent-card rounded-xl p-6 reveal" style="--card-accent:#F59E0B;">
+        <div class="w-10 h-10 rounded-lg flex items-center justify-center mb-4" style="background:rgba(245,158,11,0.12);">
+          <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
+        </div>
+        <h3 class="font-display text-lg font-700 text-white mb-2">Denial Prevention</h3>
+        <p class="text-sm text-slate-400 leading-relaxed mb-4">AI reviews every submission against historical denial patterns and payer-specific criteria. Catches missing documentation and coding errors before they become denials.</p>
+        <div class="flex flex-wrap gap-2">
+          <span class="text-xs px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">75% denial reduction</span>
+          <span class="text-xs px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">Pre-submission audit</span>
+        </div>
+      </div>
+      <!-- Card 4 -->
+      <div class="glass agent-card rounded-xl p-6 reveal" style="--card-accent:#F43F5E;">
+        <div class="w-10 h-10 rounded-lg flex items-center justify-center mb-4" style="background:rgba(244,63,94,0.12);">
+          <svg class="w-5 h-5 text-coral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+        </div>
+        <h3 class="font-display text-lg font-700 text-white mb-2">Appeal Automation</h3>
+        <p class="text-sm text-slate-400 leading-relaxed mb-4">When denials happen, GreenLight by Medivis auto-generates peer-to-peer prep, clinical evidence packages, and appeal letters. Tracks deadlines and escalation paths.</p>
+        <div class="flex flex-wrap gap-2">
+          <span class="text-xs px-2.5 py-1 rounded-full bg-coral-500/10 text-coral-400 border border-coral-500/20">80.7% appeal win rate</span>
+          <span class="text-xs px-2.5 py-1 rounded-full bg-coral-500/10 text-coral-400 border border-coral-500/20">Auto-escalation</span>
+        </div>
+      </div>
+      <!-- Card 5 -->
+      <div class="glass agent-card rounded-xl p-6 reveal" style="--card-accent:#A78BFA;">
+        <div class="w-10 h-10 rounded-lg flex items-center justify-center mb-4" style="background:rgba(167,139,250,0.12);">
+          <svg class="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+        </div>
+        <h3 class="font-display text-lg font-700 text-white mb-2">Status Tracking</h3>
+        <p class="text-sm text-slate-400 leading-relaxed mb-4">Real-time dashboard across all payers and RBMs (EviCore, Carelon, NIA). No more logging into 15 portals. One view for every pending authorization.</p>
+        <div class="flex flex-wrap gap-2">
+          <span class="text-xs px-2.5 py-1 rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/20">Unified dashboard</span>
+          <span class="text-xs px-2.5 py-1 rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/20">Multi-RBM support</span>
+        </div>
+      </div>
+      <!-- Card 6 -->
+      <div class="glass agent-card rounded-xl p-6 reveal" style="--card-accent:#14B8A6;">
+        <div class="w-10 h-10 rounded-lg flex items-center justify-center mb-4" style="background:rgba(20,184,166,0.12);">
+          <svg class="w-5 h-5 text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+        </div>
+        <h3 class="font-display text-lg font-700 text-white mb-2">Scheduling Sync</h3>
+        <p class="text-sm text-slate-400 leading-relaxed mb-4">Connects PA status to scheduling workflow. Automatically holds, releases, or reschedules imaging and surgical appointments based on authorization status.</p>
+        <div class="flex flex-wrap gap-2">
+          <span class="text-xs px-2.5 py-1 rounded-full bg-teal-500/10 text-teal-400 border border-teal-500/20">Zero scheduling conflicts</span>
+          <span class="text-xs px-2.5 py-1 rounded-full bg-teal-500/10 text-teal-400 border border-teal-500/20">OR/imaging sync</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ROI Calculator -->
+<section id="roi" class="relative py-24">
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="mb-12 reveal">
+      <p class="text-emerald-400 text-sm font-semibold tracking-wider uppercase mb-3">ROI Calculator</p>
+      <h2 class="font-display text-4xl md:text-5xl font-800 text-white mb-4">See what you'll save.</h2>
+      <p class="text-slate-400 text-lg max-w-2xl">Input your numbers. Get your answer. No sales call required.</p>
+    </div>
+    <div class="grid lg:grid-cols-5 gap-8 reveal">
+      <!-- Inputs (3 cols) -->
+      <div class="lg:col-span-3 space-y-6">
+        <!-- Facility Type -->
+        <div>
+          <label class="text-sm font-semibold text-slate-300 block mb-3">Facility Type</label>
+          <div class="grid grid-cols-3 gap-3">
+            <button onclick="setOrg('imaging')" id="btn-imaging" class="org-btn glass rounded-xl p-4 text-center cursor-pointer transition">
+              <p class="font-display text-sm font-700 text-white">Imaging Center</p>
+              <p class="text-xs text-slate-500 mt-1">1-5 radiologists</p>
+            </button>
+            <button onclick="setOrg('surgical')" id="btn-surgical" class="org-btn glass rounded-xl p-4 text-center cursor-pointer transition">
+              <p class="font-display text-sm font-700 text-white">Surgical Center</p>
+              <p class="text-xs text-slate-500 mt-1">5-20 surgeons</p>
+            </button>
+            <button onclick="setOrg('hospital')" id="btn-hospital" class="org-btn glass rounded-xl p-4 text-center cursor-pointer transition active">
+              <p class="font-display text-sm font-700 text-white">Hospital System</p>
+              <p class="text-xs text-slate-500 mt-1">50+ providers</p>
+            </button>
+          </div>
+        </div>
+        <!-- Monthly PA Volume -->
+        <div class="glass rounded-xl p-5">
+          <div class="flex justify-between items-center mb-2">
+            <label class="text-sm font-semibold text-slate-300">Monthly PA Volume</label>
+            <span id="lbl-volume" class="font-mono text-sm text-emerald-400">15,000</span>
+          </div>
+          <input type="range" id="inp-volume" min="100" max="30000" value="15000" oninput="calc()">
+        </div>
+        <!-- Staff -->
+        <div class="glass rounded-xl p-5">
+          <div class="flex justify-between items-center mb-2">
+            <label class="text-sm font-semibold text-slate-300">Staff Dedicated to PA</label>
+            <span id="lbl-staff" class="font-mono text-sm text-emerald-400">24</span>
+          </div>
+          <input type="range" id="inp-staff" min="1" max="100" value="24" oninput="calc()">
+        </div>
+        <!-- Salary -->
+        <div class="glass rounded-xl p-5">
+          <div class="flex justify-between items-center mb-2">
+            <label class="text-sm font-semibold text-slate-300">Average PA Staff Salary</label>
+            <span id="lbl-salary" class="font-mono text-sm text-emerald-400">$62,000</span>
+          </div>
+          <input type="range" id="inp-salary" min="35000" max="120000" step="1000" value="62000" oninput="calc()">
+        </div>
+        <!-- Denial Rate -->
+        <div class="glass rounded-xl p-5">
+          <div class="flex justify-between items-center mb-2">
+            <label class="text-sm font-semibold text-slate-300">Current Denial Rate</label>
+            <span id="lbl-denial" class="font-mono text-sm text-emerald-400">25%</span>
+          </div>
+          <input type="range" id="inp-denial" min="5" max="40" value="25" oninput="calc()">
+        </div>
+        <!-- Automation Rate -->
+        <div class="glass rounded-xl p-5">
+          <div class="flex justify-between items-center mb-2">
+            <label class="text-sm font-semibold text-slate-300">AI Automation Rate</label>
+            <span id="lbl-rate" class="font-mono text-sm text-emerald-400">85%</span>
+          </div>
+          <input type="range" id="inp-rate" min="60" max="95" value="85" oninput="calc()">
+        </div>
+      </div>
+      <!-- Outputs (2 cols) -->
+      <div class="lg:col-span-2 space-y-6">
+        <!-- Big savings number -->
+        <div class="glass rounded-xl p-8 text-center">
+          <p class="text-sm text-slate-500 mb-2">Annual Net Savings</p>
+          <p id="out-savings" class="font-mono text-5xl md:text-6xl font-700 text-emerald-400 savings-glow">$0</p>
+        </div>
+        <!-- Breakdown -->
+        <div class="glass rounded-xl p-6">
+          <h4 class="font-display text-sm font-700 text-white mb-4">Cost Breakdown</h4>
+          <div class="space-y-3 text-sm">
+            <div class="flex justify-between"><span class="text-slate-500">Current PA staff cost</span><span id="out-staffcost" class="font-mono text-slate-300">$0</span></div>
+            <div class="flex justify-between"><span class="text-slate-500">Current denial costs</span><span id="out-denialcost" class="font-mono text-slate-300">$0</span></div>
+            <div class="flex justify-between"><span class="text-slate-500">Current revenue leakage</span><span id="out-revloss" class="font-mono text-slate-300">$0</span></div>
+            <div class="flex justify-between border-t border-white/5 pt-3"><span class="text-slate-400 font-semibold">Total current cost</span><span id="out-totalcurrent" class="font-mono text-white font-semibold">$0</span></div>
+            <div class="h-px bg-white/5"></div>
+            <div class="flex justify-between"><span class="text-slate-500">New staff cost</span><span id="out-newstaff" class="font-mono text-slate-300">$0</span></div>
+            <div class="flex justify-between"><span class="text-slate-500">New denial costs</span><span id="out-newdenial" class="font-mono text-slate-300">$0</span></div>
+            <div class="flex justify-between"><span class="text-slate-500">GreenLight by Medivis platform cost</span><span id="out-platform" class="font-mono text-slate-300">$0</span></div>
+            <div class="flex justify-between border-t border-white/5 pt-3"><span class="text-emerald-400 font-bold">Net annual savings</span><span id="out-net" class="font-mono text-emerald-400 font-bold">$0</span></div>
+          </div>
+        </div>
+        <!-- Impact grid -->
+        <div class="grid grid-cols-2 gap-4">
+          <div class="glass rounded-xl p-5 text-center">
+            <p class="font-mono text-2xl font-700 text-emerald-400" id="out-freed">0</p>
+            <p class="text-xs text-slate-500 mt-1">Staff Freed</p>
+          </div>
+          <div class="glass rounded-xl p-5 text-center">
+            <p class="font-mono text-2xl font-700 text-sky-400" id="out-roi">0x</p>
+            <p class="text-xs text-slate-500 mt-1">ROI Multiple</p>
+          </div>
+          <div class="glass rounded-xl p-5 text-center">
+            <p class="font-mono text-2xl font-700 text-coral-400" id="out-prevented">0</p>
+            <p class="text-xs text-slate-500 mt-1">Denials Prevented</p>
+          </div>
+          <div class="glass rounded-xl p-5 text-center">
+            <p class="font-mono text-2xl font-700 text-amber-400" id="out-recovered">$0</p>
+            <p class="text-xs text-slate-500 mt-1">Revenue Recovered</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- How It Works -->
+<section id="process" class="relative py-24">
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="mb-12 reveal">
+      <p class="text-emerald-400 text-sm font-semibold tracking-wider uppercase mb-3">Process</p>
+      <h2 class="font-display text-4xl md:text-5xl font-800 text-white mb-4">Live in weeks, not months.</h2>
+      <p class="text-slate-400 text-lg max-w-2xl">No rip-and-replace. GreenLight by Medivis connects alongside your existing EHR and payer systems.</p>
+    </div>
+    <div class="grid md:grid-cols-4 gap-6 reveal">
+      <div class="glass rounded-xl p-6 step-connector">
+        <div class="w-10 h-10 rounded-full bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center font-mono text-emerald-400 font-bold text-sm mb-4">1</div>
+        <h3 class="font-display text-lg font-700 text-white mb-2">Connect</h3>
+        <p class="text-sm text-slate-400">EHR, PACS, RIS, and payer APIs via FHIR/HL7. We integrate with your existing stack.</p>
+      </div>
+      <div class="glass rounded-xl p-6 step-connector">
+        <div class="w-10 h-10 rounded-full bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center font-mono text-emerald-400 font-bold text-sm mb-4">2</div>
+        <h3 class="font-display text-lg font-700 text-white mb-2">Map</h3>
+        <p class="text-sm text-slate-400">2-week learning period. Maps payer rules and RBM requirements specific to your contracts.</p>
+      </div>
+      <div class="glass rounded-xl p-6 step-connector">
+        <div class="w-10 h-10 rounded-full bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center font-mono text-emerald-400 font-bold text-sm mb-4">3</div>
+        <h3 class="font-display text-lg font-700 text-white mb-2">Deploy</h3>
+        <p class="text-sm text-slate-400">Agents process live PAs with human oversight. Your team reviews and approves AI decisions.</p>
+      </div>
+      <div class="glass rounded-xl p-6">
+        <div class="w-10 h-10 rounded-full bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center font-mono text-emerald-400 font-bold text-sm mb-4">4</div>
+        <h3 class="font-display text-lg font-700 text-white mb-2">Automate</h3>
+        <p class="text-sm text-slate-400">Full autonomous operation. Staff handle exceptions only. Continuous learning improves over time.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Pricing -->
+<section id="pricing" class="relative py-24">
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="mb-12 text-center reveal">
+      <h2 class="font-display text-4xl md:text-5xl font-800 text-white mb-4">Transparent. Performance-based.</h2>
+      <p class="text-slate-400 text-lg max-w-2xl mx-auto">GreenLight by Medivis charges $8 per automated PA transaction. If we automate 15,000 PAs/month, that's $96K/year — while saving you $2M+. If we don't deliver savings, you don't pay.</p>
+    </div>
+    <div class="grid md:grid-cols-3 gap-6 max-w-3xl mx-auto reveal">
+      <div class="glass rounded-xl p-8 text-center">
+        <p class="font-mono text-4xl font-700 text-white mb-2">$8</p>
+        <p class="text-sm text-slate-400">/transaction</p>
+        <p class="text-xs text-slate-500 mt-3">Our fee per automated PA</p>
+      </div>
+      <div class="glass glow-card rounded-xl p-8 text-center">
+        <p class="font-mono text-4xl font-700 text-emerald-400 mb-2">$2M+</p>
+        <p class="text-sm text-slate-400">annual savings</p>
+        <p class="text-xs text-slate-500 mt-3">Average for hospital systems</p>
+      </div>
+      <div class="glass rounded-xl p-8 text-center">
+        <p class="font-mono text-4xl font-700 text-white mb-2">$0</p>
+        <p class="text-sm text-slate-400">if no savings</p>
+        <p class="text-xs text-slate-500 mt-3">Performance guarantee</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section id="cta" class="relative py-24">
+  <div class="hero-glow" style="top:-400px;left:50%;transform:translateX(-50%);"></div>
+  <div class="max-w-7xl mx-auto px-6 text-center relative z-10">
+    <div class="reveal">
+      <h2 class="font-display text-4xl md:text-6xl font-800 text-white mb-6">
+        Ready to get the<br><span class="gradient-text">green light?</span>
+      </h2>
+      <p class="text-slate-400 text-lg max-w-xl mx-auto mb-10">Get a custom ROI report for your imaging center, surgical center, or hospital system.</p>
+      <div class="flex flex-col sm:flex-row items-center justify-center gap-3 max-w-md mx-auto mb-4">
+        <input type="email" placeholder="you@hospital.com" class="w-full sm:flex-1 px-5 py-3.5 rounded-lg bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500/50 transition">
+        <button class="pulse-cta w-full sm:w-auto px-8 py-3.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold transition whitespace-nowrap">Get Report</button>
+      </div>
+      <p class="text-xs text-slate-600">No commitment. Custom savings analysis delivered within 24 hours.</p>
+    </div>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer class="border-t border-white/5 py-12">
+  <div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4">
+    <a href="#" class="font-display font-800 text-white flex items-baseline gap-2"><span class="text-lg">green<span class="text-emerald-500">light</span></span><span class="text-[10px] text-slate-500 font-medium tracking-wide">by Medivis</span></a>
+    <p class="text-xs text-slate-600 text-center">Data: AMA, CMS, KFF, CAQH, ACR, Cohere Health, Droidal Research</p>
+  </div>
+</footer>
+
+<script>
+// --- Chart.js: PA Volume Growth ---
+const ctx = document.getElementById('paChart').getContext('2d');
+new Chart(ctx, {
+  type: 'line',
+  data: {
+    labels: ['2019','2020','2021','2022','2023','2024'],
+    datasets: [{
+      label: 'PA Requests (millions)',
+      data: [37.1, 39.5, 42.2, 46.0, 49.8, 53.0],
+      borderColor: '#10B981',
+      backgroundColor: 'rgba(16,185,129,0.08)',
+      fill: true,
+      tension: 0.4,
+      pointBackgroundColor: '#10B981',
+      pointBorderColor: '#10B981',
+      pointRadius: 4,
+      pointHoverRadius: 6,
+      borderWidth: 2
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: 'rgba(8,12,20,0.9)',
+        borderColor: 'rgba(255,255,255,0.1)',
+        borderWidth: 1,
+        titleColor: '#e2e8f0',
+        bodyColor: '#94a3b8',
+        padding: 12,
+        cornerRadius: 8,
+        callbacks: {
+          label: function(c) { return c.parsed.y + 'M requests'; }
+        }
+      }
+    },
+    scales: {
+      x: {
+        grid: { color: 'rgba(255,255,255,0.03)' },
+        ticks: { color: '#475569', font: { family: 'Inter', size: 11 } }
+      },
+      y: {
+        grid: { color: 'rgba(255,255,255,0.03)' },
+        ticks: {
+          color: '#475569',
+          font: { family: 'JetBrains Mono', size: 11 },
+          callback: function(v) { return v + 'M'; }
+        },
+        min: 30,
+        max: 60
+      }
+    }
+  }
+});
+
+// --- ROI Calculator ---
+const presets = {
+  imaging:  { paVolume:800,   staffOnPA:3,  avgSalary:52000, avgDenialCost:118, denialRate:0.28, avgRevenuePerAuth:1200  },
+  surgical: { paVolume:2400,  staffOnPA:6,  avgSalary:56000, avgDenialCost:118, denialRate:0.22, avgRevenuePerAuth:3500  },
+  hospital: { paVolume:15000, staffOnPA:24, avgSalary:62000, avgDenialCost:118, denialRate:0.25, avgRevenuePerAuth:2200  }
+};
+let currentOrg = 'hospital';
+
+function setOrg(org) {
+  currentOrg = org;
+  const p = presets[org];
+  document.getElementById('inp-volume').value = p.paVolume;
+  document.getElementById('inp-staff').value = p.staffOnPA;
+  document.getElementById('inp-salary').value = p.avgSalary;
+  document.getElementById('inp-denial').value = Math.round(p.denialRate * 100);
+  document.getElementById('inp-rate').value = 85;
+  document.querySelectorAll('.org-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('btn-' + org).classList.add('active');
+  calc();
+}
+
+function fmt(n) {
+  if (Math.abs(n) >= 1e6) return '$' + (n / 1e6).toFixed(1) + 'M';
+  if (Math.abs(n) >= 1e3) return '$' + Math.round(n).toLocaleString();
+  return '$' + Math.round(n);
+}
+
+function fmtN(n) {
+  return n.toLocaleString();
+}
+
+function calc() {
+  const volume    = +document.getElementById('inp-volume').value;
+  const staff     = +document.getElementById('inp-staff').value;
+  const salary    = +document.getElementById('inp-salary').value;
+  const denialRate = +document.getElementById('inp-denial').value / 100;
+  const autoRate  = +document.getElementById('inp-rate').value / 100;
+  const revenuePerAuth = presets[currentOrg].avgRevenuePerAuth;
+
+  // Labels
+  document.getElementById('lbl-volume').textContent = volume.toLocaleString();
+  document.getElementById('lbl-staff').textContent = staff;
+  document.getElementById('lbl-salary').textContent = '$' + salary.toLocaleString();
+  document.getElementById('lbl-denial').textContent = Math.round(denialRate * 100) + '%';
+  document.getElementById('lbl-rate').textContent = Math.round(autoRate * 100) + '%';
+
+  // Current costs
+  const annualVolume      = volume * 12;
+  const currentStaffCost  = staff * salary;
+  const currentDenials    = Math.round(annualVolume * denialRate);
+  const denialReworkCost  = currentDenials * 118;
+  const revenueLostToDenials = currentDenials * revenuePerAuth * 0.15;
+  const totalCurrentCost  = currentStaffCost + denialReworkCost + revenueLostToDenials;
+
+  // With GreenLight
+  const newDenialRate     = denialRate * (1 - (autoRate * 0.75));
+  const newDenials        = Math.round(annualVolume * newDenialRate);
+  const newDenialReworkCost = newDenials * 118;
+  const newRevenueLoss    = newDenials * revenuePerAuth * 0.15;
+  const staffReduction    = Math.round(staff * autoRate * 0.7);
+  const newStaffCost      = (staff - staffReduction) * salary;
+
+  const automatedTransactions = Math.round(annualVolume * autoRate);
+  const platformCost      = automatedTransactions * 8;
+
+  const totalNewCost      = newStaffCost + newDenialReworkCost + newRevenueLoss + platformCost;
+  const netSavings        = totalCurrentCost - totalNewCost;
+  const roi               = platformCost > 0 ? netSavings / platformCost : 0;
+  const denialsPrevented  = currentDenials - newDenials;
+  const revenueRecovered  = (denialReworkCost - newDenialReworkCost) + (revenueLostToDenials - newRevenueLoss);
+
+  // Output
+  document.getElementById('out-savings').textContent = fmt(netSavings);
+  document.getElementById('out-staffcost').textContent = fmt(currentStaffCost);
+  document.getElementById('out-denialcost').textContent = fmt(denialReworkCost);
+  document.getElementById('out-revloss').textContent = fmt(revenueLostToDenials);
+  document.getElementById('out-totalcurrent').textContent = fmt(totalCurrentCost);
+  document.getElementById('out-newstaff').textContent = fmt(newStaffCost);
+  document.getElementById('out-newdenial').textContent = fmt(newDenialReworkCost);
+  document.getElementById('out-platform').textContent = fmt(platformCost);
+  document.getElementById('out-net').textContent = fmt(netSavings);
+  document.getElementById('out-freed').textContent = staffReduction;
+  document.getElementById('out-roi').textContent = roi.toFixed(1) + 'x';
+  document.getElementById('out-prevented').textContent = fmtN(denialsPrevented);
+  document.getElementById('out-recovered').textContent = fmt(revenueRecovered);
+}
+
+// Initialize
+calc();
+
+// --- Scroll Reveal ---
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('visible');
+    }
+  });
+}, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+</script>
+</body>
+</html>

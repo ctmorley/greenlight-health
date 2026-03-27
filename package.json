@@ -1,0 +1,51 @@
+{
+  "name": "greenlight-by-medivis",
+  "version": "1.0.0",
+  "description": "GreenLight by Medivis — AI-Powered Prior Authorization for Imaging, Surgery & Procedures",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint . --max-warnings 50",
+    "db:up": "./scripts/db-up.sh",
+    "db:migrate": "prisma migrate deploy",
+    "db:push": "prisma db push",
+    "db:seed": "prisma db seed",
+    "db:setup": "./scripts/db-setup.sh",
+    "test": "npx playwright test --workers=1",
+    "test:smoke": "npx playwright test --project=smoke",
+    "generate-pdf": "node generate-pdf.js",
+    "postinstall": "prisma generate"
+  },
+  "dependencies": {
+    "@auth/prisma-adapter": "^2.8.0",
+    "@prisma/client": "^6.4.0",
+    "bcryptjs": "^2.4.3",
+    "next": "^15.2.0",
+    "next-auth": "^5.0.0-beta.25",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "recharts": "^3.8.1",
+    "zod": "^3.24.0"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@next/eslint-plugin-next": "^16.2.1",
+    "@playwright/test": "^1.58.2",
+    "@tailwindcss/postcss": "^4.0.0",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "eslint": "^10.1.0",
+    "prisma": "^6.4.0",
+    "tailwindcss": "^4.0.0",
+    "tsx": "^4.21.0",
+    "typescript": "^5.7.0",
+    "typescript-eslint": "^8.57.2"
+  }
+}

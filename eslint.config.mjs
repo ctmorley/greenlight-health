@@ -1,0 +1,67 @@
+import js from "@eslint/js";
+import tseslint from "typescript-eslint";
+import nextPlugin from "@next/eslint-plugin-next";
+
+export default [
+  js.configs.recommended,
+  ...tseslint.configs.recommended,
+  {
+    ignores: [
+      ".next/**",
+      "node_modules/**",
+      "public/**",
+      "*.js",
+      "*.cjs",
+      "scripts/**",
+      "next-env.d.ts",
+    ],
+  },
+  {
+    files: ["**/*.ts", "**/*.tsx"],
+    plugins: {
+      "@next/next": nextPlugin,
+    },
+    languageOptions: {
+      globals: {
+        // Browser globals
+        window: "readonly",
+        document: "readonly",
+        console: "readonly",
+        fetch: "readonly",
+        setTimeout: "readonly",
+        clearTimeout: "readonly",
+        setInterval: "readonly",
+        clearInterval: "readonly",
+        FormData: "readonly",
+        File: "readonly",
+        Blob: "readonly",
+        URL: "readonly",
+        URLSearchParams: "readonly",
+        Request: "readonly",
+        Response: "readonly",
+        Headers: "readonly",
+        HTMLElement: "readonly",
+        HTMLInputElement: "readonly",
+        HTMLButtonElement: "readonly",
+        KeyboardEvent: "readonly",
+        // Node globals
+        process: "readonly",
+        __dirname: "readonly",
+        Buffer: "readonly",
+      },
+    },
+    rules: {
+      // TypeScript rules
+      "@typescript-eslint/no-explicit-any": "warn",
+      "@typescript-eslint/no-unused-vars": [
+        "warn",
+        { argsIgnorePattern: "^_", varsIgnorePattern: "^_" },
+      ],
+      "@typescript-eslint/triple-slash-reference": "off",
+      // Next.js rules
+      "@next/next/no-html-link-for-pages": "warn",
+      "@next/next/no-img-element": "warn",
+      "@next/next/no-sync-scripts": "error",
+    },
+  },
+];

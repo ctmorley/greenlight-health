@@ -1,0 +1,401 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Organization ────────────────────────────────────────────
+
+enum OrganizationType {
+  imaging_center
+  surgical_center
+  hospital
+  multi_specialty
+}
+
+model Organization {
+  id        String           @id @default(cuid())
+  name      String
+  type      OrganizationType @default(imaging_center)
+  npi       String?
+  taxId     String?
+  address   String?
+  phone     String?
+  fax       String?
+  email     String?
+  settings  Json?
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  users    User[]
+  patients Patient[]
+  requests PriorAuthRequest[]
+
+  @@map("organizations")
+}
+
+// ─── User ────────────────────────────────────────────────────
+
+enum UserRole {
+  admin
+  pa_coordinator
+  physician
+  viewer
+}
+
+model User {
+  id             String    @id @default(cuid())
+  organizationId String
+  email          String    @unique
+  passwordHash   String
+  firstName      String
+  lastName       String
+  role           UserRole  @default(viewer)
+  title          String?
+  npiNumber      String?
+  isActive       Boolean   @default(true)
+  lastLoginAt    DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+
+  createdRequests  PriorAuthRequest[] @relation("CreatedBy")
+  assignedRequests PriorAuthRequest[] @relation("AssignedTo")
+  orderingRequests PriorAuthRequest[] @relation("OrderingPhysician")
+  uploadedDocs     AuthDocument[]
+  statusChanges    AuthStatusChange[]
+  filedAppeals     Appeal[]
+
+  @@map("users")
+}
+
+// ─── Patient ─────────────────────────────────────────────────
+
+enum Gender {
+  male
+  female
+  other
+  unknown
+}
+
+model Patient {
+  id             String  @id @default(cuid())
+  organizationId String
+  mrn            String
+  firstName      String
+  lastName       String
+  dob            DateTime
+  gender         Gender  @default(unknown)
+  phone          String?
+  email          String?
+  address        String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization      @relation(fields: [organizationId], references: [id])
+  insurances   PatientInsurance[]
+  requests     PriorAuthRequest[]
+
+  @@unique([organizationId, mrn])
+  @@map("patients")
+}
+
+// ─── Patient Insurance ───────────────────────────────────────
+
+enum PlanType {
+  hmo
+  ppo
+  epo
+  pos
+  medicaid
+  medicare
+  tricare
+  other
+}
+
+model PatientInsurance {
+  id              String    @id @default(cuid())
+  patientId       String
+  payerId         String
+  planName        String
+  planType        PlanType  @default(other)
+  memberId        String
+  groupNumber     String?
+  isPrimary       Boolean   @default(true)
+  effectiveDate   DateTime
+  terminationDate DateTime?
+
+  patient  Patient  @relation(fields: [patientId], references: [id])
+  payer    Payer    @relation(fields: [payerId], references: [id])
+  requests PriorAuthRequest[]
+
+  @@map("patient_insurances")
+}
+
+// ─── Payer ───────────────────────────────────────────────────
+
+enum PayerType {
+  commercial
+  medicare
+  medicaid
+  tricare
+}
+
+enum RbmVendor {
+  evicore
+  carelon
+  nia
+  direct
+}
+
+model Payer {
+  id                   String    @id @default(cuid())
+  name                 String
+  payerId              String    @unique
+  type                 PayerType @default(commercial)
+  phone                String?
+  fax                  String?
+  portalUrl            String?
+  electronicSubmission Boolean   @default(false)
+  avgResponseDays      Int       @default(5)
+  rbmVendor            RbmVendor?
+  isActive             Boolean   @default(true)
+  createdAt            DateTime  @default(now())
+
+  rules      PayerRule[]
+  insurances PatientInsurance[]
+  requests   PriorAuthRequest[]
+
+  @@map("payers")
+}
+
+// ─── Payer Rule ──────────────────────────────────────────────
+
+enum ServiceCategory {
+  imaging
+  surgical
+  medical
+}
+
+model PayerRule {
+  id               String          @id @default(cuid())
+  payerId          String
+  serviceCategory  ServiceCategory
+  cptCode          String?
+  requiresPA       Boolean         @default(true)
+  clinicalCriteria Json?
+  validFrom        DateTime        @default(now())
+  validTo          DateTime?
+  createdAt        DateTime        @default(now())
+
+  payer Payer @relation(fields: [payerId], references: [id])
+
+  @@map("payer_rules")
+}
+
+// ─── Prior Auth Request ──────────────────────────────────────
+
+enum AuthStatus {
+  draft
+  submitted
+  pending_review
+  approved
+  partially_approved
+  denied
+  appealed
+  expired
+  cancelled
+}
+
+enum Urgency {
+  routine
+  urgent
+  emergent
+}
+
+enum ServiceType {
+  mri
+  ct
+  pet_ct
+  ultrasound
+  xray
+  fluoroscopy
+  mammography
+  dexa
+  nuclear
+  surgical_procedure
+  medical_procedure
+}
+
+model PriorAuthRequest {
+  id              String          @id @default(cuid())
+  organizationId  String
+  patientId       String
+  createdById     String
+  assignedToId    String?
+  referenceNumber String          @unique
+  status          AuthStatus      @default(draft)
+  urgency         Urgency         @default(routine)
+  serviceCategory ServiceCategory?
+  serviceType     ServiceType?
+  cptCodes        String[]
+  icd10Codes      String[]
+  procedureDescription String?
+
+  payerId              String?
+  insuranceId          String?
+  rbmVendor            RbmVendor?
+  rbmReferenceNumber   String?
+
+  orderingPhysicianId  String?
+  renderingPhysicianNpi String?
+  facilityName         String?
+  scheduledDate        DateTime?
+  dueDate              DateTime?
+
+  clinicalNotes  String?
+  aiAuditResult  Json?
+  draftMetadata  Json?
+
+  submittedAt    DateTime?
+  decidedAt      DateTime?
+  expiresAt      DateTime?
+
+  approvedUnits    Int?
+  approvedCptCodes String[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organization      Organization      @relation(fields: [organizationId], references: [id])
+  patient           Patient           @relation(fields: [patientId], references: [id])
+  createdBy         User              @relation("CreatedBy", fields: [createdById], references: [id])
+  assignedTo        User?             @relation("AssignedTo", fields: [assignedToId], references: [id])
+  orderingPhysician User?             @relation("OrderingPhysician", fields: [orderingPhysicianId], references: [id])
+  payer             Payer?            @relation(fields: [payerId], references: [id])
+  insurance         PatientInsurance? @relation(fields: [insuranceId], references: [id])
+
+  documents     AuthDocument[]
+  statusChanges AuthStatusChange[]
+  denials       Denial[]
+  appeals       Appeal[]
+
+  @@map("prior_auth_requests")
+}
+
+// ─── Auth Document ───────────────────────────────────────────
+
+enum DocumentCategory {
+  clinical_notes
+  imaging_order
+  lab_results
+  referral
+  medical_records
+  letter_of_necessity
+  other
+}
+
+model AuthDocument {
+  id           String           @id @default(cuid())
+  priorAuthId  String
+  uploadedById String
+  fileName     String
+  fileType     String
+  filePath     String
+  fileSize     Int
+  category     DocumentCategory @default(other)
+  createdAt    DateTime         @default(now())
+
+  priorAuth  PriorAuthRequest @relation(fields: [priorAuthId], references: [id])
+  uploadedBy User             @relation(fields: [uploadedById], references: [id])
+
+  @@map("auth_documents")
+}
+
+// ─── Auth Status Change (Audit Log) ─────────────────────────
+
+model AuthStatusChange {
+  id          String     @id @default(cuid())
+  priorAuthId String
+  changedById String
+  fromStatus  AuthStatus
+  toStatus    AuthStatus
+  note        String?
+  metadata    Json?
+  createdAt   DateTime   @default(now())
+
+  priorAuth PriorAuthRequest @relation(fields: [priorAuthId], references: [id])
+  changedBy User             @relation(fields: [changedById], references: [id])
+
+  @@map("auth_status_changes")
+}
+
+// ─── Denial ──────────────────────────────────────────────────
+
+enum DenialReasonCategory {
+  medical_necessity
+  incomplete_documentation
+  out_of_network
+  service_not_covered
+  missing_precert
+  coding_error
+  other
+}
+
+model Denial {
+  id                String              @id @default(cuid())
+  priorAuthId       String
+  denialDate        DateTime
+  reasonCode        String?
+  reasonCategory    DenialReasonCategory
+  reasonDescription String?
+  payerNotes        String?
+  createdAt         DateTime            @default(now())
+
+  priorAuth PriorAuthRequest @relation(fields: [priorAuthId], references: [id])
+  appeals   Appeal[]
+
+  @@map("denials")
+}
+
+// ─── Appeal ──────────────────────────────────────────────────
+
+enum AppealLevel {
+  first
+  second
+  external_review
+}
+
+enum AppealStatus {
+  draft
+  filed
+  in_review
+  won
+  lost
+  withdrawn
+}
+
+model Appeal {
+  id            String       @id @default(cuid())
+  priorAuthId   String
+  denialId      String
+  appealLevel   AppealLevel
+  filedDate     DateTime
+  filedById     String
+  appealReason  String
+  status        AppealStatus @default(draft)
+  decisionDate  DateTime?
+  decisionNotes String?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  priorAuth PriorAuthRequest @relation(fields: [priorAuthId], references: [id])
+  denial    Denial           @relation(fields: [denialId], references: [id])
+  filedBy   User             @relation(fields: [filedById], references: [id])
+
+  @@map("appeals")
+}
