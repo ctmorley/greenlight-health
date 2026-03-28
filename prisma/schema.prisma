@@ -30,9 +30,10 @@ model Organization {
   createdAt DateTime         @default(now())
   updatedAt DateTime         @updatedAt
 
-  users    User[]
-  patients Patient[]
-  requests PriorAuthRequest[]
+  users          User[]
+  patients       Patient[]
+  requests       PriorAuthRequest[]
+  ehrConnections EhrConnection[]
 
   @@map("organizations")
 }
@@ -527,4 +528,35 @@ model Appeal {
   filedBy   User             @relation(fields: [filedById], references: [id])
 
   @@map("appeals")
+}
+
+// ─── EHR Connection (SMART on FHIR) ─────────────────────────
+
+enum EhrVendor {
+  epic
+  oracle_health
+  meditech
+  athenahealth
+  veradigm
+  eclinicalworks
+  other
+}
+
+model EhrConnection {
+  id             String      @id @default(cuid())
+  organizationId String
+  label          String // Display name, e.g., "Main Campus Epic"
+  vendor         EhrVendor
+  fhirBaseUrl    String // FHIR R4 server base URL (the `iss`)
+  clientId       String // SMART app client_id registered with this EHR
+  scopes         String? // Granted scopes (stored after first successful launch)
+  isActive       Boolean     @default(true)
+  lastUsedAt     DateTime?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+
+  @@unique([organizationId, fhirBaseUrl])
+  @@map("ehr_connections")
 }

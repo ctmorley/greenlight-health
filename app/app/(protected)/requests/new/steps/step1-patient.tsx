@@ -1,19 +1,22 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { EhrFieldBadge } from "@/components/wizard/ehr-banner";
 import { WizardState, PatientResult, PatientDetail } from "../types";
+import type { FhirPatientData } from "@/lib/fhir/types";
 
 interface Step1PatientProps {
   state: WizardState;
   setState: React.Dispatch<React.SetStateAction<WizardState>>;
   onPatientSelected: () => void;
+  fhirPatient?: FhirPatientData | null;
 }
 
-export function Step1Patient({ state, setState, onPatientSelected }: Step1PatientProps) {
+export function Step1Patient({ state, setState, onPatientSelected, fhirPatient }: Step1PatientProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<PatientResult[]>([]);
   const [searching, setSearching] = useState(false);
@@ -29,6 +32,47 @@ export function Step1Patient({ state, setState, onPatientSelected }: Step1Patien
   });
   const [createErrors, setCreateErrors] = useState<Record<string, string>>({});
   const [creating, setCreating] = useState(false);
+  const fhirMatchAttempted = useRef(false);
+
+  // ─── Auto-match FHIR patient by MRN ─────────────────────────
+  useEffect(() => {
+    if (!fhirPatient || fhirMatchAttempted.current || state.patientId) return;
+    fhirMatchAttempted.current = true;
+
+    (async () => {
+      // Try to find existing patient by MRN
+      if (fhirPatient.mrn) {
+        try {
+          const res = await fetch(
+            `/api/patients/search?q=${encodeURIComponent(fhirPatient.mrn)}`
+          );
+          if (res.ok) {
+            const data = await res.json();
+            const match = data.patients?.find(
+              (p: PatientResult) => p.mrn === fhirPatient.mrn
+            );
+            if (match) {
+              // Auto-select the matched patient
+              await selectPatient(match, false);
+              return;
+            }
+          }
+        } catch { /* fall through to pre-fill create form */ }
+      }
+
+      // No MRN match — pre-fill the create patient form with FHIR data
+      setCreateForm({
+        firstName: fhirPatient.firstName,
+        lastName: fhirPatient.lastName,
+        mrn: fhirPatient.mrn || "",
+        dob: fhirPatient.dob,
+        gender: fhirPatient.gender,
+        phone: fhirPatient.phone || "",
+        email: fhirPatient.email || "",
+      });
+      setShowCreateForm(true);
+    })();
+  }, [fhirPatient]); // Only run when fhirPatient changes
 
   // Search patients
   useEffect(() => {
@@ -150,7 +194,10 @@ export function Step1Patient({ state, setState, onPatientSelected }: Step1Patien
     return (
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold font-display text-text-primary">Selected Patient</h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-lg font-semibold font-display text-text-primary">Selected Patient</h2>
+            {fhirPatient && <EhrFieldBadge />}
+          </div>
           <Button variant="ghost" size="sm" onClick={clearPatient}>
             Change Patient
           </Button>
@@ -242,7 +289,10 @@ export function Step1Patient({ state, setState, onPatientSelected }: Step1Patien
       {/* Create patient form */}
       {showCreateForm && (
         <div className="space-y-4 p-4 rounded-xl bg-white/5 border border-white/10">
-          <h3 className="text-sm font-semibold text-text-primary">New Patient</h3>
+          <div className="flex items-center gap-2">
+            <h3 className="text-sm font-semibold text-text-primary">New Patient</h3>
+            {fhirPatient && createForm.firstName === fhirPatient.firstName && <EhrFieldBadge />}
+          </div>
           {createErrors._form && (
             <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-sm text-red-400">
               {createErrors._form}

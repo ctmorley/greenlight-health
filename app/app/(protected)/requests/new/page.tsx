@@ -2,15 +2,17 @@
 
 import { useSearchParams } from "next/navigation";
 import { useRouter } from "next/navigation";
-import { Suspense } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { StepIndicator } from "@/components/wizard/step-indicator";
+import { EhrBanner } from "@/components/wizard/ehr-banner";
 
 import { STEPS, WizardState } from "./types";
 import { useDraftPersistence } from "./hooks/use-draft-persistence";
 import { useAuditPreview } from "./hooks/use-audit-preview";
 import { useSubmitFlow } from "./hooks/use-submit-flow";
+import { useFhirContext } from "./hooks/use-fhir-context";
 import { Step1Patient } from "./steps/step1-patient";
 import { Step2ServiceDetails } from "./steps/step2-service-details";
 import { Step3Insurance } from "./steps/step3-insurance";
@@ -84,12 +86,34 @@ function NewPARequestWizard() {
     handleSaveAsDraft,
   } = useSubmitFlow({ state, saveDraft, setAuditIssues });
 
+  // ─── FHIR / EHR Launch Integration ───────────────────────────
+  const { fhirContext, isEhrLaunch, fhirFilledFields, applyFhirData } = useFhirContext();
+  const fhirApplied = useRef(false);
+  const [showEhrBanner, setShowEhrBanner] = useState(true);
+
+  // Apply FHIR auto-fill data once after context loads
+  useEffect(() => {
+    if (isEhrLaunch && !fhirApplied.current && !loadingDraft) {
+      fhirApplied.current = true;
+      setState((prev) => applyFhirData(prev));
+    }
+  }, [isEhrLaunch, loadingDraft, applyFhirData, setState]);
+
   if (loadingDraft) {
     return <WizardSkeleton />;
   }
 
   return (
     <div className="space-y-6 animate-fade-in max-w-5xl mx-auto">
+      {/* EHR Connection Banner */}
+      {isEhrLaunch && showEhrBanner && fhirContext && (
+        <EhrBanner
+          fhirContext={fhirContext}
+          filledFieldCount={fhirFilledFields.size}
+          onDismiss={() => setShowEhrBanner(false)}
+        />
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
@@ -143,7 +167,12 @@ function NewPARequestWizard() {
       {/* Step Content */}
       <Card variant="glass" padding="lg">
         {currentStep === 1 && (
-          <Step1Patient state={state} setState={setState} onPatientSelected={() => nextStep()} />
+          <Step1Patient
+            state={state}
+            setState={setState}
+            onPatientSelected={() => nextStep()}
+            fhirPatient={fhirContext?.patient ?? null}
+          />
         )}
         {currentStep === 2 && (
           <Step2ServiceDetails state={state} setState={setState} />
