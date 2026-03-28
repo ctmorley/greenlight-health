@@ -1,16 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { auditPhiAccess } from "@/lib/security/audit-log";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limit";
-import {
-  getAnthropicClient,
-  isAiConfigured,
-  AI_MODEL,
-  AI_MAX_TOKENS,
-  buildPredictionPrompt,
-} from "@/lib/ai";
+import { isAiConfigured, NotFoundError } from "@/lib/ai";
+import { assembleApprovalContext } from "@/lib/ai/approval-predictor";
 
 const requestSchema = z.object({
   requestId: z.string().min(1, "requestId is required"),
@@ -65,149 +59,16 @@ export async function POST(request: NextRequest) {
       "Predicted approval probability"
     ).catch(() => {});
 
-    // Fetch PA request — only non-PHI fields needed for prediction
-    const paRequest = await prisma.priorAuthRequest.findFirst({
-      where: { id: requestId, organizationId },
-      include: {
-        payer: true,
-        documents: { select: { category: true } },
-      },
-    });
+    const result = await assembleApprovalContext(requestId, organizationId);
 
-    if (!paRequest) {
-      return NextResponse.json({ error: "Request not found" }, { status: 404 });
-    }
-
-    // Look up ACR guidelines for the CPT codes
-    const guidelines = await prisma.clinicalGuideline.findMany({
-      where: { cptCodes: { hasSome: paRequest.cptCodes } },
-      take: 3,
-      orderBy: { rating: "desc" },
-    });
-
-    const bestGuideline = guidelines[0] || null;
-
-    // Look up payer-specific policies
-    const payerPolicies = paRequest.payerId
-      ? await prisma.payerClinicalPolicy.findMany({
-          where: {
-            payerId: paRequest.payerId,
-            OR: [
-              { cptCode: { in: paRequest.cptCodes } },
-              { serviceCategory: paRequest.serviceCategory ?? undefined },
-            ],
-          },
-          take: 3,
-        })
-      : [];
-
-    // Look up denial patterns for this payer/service
-    const denialPatterns = paRequest.payerId
-      ? await prisma.denialPattern.findMany({
-          where: {
-            OR: [
-              { payerId: paRequest.payerId, cptCode: { in: paRequest.cptCodes } },
-              { payerId: paRequest.payerId, serviceCategory: paRequest.serviceCategory ?? undefined },
-            ],
-          },
-          take: 5,
-          orderBy: { frequency: "desc" },
-        })
-      : [];
-
-    // Calculate documentation completeness
-    const requiredDocs = new Set<string>();
-    for (const policy of payerPolicies) {
-      for (const doc of policy.requiredDocuments) {
-        requiredDocs.add(doc);
-      }
-    }
-    const presentDocs = new Set<string>(paRequest.documents.map((d) => d.category));
-    const hasNotes = !!paRequest.clinicalNotes;
-    const totalExpected = Math.max(requiredDocs.size, 1);
-    let matchCount = 0;
-    for (const req of requiredDocs) {
-      if (presentDocs.has(req) || (req === "clinical_notes" && hasNotes)) {
-        matchCount++;
-      }
-    }
-    const documentationCompleteness = Math.round(
-      (matchCount / totalExpected) * 100
-    );
-
-    // Build prompt — NO PHI, only codes and categorical data
-    const { system, user } = buildPredictionPrompt({
-      serviceCategory: paRequest.serviceCategory || "imaging",
-      serviceType: paRequest.serviceType || "unknown",
-      cptCodes: paRequest.cptCodes,
-      icd10Codes: paRequest.icd10Codes,
-      payerName: paRequest.payer?.name || "Unknown Payer",
-      payerType: paRequest.payer?.type || "commercial",
-      acrRating: bestGuideline?.rating,
-      acrCategory: bestGuideline?.ratingCategory,
-      documentationCompleteness,
-      hasRequiredDocs: matchCount >= requiredDocs.size,
-      historicalApprovalRate: payerPolicies[0]?.approvalRate ?? undefined,
-      commonDenialReasons: denialPatterns.map((d) => d.reasonDescription),
-    });
-
-    // Call Claude
-    const startTime = Date.now();
-    const client = getAnthropicClient();
-    const response = await client.messages.create({
-      model: AI_MODEL,
-      max_tokens: AI_MAX_TOKENS,
-      system,
-      messages: [{ role: "user", content: user }],
-    });
-
-    const processingTimeMs = Date.now() - startTime;
-
-    // Extract text and parse JSON response
-    const rawText = response.content
-      .filter((block) => block.type === "text")
-      .map((block) => {
-        if (block.type === "text") return block.text;
-        return "";
-      })
-      .join("\n");
-
-    let prediction;
-    try {
-      prediction = JSON.parse(rawText.trim());
-    } catch {
-      // If Claude didn't return valid JSON, provide a fallback
-      prediction = {
-        probability: 50,
-        riskLevel: "medium",
-        factors: {
-          positive: [],
-          negative: ["Unable to parse AI prediction"],
-          missing: [],
-        },
-        recommendations: ["Review request manually"],
-      };
-    }
-
-    const tokensUsed =
-      (response.usage?.input_tokens || 0) +
-      (response.usage?.output_tokens || 0);
-
-    return NextResponse.json({
-      probability: prediction.probability,
-      riskLevel: prediction.riskLevel,
-      factors: prediction.factors,
-      recommendations: prediction.recommendations,
-      metadata: {
-        model: AI_MODEL,
-        tokensUsed,
-        processingTimeMs,
-      },
-    });
+    return NextResponse.json(result);
   } catch (error) {
     console.error("Predict approval error:", error);
     if (error instanceof SyntaxError) {
       return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+    }
+    if (error instanceof NotFoundError) {
+      return NextResponse.json({ error: error.message }, { status: 404 });
     }
     if (
       error instanceof Error &&

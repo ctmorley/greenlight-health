@@ -5,6 +5,7 @@
  * - Anthropic SDK client and configuration
  * - PHI de-identification / re-identification
  * - Prompt builders for all AI endpoints
+ * - Domain logic modules for LMN, appeal, prediction, summarization
  * - Shared types
  */
 
@@ -37,3 +38,9 @@ export type {
   RiskLevel,
   AppealLevel,
 } from "./types";
+
+// Domain logic modules
+export { assembleLmnContext, NotFoundError } from "./lmn-generator";
+export { assembleAppealContext } from "./appeal-drafter";
+export { assembleApprovalContext } from "./approval-predictor";
+export { assembleSummaryContext } from "./clinical-summarizer";

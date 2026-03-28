@@ -82,12 +82,14 @@ fi
 # ── Apply Prisma schema ──
 # Try migrate deploy first; fall back to db push for dev environments
 # where migrations may not match the current schema state (e.g., P3005).
+USED_DB_PUSH=false
 echo "🔄 Applying database schema..."
 if npx prisma migrate deploy 2>/dev/null; then
   echo "✅ Migrations applied successfully."
 else
   echo "⚠️  migrate deploy failed (non-empty DB or missing baseline). Falling back to prisma db push..."
   npx prisma db push --accept-data-loss
+  USED_DB_PUSH=true
   echo "✅ Schema pushed via db push."
 fi
 
@@ -102,6 +104,13 @@ SQL
 echo "   Found tables in public schema."
 
 # ── Verify migration tracking ──
-echo "🔍 Verifying migration tracking..."
-npx prisma migrate status
+# Only check migration status when migrate deploy succeeded.
+# After db push fallback, migration metadata may be out of sync,
+# which would cause a non-zero exit under set -e.
+if [ "$USED_DB_PUSH" = "false" ]; then
+  echo "🔍 Verifying migration tracking..."
+  npx prisma migrate status
+else
+  echo "⚠️  Skipping migration status check (used db push fallback)."
+fi
 echo "✅ All done."
