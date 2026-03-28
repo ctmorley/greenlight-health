@@ -37,6 +37,11 @@ export default defineConfig({
       use: { ...devices["Desktop Chrome"] },
       testMatch: /sprint7-analytics-settings\.spec\.ts/,
     },
+    {
+      name: "sprint8",
+      use: { ...devices["Desktop Chrome"] },
+      testMatch: /sprint8-ehr-launch\.spec\.ts/,
+    },
   ],
   webServer: {
     command: "npm run dev",

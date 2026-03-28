@@ -40,7 +40,18 @@ function CallbackHandler() {
           JSON.stringify(fhirContext)
         );
 
-        // Step 4: Redirect to wizard
+        // Step 4: Record FHIR session server-side (best-effort, don't block)
+        fetch("/api/fhir/session", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            fhirBaseUrl: fhirContext.fhirBaseUrl,
+            patientId: fhirContext.patientId,
+            scopes: client.state.scope || "",
+          }),
+        }).catch(() => { /* non-blocking */ });
+
+        // Step 5: Redirect to wizard
         setStatus("Redirecting to PA wizard...");
         router.replace("/app/requests/new?source=ehr");
       } catch (err) {

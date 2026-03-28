@@ -87,7 +87,7 @@ function NewPARequestWizard() {
   } = useSubmitFlow({ state, saveDraft, setAuditIssues });
 
   // ─── FHIR / EHR Launch Integration ───────────────────────────
-  const { fhirContext, isEhrLaunch, fhirFilledFields, applyFhirData } = useFhirContext();
+  const { fhirContext, isEhrLaunch, fhirFilledFields, applyFhirData, matchPatient } = useFhirContext();
   const fhirApplied = useRef(false);
   const [showEhrBanner, setShowEhrBanner] = useState(true);
 
@@ -95,9 +95,46 @@ function NewPARequestWizard() {
   useEffect(() => {
     if (isEhrLaunch && !fhirApplied.current && !loadingDraft) {
       fhirApplied.current = true;
+
+      // Apply service/condition auto-fill to wizard state
       setState((prev) => applyFhirData(prev));
+
+      // Server-side patient matching (async, updates state when complete)
+      matchPatient().then((result) => {
+        if (!result) return;
+        const p = result.patient;
+        setState((prev) => ({
+          ...prev,
+          patientId: p.id,
+          patientDetail: {
+            id: p.id,
+            firstName: p.firstName,
+            lastName: p.lastName,
+            name: p.name,
+            mrn: p.mrn,
+            dob: p.dob,
+            gender: p.gender,
+            phone: p.phone,
+            email: p.email,
+            insurances: p.insurances.map((ins) => ({
+              id: ins.id,
+              planName: ins.planName,
+              planType: ins.planType,
+              memberId: ins.memberId,
+              groupNumber: ins.groupNumber,
+              isPrimary: ins.isPrimary,
+              effectiveDate: ins.effectiveDate,
+              payer: ins.payer,
+            })),
+          },
+          // Auto-select insurance if available
+          insuranceId: p.insurances[0]?.id || prev.insuranceId,
+          payerId: p.insurances[0]?.payer?.id || prev.payerId,
+          payerName: p.insurances[0]?.payer?.name || prev.payerName,
+        }));
+      });
     }
-  }, [isEhrLaunch, loadingDraft, applyFhirData, setState]);
+  }, [isEhrLaunch, loadingDraft, applyFhirData, matchPatient, setState]);
 
   if (loadingDraft) {
     return <WizardSkeleton />;

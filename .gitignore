@@ -45,3 +45,6 @@ prisma/migrations/
 
 # uploads
 /uploads
+
+# claude code local settings
+.claude/settings.local.json
