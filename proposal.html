@@ -756,7 +756,7 @@
       </div>
       <div class="cover-footer-inner">
         <span>Prepared: March 2026</span>
-        <span>Classification: Confidential &mdash; Version 1.0</span>
+        <span>Classification: Confidential &mdash; Version 2.0</span>
       </div>
     </div>
   </div>
@@ -785,6 +785,15 @@
     <li class="toc-item"><span class="toc-num">12</span><span class="toc-title">Technical Architecture</span><span class="toc-page">14</span></li>
     <li class="toc-item"><span class="toc-num">13</span><span class="toc-title">Clinical Data Strategy: Payer Rules &amp; Criteria Sources</span><span class="toc-page">15</span></li>
     <li class="toc-item"><span class="toc-num" style="color:var(--text-muted);">&bull;</span><span class="toc-title" style="color:var(--text-muted);">Platform Naming Considerations</span><span class="toc-page">17</span></li>
+  </ul>
+
+  <h3 style="color:var(--emerald-700); margin-bottom:10px; margin-top: 8px;">Appendix: Independent Market Research</h3>
+  <ul class="toc-list">
+    <li class="toc-item"><span class="toc-num">A1</span><span class="toc-title">Third-Party Market Validation &amp; PA Sizing</span><span class="toc-page">18</span></li>
+    <li class="toc-item"><span class="toc-num">A2</span><span class="toc-title">The Automation Gap: Why Imaging &amp; Surgery Lag</span><span class="toc-page">19</span></li>
+    <li class="toc-item"><span class="toc-num">A3</span><span class="toc-title">Revenue Per PA: The Value Hierarchy</span><span class="toc-page">20</span></li>
+    <li class="toc-item"><span class="toc-num">A4</span><span class="toc-title">CMS-0057-F: The Federal Mandate &amp; API Layer</span><span class="toc-page">21</span></li>
+    <li class="toc-item"><span class="toc-num">A5</span><span class="toc-title">Strategic Assessment: Bull Case vs. Bear Case</span><span class="toc-page">22</span></li>
   </ul>
 
   <div class="page-footer">
@@ -2255,6 +2264,402 @@
   <div class="page-footer">
     <span class="footer-logo">green<strong>light</strong> <span style="font-size:7px;color:var(--text-light);font-weight:400;">by Medivis</span></span>
     <span class="footer-page">17</span>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 18: APPENDIX A1 — THIRD-PARTY MARKET VALIDATION -->
+<!-- ============================================================ -->
+<div class="page">
+  <div class="accent-bar"></div>
+  <div class="section-num">APPENDIX A1</div>
+  <h2>Third-Party Market Validation &amp; PA Sizing</h2>
+  <div class="section-desc">Independent research data from CAQH, KFF, AMA, IDC, and market analysts confirming the prior authorization market opportunity.</div>
+
+  <h3 class="mb-4">Total PA Market Size &mdash; Multiple Sources</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>Metric</th>
+        <th>Estimate</th>
+        <th>Source</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>Total annual PA admin waste</td><td class="num"><strong>$41.4&ndash;55.8B</strong></td><td>IDC (2025)</td></tr>
+      <tr><td>Provider-side PA spend</td><td class="num"><strong>$31B/yr</strong></td><td>Valer Health</td></tr>
+      <tr><td>PA automation platform market (2024)</td><td class="num"><strong>$2.18B</strong></td><td>Growth Market Reports</td></tr>
+      <tr><td>PA automation market projected (2033)</td><td class="num"><strong>$11.32B</strong></td><td>GMR (18.4% CAGR)</td></tr>
+      <tr><td>FHIR-based PA market (2025)</td><td class="num"><strong>$745M</strong></td><td>Future Market Insights</td></tr>
+      <tr><td>FHIR PA market projected (2036)</td><td class="num"><strong>$3.2B</strong></td><td>Future Market Insights</td></tr>
+      <tr><td>CMS projected savings (10-yr)</td><td class="num"><strong>$15B</strong></td><td>CMS / AMA</td></tr>
+    </tbody>
+  </table>
+
+  <h3 class="mb-4">PA Volume Breakdown by Payer Segment</h3>
+  <div class="cols">
+    <div>
+      <table>
+        <thead>
+          <tr><th>Segment</th><th class="num">Volume/Year</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Medicare Advantage</td><td class="num"><strong>53M</strong></td></tr>
+          <tr><td>Traditional Medicare</td><td class="num">625K</td></tr>
+          <tr><td>Commercial (medical)</td><td class="num">~182M</td></tr>
+          <tr><td>Medicaid managed care</td><td class="num">~80&ndash;120M</td></tr>
+          <tr class="total-row"><td>Total medical PAs</td><td class="num">~350&ndash;500M</td></tr>
+        </tbody>
+      </table>
+      <p class="text-xs text-muted" style="line-height:1.5;">Sources: KFF (2024), CAQH Index (2025), AMA Physician Survey (2024). Pharmacy PAs add an estimated 150&ndash;200M+ additional transactions via CoverMyMeds/Surescripts.</p>
+    </div>
+    <div>
+      <div class="stat-card accent mb-8" style="text-align:left; padding:12px;">
+        <span class="stat-num" style="font-size:16px;">39</span>
+        <span class="stat-label" style="font-size:8px;">PAs per physician per week (AMA 2024, n=1,000)</span>
+      </div>
+      <div class="stat-card red mb-8" style="text-align:left; padding:12px;">
+        <span class="stat-num" style="font-size:16px;">13 hrs/wk</span>
+        <span class="stat-label" style="font-size:8px;">Physician + staff time on PA (AMA Survey)</span>
+      </div>
+      <div class="stat-card amber mb-8" style="text-align:left; padding:12px;">
+        <span class="stat-num" style="font-size:16px;">100K+ RNs</span>
+        <span class="stat-label" style="font-size:8px;">Equivalent FTE RN time consumed by PA annually (AMA)</span>
+      </div>
+      <div class="stat-card blue mb-8" style="text-align:left; padding:12px;">
+        <span class="stat-num" style="font-size:16px;">43% &uarr;</span>
+        <span class="stat-label" style="font-size:8px;">Increase in practice PA staffing spend, 2019&ndash;2024 (MGMA)</span>
+      </div>
+    </div>
+  </div>
+
+  <h3 class="mb-4">Processing Cost Per PA Transaction</h3>
+  <table>
+    <thead>
+      <tr><th>Method</th><th class="num">Provider Cost</th><th class="num">Payer Cost</th><th class="num">Combined</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Manual (phone/fax)</td><td class="num" style="color:var(--coral-500);"><strong>$10.97</strong></td><td class="num">$3.52</td><td class="num" style="color:var(--coral-500);"><strong>$14.49</strong></td></tr>
+      <tr><td>Portal/partial electronic</td><td class="num">~$7.19</td><td class="num">~$2.00</td><td class="num">~$10.00</td></tr>
+      <tr><td>Fully electronic</td><td class="num" style="color:var(--emerald-700);"><strong>$1.88&ndash;5.79</strong></td><td class="num" style="color:var(--emerald-700);">$0.05</td><td class="num" style="color:var(--emerald-700);"><strong>~$2&ndash;6</strong></td></tr>
+    </tbody>
+  </table>
+  <p class="text-xs text-muted">Sources: CAQH 2025 Index, 4sight Health, Health Affairs Scholar. All-in estimates including overhead: $40&ndash;50/PA for payers, $20&ndash;30/PA for providers.</p>
+
+  <div class="page-footer">
+    <span class="footer-logo">green<strong>light</strong> <span style="font-size:7px;color:var(--text-light);font-weight:400;">by Medivis</span></span>
+    <span class="footer-page">18</span>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 19: APPENDIX A2 — THE AUTOMATION GAP -->
+<!-- ============================================================ -->
+<div class="page">
+  <div class="accent-bar"></div>
+  <div class="section-num">APPENDIX A2</div>
+  <h2>The Automation Gap: Why Imaging &amp; Surgery Lag</h2>
+  <div class="section-desc">Independent data confirms that imaging, surgical, and procedural PAs are the least automated and most manually intensive segment of prior authorization.</div>
+
+  <h3 class="mb-8">Electronic PA Adoption by Category</h3>
+  <div class="bar-row">
+    <span class="bar-label">Pharmacy (NCPDP)</span>
+    <div class="bar-track"><div class="bar-fill emerald" style="width:75%;">75%</div></div>
+    <span class="bar-value">75%</span>
+  </div>
+  <div class="bar-row">
+    <span class="bar-label">Medical (overall)</span>
+    <div class="bar-track"><div class="bar-fill amber" style="width:37%;">37%</div></div>
+    <span class="bar-value">37%</span>
+  </div>
+  <div class="bar-row">
+    <span class="bar-label">Advanced Imaging</span>
+    <div class="bar-track"><div class="bar-fill rose" style="width:22%;">~22%</div></div>
+    <span class="bar-value">Low</span>
+  </div>
+  <div class="bar-row">
+    <span class="bar-label">Outpatient Procedures</span>
+    <div class="bar-track"><div class="bar-fill rose" style="width:18%;">~18%</div></div>
+    <span class="bar-value">Low</span>
+  </div>
+  <div class="bar-row">
+    <span class="bar-label">Inpatient Surgery</span>
+    <div class="bar-track"><div class="bar-fill rose" style="width:12%;">~12%</div></div>
+    <span class="bar-value">V. Low</span>
+  </div>
+  <div class="bar-row mb-12">
+    <span class="bar-label">SNF/Inpatient Stays</span>
+    <div class="bar-track"><div class="bar-fill rose" style="width:10%;">~10%</div></div>
+    <span class="bar-value">V. Low</span>
+  </div>
+  <p class="text-xs text-muted mb-14">Sources: CAQH 2024&ndash;2025 Index (35&ndash;40% overall medical electronic rate); AMA (45% of all PA requests still submitted by fax). Subcategory estimates are directional based on industry analysis. Surescripts pharmacy ePA covers 84% of prescribers.</p>
+
+  <h3 class="mb-4">Why Imaging/Surgical PAs Resist Automation</h3>
+  <div class="cols">
+    <div>
+      <div class="feature-card fc-rose mb-8">
+        <h4>Unstructured Clinical Documentation</h4>
+        <p>Requires narrative clinical notes, prior imaging results, failed conservative treatment docs, and lab values &mdash; scattered across EHR systems. Pharmacy PAs use structured formulary data.</p>
+      </div>
+      <div class="feature-card fc-amber mb-8">
+        <h4>Payer Criteria Variability</h4>
+        <p>Each payer uses different criteria (InterQual, MCG, proprietary). Same MRI approved by one insurer, denied by another for identical patients. No standardization.</p>
+      </div>
+      <div class="feature-card fc-purple mb-8">
+        <h4>Peer-to-Peer Review Burden</h4>
+        <p>Unique to medical/surgical PAs. Physicians must schedule phone calls with insurance medical directors. ASTRO documents reviewers lacking relevant specialty expertise.</p>
+      </div>
+    </div>
+    <div>
+      <div class="feature-card fc-sky mb-8">
+        <h4>Multiple RBM Gatekeepers</h4>
+        <p>EviCore, Carelon, and NIA each have different portals, rules, and workflows. Payers switch RBMs without notice &mdash; breaking provider workflows overnight.</p>
+      </div>
+      <div class="feature-card fc-teal mb-8">
+        <h4>PACS/RIS Integration Needed</h4>
+        <p>Imaging PAs require connection to radiology-specific systems, not just EHRs. Most horizontal PA companies don't have this capability.</p>
+      </div>
+      <div class="feature-card fc-emerald mb-8">
+        <h4>Scheduling Cascade Impact</h4>
+        <p>Delayed surgical PA disrupts OR schedules, anesthesia, patient prep, and downstream appointments &mdash; a multi-party coordination problem pharmacy PA doesn't face.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout-red" style="margin-top: 0;">
+    <strong>The damning statistic:</strong> 80.7% of appealed Medicare Advantage PA denials were overturned in 2024 (KFF). Some insurers exceed 95% overturn rates. But only 11.5% of denials are actually appealed. The system works as a friction-based cost reduction mechanism &mdash; most denials are effectively wrong, but payers profit from providers who don't fight back. <strong>An AI that gets submissions right the first time attacks this directly.</strong>
+  </div>
+
+  <div class="page-footer">
+    <span class="footer-logo">green<strong>light</strong> <span style="font-size:7px;color:var(--text-light);font-weight:400;">by Medivis</span></span>
+    <span class="footer-page">19</span>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 20: APPENDIX A3 — REVENUE PER PA: THE VALUE HIERARCHY -->
+<!-- ============================================================ -->
+<div class="page">
+  <div class="accent-bar"></div>
+  <div class="section-num">APPENDIX A3</div>
+  <h2>Revenue Per PA: The Value Hierarchy</h2>
+  <div class="section-desc">A surgical PA protects 100x more revenue than a pharmacy PA. This is why the imaging/surgery niche commands premium economics.</div>
+
+  <h3 class="mb-4">Revenue Protected Per Prior Authorization by Type</h3>
+  <table>
+    <thead>
+      <tr><th>PA Category</th><th class="num">Revenue at Stake</th><th class="num">Relative Value</th><th>Automation Status</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Standard pharmacy</td><td class="num">$15&ndash;$500</td><td class="num">1x</td><td><span class="tag tag-emerald">Solved</span></td></tr>
+      <tr><td>Specialty pharmacy</td><td class="num">$2K&ndash;$15K/mo</td><td class="num">10&ndash;30x</td><td><span class="tag tag-amber">Partial</span></td></tr>
+      <tr><td>Advanced imaging (MRI/CT/PET)</td><td class="num"><strong>$500&ndash;$4,000</strong></td><td class="num"><strong>3&ndash;10x</strong></td><td><span class="tag tag-rose">Broken</span></td></tr>
+      <tr><td>Outpatient procedures</td><td class="num"><strong>$1K&ndash;$15K</strong></td><td class="num"><strong>10&ndash;30x</strong></td><td><span class="tag tag-rose">Broken</span></td></tr>
+      <tr><td>Inpatient surgery</td><td class="num"><strong>$10K&ndash;$100K+</strong></td><td class="num"><strong>100&ndash;200x</strong></td><td><span class="tag tag-rose">Broken</span></td></tr>
+      <tr><td>DME</td><td class="num">$500&ndash;$30K</td><td class="num">5&ndash;60x</td><td><span class="tag tag-amber">Partial</span></td></tr>
+      <tr><td>Part B drugs (infusions)</td><td class="num">$2K&ndash;$20K+</td><td class="num">20&ndash;40x</td><td><span class="tag tag-amber">Partial</span></td></tr>
+    </tbody>
+  </table>
+  <p class="text-xs text-muted mb-14">Sources: Medicare fee schedules, Johns Hopkins hospital radiology pricing study, Plancher Orthopedics cost analysis, PMC commercial imaging price variation study.</p>
+
+  <h3 class="mb-4">Specific Claim Values in GreenLight Target Segments</h3>
+  <div class="cols">
+    <div>
+      <div class="stat-card red mb-8" style="text-align:left; padding:12px;">
+        <span class="stat-num" style="font-size:16px;">$29,300</span>
+        <span class="stat-label" style="font-size:8px;">Average total knee replacement claim (range: $15K&ndash;$70K)</span>
+      </div>
+      <div class="stat-card amber mb-8" style="text-align:left; padding:12px;">
+        <span class="stat-num" style="font-size:16px;">$50K+</span>
+        <span class="stat-label" style="font-size:8px;">Lumbar fusion total claim value</span>
+      </div>
+      <div class="stat-card blue mb-8" style="text-align:left; padding:12px;">
+        <span class="stat-num" style="font-size:16px;">$1,788</span>
+        <span class="stat-label" style="font-size:8px;">Brain MRI with contrast (commercial rate)</span>
+      </div>
+      <div class="stat-card accent mb-8" style="text-align:left; padding:12px;">
+        <span class="stat-num" style="font-size:16px;">$1,311</span>
+        <span class="stat-label" style="font-size:8px;">Lumbar MRI (commercial rate vs. $269 Medicare)</span>
+      </div>
+    </div>
+    <div>
+      <h4 class="mb-4">Provider Pain Points &mdash; By the Numbers</h4>
+      <ul class="feature-list" style="font-size:8.5px; line-height:1.65;">
+        <li><strong>94%</strong> of physicians say PA delays access to necessary care (AMA 2024)</li>
+        <li><strong>29%</strong> report serious adverse events from PA delays (hospitalization, impairment, death)</li>
+        <li><strong>82%</strong> report PA leads to treatment abandonment by patients</li>
+        <li><strong>87%</strong> say PA leads to <em>higher</em> overall healthcare utilization &mdash; the opposite of its intent</li>
+        <li><strong>92%</strong> of medical groups have hired staff exclusively for PA (MGMA)</li>
+        <li><strong>$83K/yr</strong> per radiology practice in PA-related costs (14 hrs/week radiologist time)</li>
+        <li><strong>$1.5M+/yr</strong> lost by mid-sized radiology centers to PA denials and delays</li>
+        <li><strong>96%</strong> of AAHKS surgeons report PA delays timely surgical access</li>
+        <li>In radiation oncology: <strong>7%</strong> of surveyed oncologists linked PA directly to patient deaths</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="callout" style="margin-top: 0;">
+    <strong>The economic math:</strong> A single denied surgical PA puts $15K&ndash;$50K+ in provider revenue at risk. A denied pharmacy PA puts $15&ndash;$500 at risk. Preventing one surgical denial recovers as much revenue as preventing 100 pharmacy denials. This fundamentally changes willingness to pay for automation &mdash; and explains why <strong class="num">$8/PA</strong> is a compelling price point for imaging and surgical practices.
+  </div>
+
+  <div class="page-footer">
+    <span class="footer-logo">green<strong>light</strong> <span style="font-size:7px;color:var(--text-light);font-weight:400;">by Medivis</span></span>
+    <span class="footer-page">20</span>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 21: APPENDIX A4 — CMS-0057-F: THE FEDERAL MANDATE -->
+<!-- ============================================================ -->
+<div class="page">
+  <div class="accent-bar"></div>
+  <div class="section-num">APPENDIX A4</div>
+  <h2>CMS-0057-F: The Federal Mandate &amp; API Layer</h2>
+  <div class="section-desc">The CMS Interoperability and Prior Authorization Final Rule (89 FR 8758, published Feb 8, 2024) creates mandatory FHIR-based PA infrastructure for the exact categories GreenLight targets.</div>
+
+  <h3 class="mb-4">What CMS-0057-F Requires</h3>
+  <table>
+    <thead>
+      <tr><th>Requirement</th><th>Description</th><th>Impact</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><strong>Prior Authorization API</strong></td><td>FHIR-based API for providers to check PA requirements, discover documentation needs, submit requests, and receive decisions electronically</td><td><span class="tag tag-emerald">Core enabler</span></td></tr>
+      <tr><td><strong>Decision Timeframes</strong></td><td>72 hours for urgent/expedited; 7 calendar days for standard (down from 14 days)</td><td><span class="tag tag-sky">Faster cycles</span></td></tr>
+      <tr><td><strong>Specific Denial Reasons</strong></td><td>All denials must include specific reasons regardless of submission method</td><td><span class="tag tag-amber">Appeal fuel</span></td></tr>
+      <tr><td><strong>Public Metrics Reporting</strong></td><td>Payers must publish approval rates, denial rates, appeal outcomes, turnaround times annually</td><td><span class="tag tag-purple">Transparency</span></td></tr>
+      <tr><td><strong>Provider Access API</strong></td><td>Payers share claims, encounters, and PA info with in-network providers</td><td><span class="tag tag-teal">Data access</span></td></tr>
+    </tbody>
+  </table>
+
+  <h3 class="mb-4">Compliance Timeline &mdash; Hard Deadlines</h3>
+  <div class="cols">
+    <div>
+      <div class="feature-card fc-amber mb-8">
+        <h4>Jan 1, 2026 &mdash; NOW IN EFFECT</h4>
+        <p>72-hour/7-day decision timeframes active. Specific denial reasons required. PA metrics collection begins for all impacted payers.</p>
+        <span class="tag tag-amber">Operational</span>
+      </div>
+      <div class="feature-card fc-rose mb-8">
+        <h4>March 31, 2026 &mdash; IMMINENT</h4>
+        <p>First public reporting of CY2025 PA metrics. Payer denial rates become visible for the first time.</p>
+        <span class="tag tag-rose">Transparency</span>
+      </div>
+    </div>
+    <div>
+      <div class="feature-card fc-emerald mb-8">
+        <h4>Jan 1, 2027 &mdash; THE BIG ONE</h4>
+        <p>Prior Authorization API must be live for all MA organizations, Medicaid/CHIP FFS, managed care, and QHP issuers. FHIR-based electronic PA becomes mandatory.</p>
+        <span class="tag tag-emerald">API mandate</span>
+      </div>
+      <div class="feature-card fc-sky mb-8">
+        <h4>2028 &mdash; Full Enforcement</h4>
+        <p>States may receive one-year extension for Medicaid/CHIP. Enhanced federal financial participation (FFP) for implementation. Full ecosystem operational.</p>
+        <span class="tag tag-sky">Universal</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="cols">
+    <div>
+      <div class="callout-green">
+        <strong>Critical scope detail:</strong> CMS-0057 covers <strong>medical items and services</strong> but <strong>explicitly excludes pharmacy benefit drugs</strong>. This means the rule directly mandates electronic infrastructure for imaging, surgery, and procedures &mdash; while leaving pharmacy PA to existing CoverMyMeds/Surescripts infrastructure. The rule creates the plumbing GreenLight connects to.
+      </div>
+    </div>
+    <div>
+      <div class="callout">
+        <strong>FHIR-only enforcement discretion:</strong> CMS waived HIPAA X12 278 enforcement for payers implementing all-FHIR PA APIs (Feb 28, 2024). New entrants don't need legacy EDI capabilities. The Da Vinci PAS, CRD, and DTR implementation guides are recommended but not mandated &mdash; creating flexibility for innovators.
+      </div>
+    </div>
+  </div>
+
+  <h3 class="mb-4">Related Federal Legislation</h3>
+  <div class="cols">
+    <div>
+      <p class="text-sm" style="line-height:1.6;"><strong>Improving Seniors' Timely Access to Care Act</strong> (H.R. 3514 / S. 1816, 119th Congress, introduced May 2025). Would codify electronic PA requirements in statute, add real-time decisions for routinely approved items. Strong bipartisan support but has failed in multiple prior sessions. GovTrack gives &lt;1% chance of passage.</p>
+    </div>
+    <div>
+      <p class="text-sm" style="line-height:1.6;"><strong>Political risk is low:</strong> The current administration suspended some MA transparency requirements but has <strong>not touched CMS-0057-F</strong>. The rule enjoys broad bipartisan support (reducing admin burden is popular across the spectrum). 67% of health plans plan to reevaluate PA vendor contracts by 2026.</p>
+    </div>
+  </div>
+
+  <div class="page-footer">
+    <span class="footer-logo">green<strong>light</strong> <span style="font-size:7px;color:var(--text-light);font-weight:400;">by Medivis</span></span>
+    <span class="footer-page">21</span>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 22: APPENDIX A5 — STRATEGIC ASSESSMENT -->
+<!-- ============================================================ -->
+<div class="page">
+  <div class="accent-bar"></div>
+  <div class="section-num">APPENDIX A5</div>
+  <h2>Strategic Assessment: Bull Case vs. Bear Case</h2>
+  <div class="section-desc">An honest, data-driven analysis of whether the imaging/surgery PA niche is worth a multi-year commitment.</div>
+
+  <div class="cols">
+    <div>
+      <h3 style="color:var(--emerald-700); margin-bottom:6px;">The Bull Case</h3>
+      <div class="feature-card fc-emerald mb-8">
+        <h4>1. Massive, Proven Market</h4>
+        <p>$35&ndash;56B in annual waste. $1.5&ndash;30M revenue leakage per facility. 94% of physicians say PA harms care. Pain is real and quantified.</p>
+      </div>
+      <div class="feature-card fc-emerald mb-8">
+        <h4>2. Clear Competitive Whitespace</h4>
+        <p>CoverMyMeds solved pharmacy PA. No equivalent exists for medical/imaging/surgical PA. The "CoverMyMeds for medical PA" position is genuinely available.</p>
+      </div>
+      <div class="feature-card fc-emerald mb-8">
+        <h4>3. Regulatory Tailwind with Hard Deadline</h4>
+        <p>CMS-0057 forces payers to build FHIR APIs by Jan 2027 &mdash; creating standardized infrastructure that GreenLight builds on. Timing is excellent.</p>
+      </div>
+      <div class="feature-card fc-emerald mb-8">
+        <h4>4. Complexity = Defensibility</h4>
+        <p>Unstructured clinical docs, payer variability, RBM fragmentation, PACS integration create genuine moats. Rules engine compounds over time with more PA outcomes data.</p>
+      </div>
+      <div class="feature-card fc-emerald mb-8">
+        <h4>5. Unit Economics Work</h4>
+        <p>$8/PA with 3&ndash;4x customer ROI. Performance guarantee de-risks adoption. Revenue per customer scales from $77K/yr (imaging center) to $4.8M/yr (multi-hospital).</p>
+      </div>
+      <div class="feature-card fc-emerald mb-8">
+        <h4>6. Validated by Market Signals</h4>
+        <p>Cohere Health ($5.5B valuation) proves PA AI is valued. 94% of payers plan substantial AI-PA investment. 67% plan to reevaluate vendors by 2026. Demand is surging.</p>
+      </div>
+    </div>
+    <div>
+      <h3 style="color:var(--coral-500); margin-bottom:6px;">The Bear Case &amp; Mitigations</h3>
+      <div class="feature-card fc-rose mb-8">
+        <h4>1. EHR Vendors Build Native PA</h4>
+        <p>Epic already has some PA features. <strong>Mitigation:</strong> EHR tools will be generic; imaging-specific intelligence (ACR criteria, PACS/RIS, RBM navigation) is too specialized for EHR platforms. Partner, don't compete.</p>
+      </div>
+      <div class="feature-card fc-rose mb-8">
+        <h4>2. Olive AI Cautionary Tale</h4>
+        <p>$400M raised at $4B valuation, collapsed in 2023. <strong>Mitigation:</strong> Olive failed from lack of focus ("automate everything"). GreenLight's vertical niche strategy is the opposite approach.</p>
+      </div>
+      <div class="feature-card fc-rose mb-8">
+        <h4>3. CMS-0057 Could Reduce PA Volume</h4>
+        <p>Faster decisions + transparency may eliminate some PAs. <strong>Mitigation:</strong> MA PA volume has actually grown from 37M (2019) to 53M (2024) despite reform talk. Payers add PAs faster than they remove them.</p>
+      </div>
+      <div class="feature-card fc-rose mb-8">
+        <h4>4. Customer Concentration Risk</h4>
+        <p>15 customers in Year 1 creates dependency. <strong>Mitigation:</strong> GTM plan diversifies across facility types (imaging centers &rarr; ASCs &rarr; hospitals). Enforce no single customer &gt;15% of revenue.</p>
+      </div>
+      <div class="feature-card fc-rose mb-8">
+        <h4>5. Payer Portal Instability</h4>
+        <p>Payers change portals, rules, and RBMs without notice. <strong>Mitigation:</strong> CMS-0057 API mandate reduces portal dependency. Dedicated monitoring team required as permanent OpEx.</p>
+      </div>
+
+      <div class="fin-total" style="margin-top:8px;">
+        <span class="stat-num" style="font-size:18px;">VERDICT</span>
+        <span class="stat-label" style="font-size:9.5px; line-height:1.7; display:block; margin-top:6px; color:var(--text-body);">
+          <strong style="color:var(--emerald-700);">This is not a mirage.</strong> The convergence of massive pain ($35B+ waste), clear whitespace (no CoverMyMeds for medical PA), and a regulatory catalyst (CMS-0057, Jan 2027) makes this a rare setup. The key risk is execution, not market validity. Worth going all-in.
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-footer">
+    <span class="footer-logo">green<strong>light</strong> <span style="font-size:7px;color:var(--text-light);font-weight:400;">by Medivis</span></span>
+    <span class="footer-page">22</span>
   </div>
 </div>
 

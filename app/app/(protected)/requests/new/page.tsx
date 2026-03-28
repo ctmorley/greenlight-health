@@ -74,7 +74,7 @@ function NewPARequestWizard() {
     goToStep,
   } = useDraftPersistence({ editDraftId });
 
-  const { auditIssues, setAuditIssues } = useAuditPreview(currentStep, state);
+  const { auditIssues, setAuditIssues, clinicalCriteria, loadingCriteria } = useAuditPreview(currentStep, state);
 
   const {
     submitting,
@@ -159,6 +159,8 @@ function NewPARequestWizard() {
             state={state}
             auditIssues={auditIssues}
             submitError={submitError}
+            clinicalCriteria={clinicalCriteria}
+            loadingCriteria={loadingCriteria}
           />
         )}
       </Card>

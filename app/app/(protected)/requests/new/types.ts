@@ -68,6 +68,41 @@ export interface AuditIssue {
   message: string;
 }
 
+export interface ClinicalCriteriaResult {
+  guidelines: Array<{
+    condition: string;
+    variant: string;
+    procedures: Array<{
+      id: string;
+      procedure: string;
+      rating: number;
+      ratingCategory: string;
+      evidenceStrength: string;
+      cptCodes: string[];
+      radiationLevel: number | null;
+      radiationDose: string | null;
+    }>;
+  }>;
+  guidelineCount: number;
+  audit: {
+    hasGuidelines: boolean;
+    highestRating?: number;
+    avgRating?: number;
+    appropriateCount?: number;
+    mayBeCount?: number;
+    notAppropriateCount?: number;
+    riskLevel: "low" | "medium" | "high" | "unknown";
+    message: string;
+    topRecommendation?: string;
+  };
+  denialPatterns: Array<{
+    reasonCategory: string;
+    reasonDescription: string;
+    frequency: number;
+    preventionTip: string | null;
+  }>;
+}
+
 export interface UploadedFile {
   id?: string;
   file?: File;
