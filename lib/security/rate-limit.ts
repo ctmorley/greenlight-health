@@ -44,6 +44,8 @@ export const RATE_LIMITS = {
   cdsHooks: { limit: 60, windowSeconds: 60 } as RateLimitConfig,
   /** PA submission: 5 req / min */
   submit: { limit: 5, windowSeconds: 60 } as RateLimitConfig,
+  /** AI endpoints: 10 req / min */
+  ai: { limit: 10, windowSeconds: 60 } as RateLimitConfig,
 };
 
 /**

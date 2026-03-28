@@ -5,8 +5,29 @@ import { prisma } from "@/lib/prisma";
 import { authConfig } from "@/lib/auth.config";
 import { audit } from "@/lib/security/audit-log";
 
-// In-memory rate limiter for login attempts (per email)
+// In-memory rate limiter for login attempts (per email).
+//
+// Production note: For multi-instance deployments, replace with a
+// Redis/Upstash-backed store using key TTLs to avoid cross-instance
+// bypass and per-process memory overhead.
 const loginAttempts = new Map<string, { count: number; windowStart: number }>();
+const LOGIN_WINDOW_MS = 15 * 60 * 1000;
+const LOGIN_MAX_STORE_SIZE = 5000;
+
+// Periodic cleanup of expired entries every 60 seconds to bound memory usage.
+// This prevents unbounded growth even under sustained brute-force traffic.
+const cleanupTimer = setInterval(() => {
+  const now = Date.now();
+  for (const [key, entry] of loginAttempts) {
+    if (now - entry.windowStart > LOGIN_WINDOW_MS) {
+      loginAttempts.delete(key);
+    }
+  }
+}, 60 * 1000);
+// Allow Node to exit cleanly without waiting for the cleanup timer
+if (cleanupTimer && typeof cleanupTimer === "object" && "unref" in cleanupTimer) {
+  cleanupTimer.unref();
+}
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   ...authConfig,
@@ -26,7 +47,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
         // Rate limiting: max 5 failed attempts per email per 15-minute window
         const now = Date.now();
-        const windowMs = 15 * 60 * 1000;
+        const windowMs = LOGIN_WINDOW_MS;
         const maxAttempts = 5;
         const key = email;
         const entry = loginAttempts.get(key);
@@ -37,6 +58,25 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             loginAttempts.delete(key);
           } else if (entry.count >= maxAttempts) {
             return null;
+          }
+        }
+
+        // Guard against unbounded store growth: evict expired entries first,
+        // then if still over the cap, evict oldest entries by window start.
+        if (loginAttempts.size > LOGIN_MAX_STORE_SIZE) {
+          // First pass: remove all expired entries
+          for (const [k, v] of loginAttempts) {
+            if (now - v.windowStart > windowMs) loginAttempts.delete(k);
+          }
+          // Second pass: if still over cap, evict oldest half
+          if (loginAttempts.size > LOGIN_MAX_STORE_SIZE) {
+            const oldest = [...loginAttempts.entries()].sort(
+              (a, b) => a[1].windowStart - b[1].windowStart
+            );
+            const evictCount = Math.ceil(oldest.length / 2);
+            for (let i = 0; i < evictCount; i++) {
+              loginAttempts.delete(oldest[i][0]);
+            }
           }
         }
 

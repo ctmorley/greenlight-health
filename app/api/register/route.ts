@@ -5,7 +5,7 @@ import { z } from "zod";
 import { Prisma } from "@prisma/client";
 
 const registerSchema = z.object({
-  organizationName: z.string().min(2, "Organization name is required"),
+  organizationName: z.string().trim().min(2, "Organization name is required"),
   organizationType: z.enum(["imaging_center", "surgical_center", "hospital", "multi_specialty"]).default("imaging_center"),
   firstName: z.string().optional().default("Admin").transform((v) => v.trim() || "Admin"),
   lastName: z.string().optional().default("User").transform((v) => v.trim() || "User"),

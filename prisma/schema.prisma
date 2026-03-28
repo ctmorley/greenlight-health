@@ -34,6 +34,8 @@ model Organization {
   patients       Patient[]
   requests       PriorAuthRequest[]
   ehrConnections EhrConnection[]
+  notifications  Notification[]
+  statusChecks   PaStatusCheck[]
 
   @@map("organizations")
 }
@@ -64,12 +66,15 @@ model User {
 
   organization Organization @relation(fields: [organizationId], references: [id])
 
-  createdRequests  PriorAuthRequest[] @relation("CreatedBy")
-  assignedRequests PriorAuthRequest[] @relation("AssignedTo")
-  orderingRequests PriorAuthRequest[] @relation("OrderingPhysician")
-  uploadedDocs     AuthDocument[]
-  statusChanges    AuthStatusChange[]
-  filedAppeals     Appeal[]
+  createdRequests          PriorAuthRequest[] @relation("CreatedBy")
+  assignedRequests         PriorAuthRequest[] @relation("AssignedTo")
+  orderingRequests         PriorAuthRequest[] @relation("OrderingPhysician")
+  uploadedDocs             AuthDocument[]
+  statusChanges            AuthStatusChange[]
+  filedAppeals             Appeal[]
+  notificationPreference   NotificationPreference?
+  notifications            Notification[]
+  statusChecks             PaStatusCheck[]
 
   @@map("users")
 }
@@ -413,6 +418,7 @@ model PriorAuthRequest {
   statusChanges AuthStatusChange[]
   denials       Denial[]
   appeals       Appeal[]
+  statusChecks  PaStatusCheck[]
 
   @@map("prior_auth_requests")
 }
@@ -576,6 +582,8 @@ enum AuditAction {
   fhir_write
   pa_submit
   pa_submit_electronic
+  ai_generate
+  status_check
 }
 
 model AuditLog {
@@ -599,4 +607,66 @@ model AuditLog {
   @@index([resourceType, resourceId])
   @@index([action, createdAt])
   @@map("audit_logs")
+}
+
+// ─── Notification Preference ───────────────────────────────
+
+model NotificationPreference {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  emailEnabled Boolean  @default(true)
+  inAppEnabled Boolean  @default(true)
+  events       String[] // Array of NotificationEventType values
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([userId])
+  @@map("notification_preferences")
+}
+
+// ─── Notification ──────────────────────────────────────────
+
+model Notification {
+  id             String       @id @default(cuid())
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  type           String       // NotificationEventType
+  title          String
+  message        String
+  resourceType   String?      // "PriorAuthRequest", "Appeal", etc.
+  resourceId     String?
+  read           Boolean      @default(false)
+  emailSent      Boolean      @default(false)
+  createdAt      DateTime     @default(now())
+
+  @@index([userId, read])
+  @@index([organizationId])
+  @@map("notifications")
+}
+
+// ─── PA Status Check ───────────────────────────────────────
+
+model PaStatusCheck {
+  id                String           @id @default(cuid())
+  requestId         String
+  request           PriorAuthRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  organizationId    String
+  organization      Organization     @relation(fields: [organizationId], references: [id])
+  checkedBy         String
+  user              User             @relation(fields: [checkedBy], references: [id])
+  checkType         String           // "manual" | "automatic"
+  payerResponseCode String?          // Simulated payer response code
+  payerMessage      String?          // Simulated payer message
+  previousStatus    String           // Status before check
+  newStatus         String?          // Status after check (null if unchanged)
+  statusChanged     Boolean          @default(false)
+  responseTimeMs    Int?             // Simulated response time
+  createdAt         DateTime         @default(now())
+
+  @@index([requestId])
+  @@index([organizationId])
+  @@map("pa_status_checks")
 }

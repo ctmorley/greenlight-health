@@ -59,6 +59,15 @@ const nextConfig: NextConfig = {
     },
   ],
 
+  // ─── ESLint ────────────────────────────────────────────────────
+  // Linting is enforced via `npm run lint` using our flat ESLint config
+  // (eslint.config.mjs) which includes @next/eslint-plugin-next rules.
+  // Next.js build's built-in ESLint step doesn't fully support flat config
+  // detection yet, so we skip it here to avoid a false warning.
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+
   // ─── Output Configuration for Azure App Service ──────────────
   output: "standalone",
 };

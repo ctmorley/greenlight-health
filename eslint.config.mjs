@@ -44,6 +44,7 @@ export default [
         HTMLInputElement: "readonly",
         HTMLButtonElement: "readonly",
         KeyboardEvent: "readonly",
+        Map: "readonly",
         // Node globals
         process: "readonly",
         __dirname: "readonly",
@@ -58,10 +59,14 @@ export default [
         { argsIgnorePattern: "^_", varsIgnorePattern: "^_" },
       ],
       "@typescript-eslint/triple-slash-reference": "off",
-      // Next.js rules
+      // Next.js recommended rules
+      ...nextPlugin.configs.recommended.rules,
+      ...nextPlugin.configs["core-web-vitals"].rules,
+      // Override some Next.js rules
       "@next/next/no-html-link-for-pages": "warn",
       "@next/next/no-img-element": "warn",
-      "@next/next/no-sync-scripts": "error",
+      // no-page-custom-font is a Pages Router rule; not applicable in App Router
+      "@next/next/no-page-custom-font": "off",
     },
   },
 ];
