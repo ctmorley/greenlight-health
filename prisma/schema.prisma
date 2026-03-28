@@ -560,3 +560,43 @@ model EhrConnection {
   @@unique([organizationId, fhirBaseUrl])
   @@map("ehr_connections")
 }
+
+// ─── HIPAA Audit Log ─────────────────────────────────────────
+
+enum AuditAction {
+  view
+  create
+  update
+  delete
+  export
+  login
+  logout
+  login_failed
+  fhir_read
+  fhir_write
+  pa_submit
+  pa_submit_electronic
+}
+
+model AuditLog {
+  id             String      @id @default(cuid())
+  organizationId String?
+  userId         String?
+  userEmail      String?
+  action         AuditAction
+  resourceType   String // e.g., "Patient", "PriorAuthRequest", "FhirContext"
+  resourceId     String? // ID of the accessed resource
+  description    String? // Human-readable description
+  ipAddress      String?
+  userAgent      String?
+  requestPath    String? // API route path
+  metadata       Json? // Additional context (e.g., fields accessed, FHIR scopes)
+  phiAccessed    Boolean     @default(false) // Whether PHI was part of this action
+  createdAt      DateTime    @default(now())
+
+  @@index([organizationId, createdAt])
+  @@index([userId, createdAt])
+  @@index([resourceType, resourceId])
+  @@index([action, createdAt])
+  @@map("audit_logs")
+}
