@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GreenLight by Medivis — EHR Integration Strategy & Technical Roadmap</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --emerald-700: #059669; --emerald-500: #10B981; --emerald-300: #34D399;
+    --emerald-50: #ECFDF5; --emerald-100: #D1FAE5;
+    --sky-500: #0EA5E9; --sky-400: #38BDF8; --sky-50: #F0F9FF;
+    --coral-500: #F43F5E; --coral-400: #FB7185; --coral-50: #FFF1F2;
+    --amber-500: #F59E0B; --amber-400: #FBBF24; --amber-50: #FFFBEB;
+    --purple-500: #8B5CF6; --purple-50: #F5F3FF;
+    --teal-500: #14B8A6; --teal-50: #F0FDFA;
+    --text-dark: #1a1a2e; --text-body: #475569; --text-muted: #64748b; --text-light: #94a3b8;
+    --bg-light: #F8FAFC; --bg-mid: #F1F5F9; --bg-border: #E2E8F0;
+  }
+  @page { size: A4; margin: 0; }
+  body { font-family: 'Inter', -apple-system, sans-serif; font-size: 10px; line-height: 1.5; color: var(--text-body); background: #E2E8F0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  h1, h2, h3, h4, h5 { font-family: 'Plus Jakarta Sans', 'Inter', sans-serif; color: var(--text-dark); line-height: 1.25; }
+  h1 { font-size: 28px; font-weight: 800; letter-spacing: -0.5px; }
+  h2 { font-size: 20px; font-weight: 700; margin-bottom: 6px; letter-spacing: -0.3px; }
+  h3 { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+  h4 { font-size: 12px; font-weight: 600; margin-bottom: 3px; }
+  .num { font-family: 'JetBrains Mono', monospace; }
+  .page { width: 210mm; height: 297mm; margin: 20px auto; background: #fff; position: relative; overflow: hidden; page-break-after: always; padding: 18mm 22mm 16mm 22mm; box-shadow: 0 4px 24px rgba(0,0,0,0.10); }
+  @media print { body { background: #fff; } .page { margin: 0; box-shadow: none; } }
+  .cover { padding: 0; background: linear-gradient(145deg, #022c22 0%, #064e3b 30%, #065f46 50%, #047857 75%, #059669 100%); color: #fff; display: table; width: 210mm; height: 297mm; table-layout: fixed; }
+  .cover-row { display: table-row; }
+  .cover-cell { display: table-cell; vertical-align: middle; padding: 0 28mm; }
+  .cover-cell-top { display: table-cell; vertical-align: top; padding: 20mm 28mm 0; height: 1px; }
+  .cover-cell-bot { display: table-cell; vertical-align: bottom; padding: 0 28mm 8mm; height: 1px; }
+  .cover-classification { font-size: 9px; font-weight: 600; letter-spacing: 2.5px; text-transform: uppercase; color: rgba(255,255,255,0.5); margin-bottom: 20px; }
+  .cover-logo { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 30px; font-weight: 300; margin-bottom: 24px; color: var(--emerald-300); }
+  .cover-logo strong { font-weight: 800; color: #fff; }
+  .cover h1 { font-size: 34px; font-weight: 800; color: #fff; margin-bottom: 12px; line-height: 1.15; max-width: 480px; }
+  .cover-subtitle { font-size: 14px; color: rgba(255,255,255,0.7); font-weight: 400; max-width: 440px; line-height: 1.55; }
+  .cover-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
+  .cover-stat { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 16px 14px; }
+  .cover-stat .stat-num { font-family: 'JetBrains Mono', monospace; font-size: 22px; font-weight: 700; color: var(--emerald-300); display: block; margin-bottom: 4px; }
+  .cover-stat .stat-label { font-size: 8.5px; color: rgba(255,255,255,0.55); font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1.3; }
+  .cover-footer-inner { display: flex; justify-content: space-between; align-items: center; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.08); }
+  .accent-bar { height: 4px; background: linear-gradient(90deg, var(--emerald-700), var(--emerald-500), var(--emerald-300)); border-radius: 2px; margin-bottom: 20px; }
+  .accent-line { height: 2px; width: 48px; background: linear-gradient(90deg, var(--emerald-700), var(--emerald-300)); border-radius: 1px; margin-bottom: 12px; }
+  .section-num { font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700; color: var(--emerald-700); margin-bottom: 2px; letter-spacing: 1px; }
+  .section-desc { font-size: 10.5px; color: var(--text-muted); margin-bottom: 16px; line-height: 1.6; }
+  table { width: 100%; border-collapse: collapse; font-size: 9px; margin-bottom: 14px; }
+  th { background: var(--emerald-50); color: var(--emerald-700); font-weight: 600; text-align: left; padding: 7px 10px; font-size: 8.5px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid var(--emerald-300); }
+  td { padding: 7px 10px; border-bottom: 1px solid var(--bg-border); color: var(--text-body); vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  td.num, th.num { font-family: 'JetBrains Mono', monospace; text-align: right; }
+  tr.total-row td { font-weight: 700; color: var(--text-dark); border-top: 2px solid var(--emerald-500); background: var(--emerald-50); }
+  .stat-grid { display: grid; gap: 10px; margin-bottom: 14px; }
+  .stat-grid.cols-4 { grid-template-columns: repeat(4, 1fr); }
+  .stat-grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
+  .stat-grid.cols-2 { grid-template-columns: repeat(2, 1fr); }
+  .stat-card { background: var(--bg-light); border: 1px solid var(--bg-border); border-radius: 8px; padding: 14px; text-align: center; }
+  .stat-card .stat-num { font-family: 'JetBrains Mono', monospace; font-size: 20px; font-weight: 700; color: var(--text-dark); display: block; margin-bottom: 4px; line-height: 1.1; }
+  .stat-card .stat-label { font-size: 8px; color: var(--text-muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1.3; }
+  .stat-card.accent { background: linear-gradient(135deg, var(--emerald-50), #d1fae5); border-color: var(--emerald-300); }
+  .stat-card.accent .stat-num { color: var(--emerald-700); }
+  .stat-card.green { background: var(--emerald-50); border-color: var(--emerald-300); }
+  .stat-card.green .stat-num { color: var(--emerald-700); }
+  .stat-card.red { background: var(--coral-50); border-color: var(--coral-400); }
+  .stat-card.red .stat-num { color: var(--coral-500); }
+  .stat-card.blue { background: var(--sky-50); border-color: var(--sky-400); }
+  .stat-card.blue .stat-num { color: var(--sky-500); }
+  .stat-card.amber { background: var(--amber-50); border-color: var(--amber-400); }
+  .stat-card.amber .stat-num { color: var(--amber-500); }
+  .callout { background: var(--emerald-50); border-left: 4px solid var(--emerald-500); border-radius: 0 8px 8px 0; padding: 14px 16px; margin-bottom: 14px; font-size: 9.5px; line-height: 1.65; color: var(--text-body); }
+  .callout strong { color: var(--text-dark); }
+  .callout-green { background: var(--emerald-50); border-left: 4px solid var(--emerald-500); border-radius: 0 8px 8px 0; padding: 14px 16px; margin-bottom: 14px; font-size: 9.5px; line-height: 1.65; }
+  .callout-green strong { color: var(--emerald-700); }
+  .callout-red { background: var(--coral-50); border-left: 4px solid var(--coral-500); border-radius: 0 8px 8px 0; padding: 14px 16px; margin-bottom: 14px; font-size: 9.5px; line-height: 1.65; }
+  .callout-red strong { color: var(--coral-500); }
+  .callout-sky { background: var(--sky-50); border-left: 4px solid var(--sky-500); border-radius: 0 8px 8px 0; padding: 14px 16px; margin-bottom: 14px; font-size: 9.5px; line-height: 1.65; }
+  .callout-sky strong { color: #0369A1; }
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 14px; }
+  .cols-3-2 { display: grid; grid-template-columns: 3fr 2fr; gap: 16px; margin-bottom: 14px; }
+  .cols-2-3 { display: grid; grid-template-columns: 2fr 3fr; gap: 16px; margin-bottom: 14px; }
+  .page-footer { position: absolute; bottom: 0; left: 0; right: 0; padding: 10px 22mm; display: flex; justify-content: space-between; align-items: center; font-size: 8px; color: var(--text-light); border-top: 1px solid var(--bg-border); }
+  .page-footer .footer-logo { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 10px; font-weight: 300; color: var(--text-light); }
+  .page-footer .footer-logo strong { font-weight: 700; color: var(--emerald-500); }
+  .page-footer .footer-page { font-family: 'JetBrains Mono', monospace; font-size: 8px; color: var(--text-light); }
+  .toc-list { list-style: none; margin-bottom: 14px; }
+  .toc-item { display: flex; align-items: baseline; padding: 9px 0; border-bottom: 1px solid var(--bg-border); }
+  .toc-item:last-child { border-bottom: none; }
+  .toc-num { font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; color: var(--emerald-700); width: 36px; flex-shrink: 0; }
+  .toc-title { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 11.5px; font-weight: 600; color: var(--text-dark); flex: 1; }
+  .toc-page { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--text-muted); margin-left: 12px; }
+  .tag { display: inline-block; font-size: 7.5px; font-weight: 600; padding: 2px 7px; border-radius: 4px; margin-right: 4px; margin-top: 4px; letter-spacing: 0.2px; }
+  .tag-emerald { background: var(--emerald-50); color: var(--emerald-700); border: 1px solid #a7f3d0; }
+  .tag-sky { background: var(--sky-50); color: #0369A1; border: 1px solid #bae6fd; }
+  .tag-amber { background: var(--amber-50); color: #B45309; border: 1px solid #fde68a; }
+  .tag-rose { background: var(--coral-50); color: #BE123C; border: 1px solid #fecdd3; }
+  .tag-purple { background: var(--purple-50); color: #6D28D9; border: 1px solid #ddd6fe; }
+  .tag-teal { background: var(--teal-50); color: #0F766E; border: 1px solid #99f6e4; }
+  .feature-card { border-radius: 8px; padding: 14px; border: 1px solid var(--bg-border); background: #fff; margin-bottom: 8px; }
+  .feature-card h4 { font-size: 11px; margin-bottom: 4px; }
+  .feature-card p { font-size: 8.5px; line-height: 1.5; color: var(--text-muted); margin-bottom: 6px; }
+  .feature-card.fc-emerald { border-left: 3px solid var(--emerald-500); background: var(--emerald-50); }
+  .feature-card.fc-emerald h4 { color: var(--emerald-700); }
+  .feature-card.fc-sky { border-left: 3px solid var(--sky-500); background: var(--sky-50); }
+  .feature-card.fc-sky h4 { color: #0369A1; }
+  .feature-card.fc-amber { border-left: 3px solid var(--amber-500); background: var(--amber-50); }
+  .feature-card.fc-amber h4 { color: #B45309; }
+  .feature-card.fc-rose { border-left: 3px solid var(--coral-500); background: var(--coral-50); }
+  .feature-card.fc-rose h4 { color: #BE123C; }
+  .feature-card.fc-purple { border-left: 3px solid var(--purple-500); background: var(--purple-50); }
+  .feature-card.fc-purple h4 { color: #6D28D9; }
+  .feature-card.fc-teal { border-left: 3px solid var(--teal-500); background: var(--teal-50); }
+  .feature-card.fc-teal h4 { color: #0F766E; }
+  .phase-box { border-radius: 8px; padding: 12px 14px; margin-bottom: 10px; border: 1px solid var(--bg-border); background: var(--bg-light); }
+  .phase-box h4 { font-size: 10.5px; color: var(--emerald-700); margin-bottom: 4px; }
+  .phase-box ul { font-size: 8.5px; line-height: 1.55; padding-left: 14px; color: var(--text-body); }
+  .phase-box .milestone { font-size: 8px; font-weight: 600; color: var(--emerald-700); margin-top: 4px; }
+  .gantt-row { display: flex; align-items: center; margin-bottom: 5px; font-size: 7.5px; }
+  .gantt-label { width: 100px; flex-shrink: 0; font-weight: 500; color: var(--text-body); text-align: right; padding-right: 8px; font-size: 7.5px; }
+  .gantt-track { flex: 1; height: 14px; position: relative; border-left: 1px solid var(--bg-border); }
+  .gantt-bar { position: absolute; height: 10px; top: 2px; border-radius: 3px; opacity: 0.85; }
+  .fin-total { background: linear-gradient(135deg, var(--emerald-50), #d1fae5); border: 2px solid var(--emerald-500); border-radius: 8px; padding: 12px 16px; text-align: center; margin-bottom: 14px; }
+  .fin-total .stat-num { font-family: 'JetBrains Mono', monospace; font-size: 28px; font-weight: 700; color: var(--emerald-700); }
+  .fin-total .stat-label { font-size: 9px; color: var(--text-muted); font-weight: 500; }
+  ul.feature-list { list-style: none; padding: 0; font-size: 9px; line-height: 1.6; }
+  ul.feature-list li { padding: 3px 0 3px 14px; position: relative; }
+  ul.feature-list li::before { content: ''; position: absolute; left: 0; top: 8px; width: 6px; height: 6px; background: var(--emerald-500); border-radius: 50%; }
+  ul.check-list { list-style: none; padding: 0; font-size: 9px; line-height: 1.6; }
+  ul.check-list li { padding: 2px 0 2px 16px; position: relative; }
+  ul.check-list li::before { content: '\2713'; position: absolute; left: 0; color: var(--emerald-500); font-weight: 700; }
+  .mb-4 { margin-bottom: 4px; } .mb-8 { margin-bottom: 8px; } .mb-12 { margin-bottom: 12px; }
+  .mb-14 { margin-bottom: 14px; } .mb-16 { margin-bottom: 16px; } .mb-20 { margin-bottom: 20px; }
+  .text-sm { font-size: 9px; } .text-xs { font-size: 8px; } .text-muted { color: var(--text-muted); }
+  .code-block { background: #1e293b; color: #e2e8f0; border-radius: 6px; padding: 10px 12px; font-family: 'JetBrains Mono', monospace; font-size: 8px; line-height: 1.6; margin-bottom: 12px; white-space: pre; overflow: hidden; }
+  .code-block .keyword { color: var(--emerald-300); }
+  .code-block .comment { color: #64748b; }
+  .code-block .string { color: var(--amber-400); }
+</style>
+</head>
+<body>
+
+<!-- PAGE 1: COVER -->
+<div class="cover" style="page-break-after:always;">
+  <div class="cover-row"><div class="cover-cell-top"><div class="cover-classification">CONFIDENTIAL &mdash; TECHNICAL STRATEGY DOCUMENT</div></div></div>
+  <div class="cover-row">
+    <div class="cover-cell">
+      <div class="cover-logo">green<strong>light</strong> <span style="font-size:12px;font-weight:400;color:rgba(255,255,255,0.4);letter-spacing:0.04em;">by Medivis</span></div>
+      <h1>EHR Integration Strategy<br>&amp; Technical Roadmap</h1>
+      <div class="cover-subtitle">SMART on FHIR, Da Vinci Implementation Guides, Multi-Vendor EHR Marketplace Strategy &amp; Security Compliance</div>
+    </div>
+  </div>
+  <div class="cover-row">
+    <div class="cover-cell-bot">
+      <div class="cover-stats">
+        <div class="cover-stat"><span class="stat-num">6</span><span class="stat-label">Major EHR Vendors</span></div>
+        <div class="cover-stat"><span class="stat-num">FHIR R4</span><span class="stat-label">Universal Standard</span></div>
+        <div class="cover-stat"><span class="stat-num">Jan 2027</span><span class="stat-label">CMS API Mandate</span></div>
+        <div class="cover-stat"><span class="stat-num">6-12mo</span><span class="stat-label">First EHR Go-Live</span></div>
+      </div>
+      <div class="cover-footer-inner">
+        <span>Prepared: March 2026</span>
+        <span>Classification: Confidential &mdash; Version 1.0</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PAGE 2: TABLE OF CONTENTS -->
+<div class="page">
+  <div class="accent-bar"></div>
+  <div class="section-num">CONTENTS</div>
+  <h2 style="margin-bottom: 24px;">Table of Contents</h2>
+  <ul class="toc-list">
+    <li class="toc-item"><span class="toc-num">01</span><span class="toc-title">Executive Summary &amp; Current State</span><span class="toc-page">03</span></li>
+    <li class="toc-item"><span class="toc-num">02</span><span class="toc-title">SMART on FHIR: The Universal Foundation</span><span class="toc-page">04</span></li>
+    <li class="toc-item"><span class="toc-num">03</span><span class="toc-title">Da Vinci Implementation Guides: CRD, DTR, PAS</span><span class="toc-page">05</span></li>
+    <li class="toc-item"><span class="toc-num">04</span><span class="toc-title">FHIR Resources for Prior Authorization</span><span class="toc-page">06</span></li>
+    <li class="toc-item"><span class="toc-num">05</span><span class="toc-title">EHR Vendor Marketplace Strategy</span><span class="toc-page">07</span></li>
+    <li class="toc-item"><span class="toc-num">06</span><span class="toc-title">Epic Integration: Step-by-Step</span><span class="toc-page">08</span></li>
+    <li class="toc-item"><span class="toc-num">07</span><span class="toc-title">Implementation Phases &amp; Timeline</span><span class="toc-page">09</span></li>
+    <li class="toc-item"><span class="toc-num">08</span><span class="toc-title">Security &amp; Compliance Requirements</span><span class="toc-page">10</span></li>
+    <li class="toc-item"><span class="toc-num">09</span><span class="toc-title">Legal Agreements &amp; Vendor Contracts</span><span class="toc-page">11</span></li>
+    <li class="toc-item"><span class="toc-num">10</span><span class="toc-title">Cost Estimates &amp; Budget</span><span class="toc-page">12</span></li>
+  </ul>
+  <div class="page-footer"><span class="footer-logo">green<strong>light</strong> <span style="font-size:7px;color:var(--text-light);font-weight:400;">by Medivis</span></span><span class="footer-page">02</span></div>
+</div>
+
+<!-- PAGE 3: EXECUTIVE SUMMARY -->
+<div class="page">
+  <div class="accent-bar"></div>
+  <div class="section-num">SECTION 01</div>
+  <h2>Executive Summary &amp; Current State</h2>
+  <div class="section-desc">GreenLight's core PA workflow and clinical intelligence layer are built. EHR integration is the critical next phase to move from standalone web app to embedded clinical tool.</div>
+
+  <div class="callout mb-12">
+    <strong>Current state:</strong> GreenLight is a fully functional PA automation platform with a 5-step submission wizard, ACR Appropriateness Criteria matching (11,975 guidelines), pre-submission audit with denial pattern warnings, and a complete dashboard/analytics suite. However, all data entry is manual &mdash; no EHR connectivity, no FHIR libraries, no SMART on FHIR implementation. This document lays out the path from standalone to EHR-embedded.
+  </div>
+
+  <h3 class="mb-8">What Exists vs. What Needs to Be Built</h3>
+  <div class="cols">
+    <div>
+      <h4 style="color:var(--emerald-700); margin-bottom:6px;">Built &amp; Live Today</h4>
+      <ul class="check-list">
+        <li>5-step PA submission wizard with validation</li>
+        <li>Patient, insurance &amp; payer management</li>
+        <li>11,975 ACR guidelines with risk scoring</li>
+        <li>Pre-submission audit + denial pattern warnings</li>
+        <li>21 payer clinical policies (5 major payers)</li>
+        <li>Document upload with categorization</li>
+        <li>Denial tracking and appeal filing</li>
+        <li>Full analytics dashboard with export</li>
+        <li>RBM vendor routing (EviCore, Carelon, NIA)</li>
+        <li>Production deployment (Vercel + Neon Postgres)</li>
+      </ul>
+    </div>
+    <div>
+      <h4 style="color:var(--coral-500); margin-bottom:6px;">Not Yet Built</h4>
+      <ul class="feature-list" style="font-size:8.5px;">
+        <li>SMART on FHIR launch + OAuth 2.0 flow</li>
+        <li>FHIR R4 data extraction (Patient, Coverage, etc.)</li>
+        <li>Da Vinci CRD (CDS Hooks for "is PA required?")</li>
+        <li>Da Vinci DTR (auto-populate documentation from EHR)</li>
+        <li>Da Vinci PAS (electronic PA submission to payers)</li>
+        <li>Epic App Showroom listing</li>
+        <li>Oracle Health / Cerner Ignite integration</li>
+        <li>PACS/RIS direct integration</li>
+        <li>Mirth Connect / integration engine</li>
+        <li>SOC 2 Type II certification</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3 class="mb-4">The Build-Once, Deploy-Many Advantage</h3>
+  <div class="callout-green">
+    <strong>SMART on FHIR is the universal standard.</strong> By building a single SMART on FHIR integration layer, GreenLight can launch from inside Epic, Oracle Health, MEDITECH, athenahealth, Veradigm, and eClinicalWorks. The core OAuth + FHIR data extraction is identical across vendors. Vendor-specific work is limited to sandbox testing, certification, and per-site activation. This is a one-time investment that unlocks the entire US hospital market.
+  </div>
+
+  <div class="stat-grid cols-4">
+    <div class="stat-card accent"><span class="stat-num">~38%</span><span class="stat-label">Epic US Hospital<br>Market Share</span></div>
+    <div class="stat-card blue"><span class="stat-num">~25%</span><span class="stat-label">Oracle Health<br>Market Share</span></div>
+    <div class="stat-card green"><span class="stat-num">~16%</span><span class="stat-label">MEDITECH<br>Market Share</span></div>
+    <div class="stat-card amber"><span class="stat-num">450+</span><span class="stat-label">Epic FHIR R4<br>API Endpoints</span></div>
+  </div>
+
+  <div class="page-footer"><span class="footer-logo">green<strong>light</strong> <span style="font-size:7px;color:var(--text-light);font-weight:400;">by Medivis</span></span><span class="footer-page">03</span></div>
+</div>
+
+<!-- PAGE 4: SMART ON FHIR -->
+<div class="page">
+  <div class="accent-bar"></div>
+  <div class="section-num">SECTION 02</div>
+  <h2>SMART on FHIR: The Universal Foundation</h2>
+  <div class="section-desc">SMART (Substitutable Medical Applications, Reusable Technologies) on FHIR is the ONC-mandated standard for launching third-party apps inside any compliant EHR. Current version: v2.2.0.</div>
+
+  <h3 class="mb-4">Two Launch Patterns</h3>
+  <div class="cols mb-12">
+    <div class="feature-card fc-emerald">
+      <h4>EHR Launch (Primary)</h4>
+      <p>App launches from within an existing EHR session. The EHR passes an opaque launch context handle; the app inherits the user's session context (current patient, encounter, practitioner). This is the primary integration mode for clinical workflows.</p>
+      <span class="tag tag-emerald">Point-of-order</span> <span class="tag tag-emerald">Context-aware</span>
+    </div>
+    <div class="feature-card fc-sky">
+      <h4>Standalone Launch</h4>
+      <p>App launches independently from a browser or mobile device, then authenticates against the EHR's FHIR server. Used for administrative workflows, batch processing, and non-clinical users.</p>
+      <span class="tag tag-sky">Admin workflows</span> <span class="tag tag-sky">Batch processing</span>
+    </div>
+  </div>
+
+  <h3 class="mb-4">OAuth 2.0 + PKCE Authentication Flow</h3>
+  <div class="code-block"><span class="comment">// 1. Discovery</span>
+GET {fhir_base}/.well-known/smart-configuration
+<span class="comment">// Returns: authorization_endpoint, token_endpoint, scopes_supported</span>
+
+<span class="comment">// 2. Authorization Request</span>
+GET {authorization_endpoint}?
+  response_type=code&amp;
+  client_id={app_id}&amp;
+  redirect_uri={callback}&amp;
+  scope=<span class="string">launch patient/Patient.read patient/Coverage.read</span>&amp;
+  state={random}&amp;
+  code_challenge={pkce_challenge}&amp;
+  code_challenge_method=S256
+
+<span class="comment">// 3. Token Exchange (after user authorizes)</span>
+POST {token_endpoint}
+  grant_type=authorization_code&amp;
+  code={auth_code}&amp;
+  code_verifier={pkce_verifier}
+
+<span class="comment">// 4. Returns: access_token, refresh_token, patient (context ID)</span></div>
+
+  <h3 class="mb-4">FHIR Scopes GreenLight Will Request</h3>
+  <table>
+    <thead><tr><th>Scope</th><th>Purpose</th><th>Priority</th></tr></thead>
+    <tbody>
+      <tr><td><code>launch</code></td><td>Receive EHR launch context (patient, encounter)</td><td><span class="tag tag-emerald">Required</span></td></tr>
+      <tr><td><code>patient/Patient.read</code></td><td>Auto-fill patient demographics (name, DOB, MRN, gender)</td><td><span class="tag tag-emerald">Required</span></td></tr>
+      <tr><td><code>patient/Coverage.read</code></td><td>Auto-fill insurance/payer info (plan, member ID, group)</td><td><span class="tag tag-emerald">Required</span></td></tr>
+      <tr><td><code>patient/Condition.read</code></td><td>Pre-populate ICD-10 diagnosis codes from patient history</td><td><span class="tag tag-emerald">Required</span></td></tr>
+      <tr><td><code>patient/ServiceRequest.read</code></td><td>Read the procedure/imaging order triggering PA</td><td><span class="tag tag-emerald">Required</span></td></tr>
+      <tr><td><code>patient/DocumentReference.read</code></td><td>Pull clinical notes for documentation package</td><td><span class="tag tag-sky">Phase 2</span></td></tr>
+      <tr><td><code>patient/Observation.read</code></td><td>Extract lab values for clinical justification</td><td><span class="tag tag-sky">Phase 2</span></td></tr>
+      <tr><td><code>user/Practitioner.read</code></td><td>Auto-fill ordering/rendering physician details</td><td><span class="tag tag-amber">Phase 3</span></td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout">
+    <strong>Key technical decision:</strong> Use the <code>fhirclient</code> JavaScript library (maintained by SMART Health IT / Boston Children's Hospital) for the OAuth launch flow, and <code>@smile-cdr/fhirts</code> for TypeScript FHIR R4 type definitions. These are the standard libraries used by the SMART on FHIR ecosystem.
+  </div>
+
+  <div class="page-footer"><span class="footer-logo">green<strong>light</strong> <span style="font-size:7px;color:var(--text-light);font-weight:400;">by Medivis</span></span><span class="footer-page">04</span></div>
+</div>
+
+<!-- PAGE 5: DA VINCI IGs -->
+<div class="page">
+  <div class="accent-bar"></div>
+  <div class="section-num">SECTION 03</div>
+  <h2>Da Vinci Implementation Guides: CRD, DTR, PAS</h2>
+  <div class="section-desc">The HL7 Da Vinci Project defines the three-part electronic Prior Authorization (ePA) framework. These are the standards that CMS-0057-F recommends payers adopt by January 2027.</div>
+
+  <div class="callout-sky mb-12">
+    <strong>The integrated workflow:</strong> CRD detects PA requirement at point of order &rarr; DTR auto-collects documentation from EHR &rarr; PAS submits the complete PA request electronically &rarr; Payer responds with approval/denial in real-time. This eliminates fax, phone, and portal submissions entirely.
+  </div>
+
+  <div class="cols mb-12">
+    <div>
+      <div class="feature-card fc-emerald mb-8">
+        <h4>CRD &mdash; Coverage Requirements Discovery</h4>
+        <p>Real-time "is PA required?" check at the point of order. Uses CDS Hooks to intercept clinical workflow events inside the EHR.</p>
+        <p><strong>Mandatory hooks:</strong> <code>appointment-book</code>, <code>orders-sign</code>, <code>order-dispatch</code></p>
+        <p><strong>Returns:</strong> Coverage status, PA requirement (no-auth / auth-needed / satisfied), documentation requirements, payer-specific rules</p>
+        <p><strong>GreenLight advantage:</strong> Our existing ACR criteria engine (11,975 guidelines) and payer policy database power the CRD response. This intelligence is already built &mdash; CRD is the delivery mechanism.</p>
+        <span class="tag tag-emerald">CDS Hooks</span> <span class="tag tag-emerald">Real-time</span> <span class="tag tag-emerald">v2.2.1 STU</span>
+      </div>
+
+      <div class="feature-card fc-amber mb-8">
+        <h4>DTR &mdash; Documentation Templates &amp; Rules</h4>
+        <p>Auto-populates documentation requirements by pulling clinical data directly from the EHR. Payers publish FHIR Questionnaire resources with embedded CQL logic.</p>
+        <p><strong>Workflow:</strong> SMART on FHIR app presents Questionnaire &rarr; CQL engine auto-fills answers from EHR data &rarr; clinician confirms &rarr; QuestionnaireResponse generated</p>
+        <p><strong>Data auto-populated:</strong> Clinical notes, lab values, prior imaging results, medication history, diagnosis history, treatment records</p>
+        <span class="tag tag-amber">SMART launch</span> <span class="tag tag-amber">CQL engine</span> <span class="tag tag-amber">v2.2.0 STU</span>
+      </div>
+    </div>
+    <div>
+      <div class="feature-card fc-sky mb-8">
+        <h4>PAS &mdash; Prior Authorization Support</h4>
+        <p>Electronic submission of PA requests from EHR to payer via the <code>Claim/$submit</code> FHIR operation. Replaces fax, phone, and portal submissions entirely.</p>
+        <p><strong>Submission bundle:</strong> Claim + Patient + Coverage + ServiceRequest + Practitioner + Organization + Condition + Observation + QuestionnaireResponse</p>
+        <p><strong>Response types:</strong></p>
+        <ul class="feature-list" style="font-size:8px;">
+          <li><strong>Approved</strong> &mdash; with authorization number</li>
+          <li><strong>Denied</strong> &mdash; with specific reason code</li>
+          <li><strong>Pended</strong> &mdash; with request for additional info</li>
+        </ul>
+        <p><strong>X12 compatibility:</strong> Supports conversion to/from X12 278 for backward compatibility with payers not yet on FHIR.</p>
+        <span class="tag tag-sky">$submit</span> <span class="tag tag-sky">Real-time</span> <span class="tag tag-sky">v2.1.0 STU</span>
+      </div>
+
+      <div class="callout-green" style="margin-top:0;">
+        <strong>Why this matters for GreenLight:</strong> Today, our PA wizard requires 5 steps of manual data entry. With CRD + DTR + PAS, the workflow becomes: clinician orders an MRI &rarr; CRD confirms PA is needed &rarr; DTR auto-fills 90%+ of the documentation &rarr; PAS submits instantly. The clinician's only action is placing the order. Everything else is automated.
+      </div>
+    </div>
+  </div>
+
+  <div class="page-footer"><span class="footer-logo">green<strong>light</strong> <span style="font-size:7px;color:var(--text-light);font-weight:400;">by Medivis</span></span><span class="footer-page">05</span></div>
+</div>
+
+<!-- PAGE 6: FHIR RESOURCES -->
+<div class="page">
+  <div class="accent-bar"></div>
+  <div class="section-num">SECTION 04</div>
+  <h2>FHIR Resources for Prior Authorization</h2>
+  <div class="section-desc">The FHIR R4 resources that compose a Prior Authorization Support (PAS) submission bundle, and how each maps to GreenLight's existing data model.</div>
+
+  <h3 class="mb-4">PAS Bundle Structure</h3>
+  <table>
+    <thead><tr><th>FHIR Resource</th><th>Role in PA</th><th>GreenLight Mapping</th><th>Auto-Fill Source</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Claim</strong> (use: preauth)</td><td>Primary submission resource; first entry in Bundle</td><td>PARequest model</td><td>Generated from wizard data</td></tr>
+      <tr><td><strong>ClaimResponse</strong></td><td>Payer response (approval/denial/pend + auth number)</td><td>PARequest status + Denial model</td><td>From payer API</td></tr>
+      <tr><td><strong>Patient</strong></td><td>Patient demographics</td><td>Patient model</td><td>EHR context (launch)</td></tr>
+      <tr><td><strong>Coverage</strong></td><td>Insurance/payer information</td><td>PatientInsurance model</td><td>EHR FHIR API</td></tr>
+      <tr><td><strong>ServiceRequest</strong></td><td>The procedure/imaging order requiring PA</td><td>CPT codes + description</td><td>EHR order context</td></tr>
+      <tr><td><strong>Practitioner</strong></td><td>Ordering and rendering provider</td><td>Ordering/rendering physician fields</td><td>EHR user context</td></tr>
+      <tr><td><strong>Organization</strong></td><td>Requesting facility</td><td>Organization model</td><td>EHR org context</td></tr>
+      <tr><td><strong>Condition</strong></td><td>Diagnosis (ICD-10) supporting medical necessity</td><td>ICD-10 codes in wizard Step 2</td><td>EHR problem list</td></tr>
+      <tr><td><strong>Observation</strong></td><td>Lab values, vital signs supporting justification</td><td>Clinical notes attachment</td><td>EHR lab results</td></tr>
+      <tr><td><strong>DocumentReference</strong></td><td>Clinical notes, imaging reports, prior records</td><td>Document upload model</td><td>EHR document store</td></tr>
+      <tr><td><strong>QuestionnaireResponse</strong></td><td>Completed payer documentation requirements (from DTR)</td><td>New &mdash; needs implementation</td><td>DTR auto-fill + clinician</td></tr>
+    </tbody>
+  </table>
+
+  <h3 class="mb-4">Data Auto-Fill: What Changes for End Users</h3>
+  <div class="cols">
+    <div>
+      <h4 style="color:var(--coral-500); margin-bottom:6px;">Today (Manual Entry)</h4>
+      <table>
+        <thead><tr><th>Wizard Step</th><th>Manual Fields</th></tr></thead>
+        <tbody>
+          <tr><td>Step 1: Patient</td><td>Name, DOB, MRN, gender, insurance</td></tr>
+          <tr><td>Step 2: Service</td><td>Category, CPT, ICD-10, description</td></tr>
+          <tr><td>Step 3: Insurance</td><td>Payer, physician, facility, date</td></tr>
+          <tr><td>Step 4: Docs</td><td>Type clinical notes, upload files</td></tr>
+          <tr><td>Step 5: Review</td><td>Manual review of all fields</td></tr>
+        </tbody>
+      </table>
+      <p class="text-xs text-muted">Average time per PA: 20&ndash;45 minutes</p>
+    </div>
+    <div>
+      <h4 style="color:var(--emerald-700); margin-bottom:6px;">With EHR Integration (Auto-Fill)</h4>
+      <table>
+        <thead><tr><th>Wizard Step</th><th>Auto-Filled From</th></tr></thead>
+        <tbody>
+          <tr><td>Step 1: Patient</td><td><span class="tag tag-emerald">FHIR Patient + Coverage</span></td></tr>
+          <tr><td>Step 2: Service</td><td><span class="tag tag-emerald">FHIR ServiceRequest + Condition</span></td></tr>
+          <tr><td>Step 3: Insurance</td><td><span class="tag tag-emerald">FHIR Coverage + Practitioner</span></td></tr>
+          <tr><td>Step 4: Docs</td><td><span class="tag tag-emerald">DTR + DocumentReference</span></td></tr>
+          <tr><td>Step 5: Review</td><td><span class="tag tag-emerald">ACR audit (already built)</span></td></tr>
+        </tbody>
+      </table>
+      <p class="text-xs text-muted">Target time per PA: <strong>45 seconds</strong> (confirm + submit)</p>
+    </div>
+  </div>
+
+  <div class="fin-total">
+    <span class="stat-num" style="font-size:20px;">20 min &rarr; 45 sec</span>
+    <span class="stat-label">Per-PA processing time reduction with full EHR integration</span>
+  </div>
+
+  <div class="page-footer"><span class="footer-logo">green<strong>light</strong> <span style="font-size:7px;color:var(--text-light);font-weight:400;">by Medivis</span></span><span class="footer-page">06</span></div>
+</div>
+
+<!-- PAGE 7: EHR VENDOR MARKETPLACE STRATEGY -->
+<div class="page">
+  <div class="accent-bar"></div>
+  <div class="section-num">SECTION 05</div>
+  <h2>EHR Vendor Marketplace Strategy</h2>
+  <div class="section-desc">All major EHR vendors now support FHIR R4 and SMART on FHIR per ONC 21st Century Cures Act requirements. The integration surface is standardized.</div>
+
+  <table>
+    <thead><tr><th>EHR Vendor</th><th class="num">Market Share</th><th>Marketplace</th><th>FHIR Support</th><th class="num">Listing Cost</th><th>Key Requirement</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Epic</strong></td><td class="num">~38%</td><td>Showroom / Connection Hub</td><td>FHIR R4, 450+ endpoints</td><td class="num">~$500/yr</td><td>Customer sponsor required</td></tr>
+      <tr><td><strong>Oracle Health</strong></td><td class="num">~25%</td><td>App Gallery (Ignite APIs)</td><td>FHIR R4 (Ignite)</td><td class="num">Free portal</td><td>4&ndash;8 week validation</td></tr>
+      <tr><td><strong>MEDITECH</strong></td><td class="num">~16%</td><td>Alliance Program</td><td>FHIR R4, US Core</td><td class="num">Not public</td><td>Alliance membership</td></tr>
+      <tr><td><strong>athenahealth</strong></td><td class="num">Large ambulatory</td><td>Marketplace (800+ apps)</td><td>FHIR R4 (ONC HTI-1)</td><td class="num">Free</td><td>HITRUST self-assess in 90d</td></tr>
+      <tr><td><strong>Veradigm</strong></td><td class="num">Mid-market</td><td>App Expo</td><td>FHIR R4, SMART v2.0</td><td class="num">Free portal</td><td>Veradigm certification</td></tr>
+      <tr><td><strong>eClinicalWorks</strong></td><td class="num">Large ambulatory</td><td>Developer Portal</td><td>FHIR R4, ONC certified</td><td class="num">Free</td><td>Portal registration</td></tr>
+    </tbody>
+  </table>
+
+  <h3 class="mb-4">Recommended Sequencing</h3>
+  <div class="cols">
+    <div>
+      <div class="feature-card fc-emerald mb-8">
+        <h4>Priority 1: Epic (Months 1&ndash;12)</h4>
+        <p>Largest market share (~38%). Build SMART on FHIR app in Epic sandbox. Find pilot customer (imaging center running Epic). Get listed on Connection Hub. This single integration unlocks the majority of US hospitals.</p>
+        <p><strong>Timeline:</strong> 6&ndash;12 months to first production go-live</p>
+        <p><strong>Dev cost:</strong> $200K&ndash;$400K including labor</p>
+        <span class="tag tag-emerald">First mover</span>
+      </div>
+      <div class="feature-card fc-sky mb-8">
+        <h4>Priority 2: Oracle Health (Months 9&ndash;18)</h4>
+        <p>Second largest share (~25%). SMART on FHIR core transfers directly. Ignite APIs use same FHIR R4 standard. Primarily configuration + vendor-specific testing.</p>
+        <p><strong>Incremental dev cost:</strong> $35K&ndash;$70K (read-only), $130K&ndash;$300K (bidirectional)</p>
+        <span class="tag tag-sky">Reuse SMART core</span>
+      </div>
+    </div>
+    <div>
+      <div class="feature-card fc-amber mb-8">
+        <h4>Priority 3: athenahealth (Months 12&ndash;18)</h4>
+        <p>Largest ambulatory EHR install base. Free marketplace listing, no interface fees. Excellent for imaging centers and surgical centers that are our primary GTM target.</p>
+        <p><strong>Requirement:</strong> HITRUST self-assessment within 90 days of GA</p>
+        <span class="tag tag-amber">Ambulatory focus</span>
+      </div>
+      <div class="feature-card fc-purple mb-8">
+        <h4>Priority 4: MEDITECH + Others (Months 15&ndash;24)</h4>
+        <p>MEDITECH serves ~16% of hospitals. Alliance Program membership required. Greenfield Workspace sandbox available. Veradigm and eClinicalWorks round out coverage.</p>
+        <span class="tag tag-purple">Full coverage</span>
+      </div>
+      <div class="callout" style="margin-top:0;">
+        <strong>Acceleration option:</strong> Use <strong>Redox</strong> or <strong>Health Gorilla</strong> as middleware. Single API abstracts EHR differences. Costs ~$1K&ndash;5K/month but can cut multi-EHR development time by 50&ndash;70%. Consider for Priority 3&ndash;4 vendors.
+      </div>
+    </div>
+  </div>
+
+  <div class="page-footer"><span class="footer-logo">green<strong>light</strong> <span style="font-size:7px;color:var(--text-light);font-weight:400;">by Medivis</span></span><span class="footer-page">07</span></div>
+</div>
+
+<!-- PAGE 8: EPIC STEP-BY-STEP -->
+<div class="page">
+  <div class="accent-bar"></div>
+  <div class="section-num">SECTION 06</div>
+  <h2>Epic Integration: Step-by-Step</h2>
+  <div class="section-desc">Epic has ~38% of US hospital market share and is the highest-priority EHR integration target. Here is the complete process from zero to production.</div>
+
+  <div class="cols">
+    <div>
+      <div class="phase-box">
+        <h4>Step 1: Developer Registration</h4>
+        <ul>
+          <li>Register at open.epic.com (free, immediate access)</li>
+          <li>Access FHIR documentation, sandboxes, and learning resources</li>
+          <li>Review Epic's 450+ FHIR R4 API endpoints across 55 resource types</li>
+        </ul>
+        <div class="milestone">Timeline: 1&ndash;2 days</div>
+      </div>
+      <div class="phase-box">
+        <h4>Step 2: App Registration &amp; Scoping</h4>
+        <ul>
+          <li>Define exact FHIR resources, scopes, and launch context</li>
+          <li>Choose EHR Launch (primary) + Standalone Launch (admin)</li>
+          <li>Register redirect URIs and configure PKCE</li>
+        </ul>
+        <div class="milestone">Timeline: 1 week</div>
+      </div>
+      <div class="phase-box">
+        <h4>Step 3: Sandbox Development</h4>
+        <ul>
+          <li>Build SMART on FHIR launch flow against Epic public sandbox</li>
+          <li>Implement OAuth 2.0 + PKCE token exchange</li>
+          <li>Test FHIR resource reads: Patient, Coverage, Condition, ServiceRequest</li>
+          <li>Build auto-fill mapping to GreenLight wizard steps</li>
+          <li>Validate against synthetic patient data</li>
+        </ul>
+        <div class="milestone">Timeline: 2&ndash;4 months</div>
+      </div>
+      <div class="phase-box">
+        <h4>Step 4: Customer Sponsorship</h4>
+        <ul>
+          <li>Find at least one Epic customer site willing to sponsor the app</li>
+          <li>Customer submits activation request on GreenLight's behalf</li>
+          <li>Target: early GreenLight imaging center customer running Epic</li>
+        </ul>
+        <div class="milestone">Timeline: 1&ndash;3 months (critical gate)</div>
+      </div>
+    </div>
+    <div>
+      <div class="phase-box">
+        <h4>Step 5: Epic Technical Review</h4>
+        <ul>
+          <li>Epic engineers review FHIR compliance and SMART implementation</li>
+          <li>Functionality, performance, and UX review</li>
+          <li>Must demonstrate proper scope handling and error cases</li>
+        </ul>
+        <div class="milestone">Timeline: 2&ndash;8 weeks</div>
+      </div>
+      <div class="phase-box">
+        <h4>Step 6: Security Validation</h4>
+        <ul>
+          <li>Penetration testing and vulnerability assessment</li>
+          <li>HIPAA compliance verification</li>
+          <li>TLS 1.2+ transport encryption</li>
+          <li>OAuth 2.0 with PKCE (mandatory)</li>
+          <li>AES-128+ encryption at rest</li>
+          <li>SOC 2 Type II report preferred (not always mandatory at this stage)</li>
+        </ul>
+        <div class="milestone">Timeline: 2&ndash;4 weeks</div>
+      </div>
+      <div class="phase-box">
+        <h4>Step 7: Connection Hub Listing</h4>
+        <ul>
+          <li>Execute agreements with Epic Vendor Services</li>
+          <li>Annual listing fee: ~$500/year</li>
+          <li>Listed in Showroom &rarr; visible to all Epic customers</li>
+        </ul>
+        <div class="milestone">Timeline: 1&ndash;2 weeks</div>
+      </div>
+      <div class="phase-box">
+        <h4>Step 8: Per-Site Activation</h4>
+        <ul>
+          <li>Each Epic customer individually activates GreenLight</li>
+          <li>Site-specific configuration and data mapping</li>
+          <li>User acceptance testing at each site</li>
+          <li>Go-live with monitoring and support</li>
+        </ul>
+        <div class="milestone">Timeline: 2&ndash;4 weeks per site</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout-red">
+    <strong>The critical gate is Step 4: Customer Sponsorship.</strong> You cannot get an Epic Showroom listing without a live customer. Start building relationships with Epic-running imaging centers now, even before the SMART on FHIR code is complete. The sponsorship process often takes longer than the technical development.
+  </div>
+
+  <div class="page-footer"><span class="footer-logo">green<strong>light</strong> <span style="font-size:7px;color:var(--text-light);font-weight:400;">by Medivis</span></span><span class="footer-page">08</span></div>
+</div>
+
+<!-- PAGE 9: IMPLEMENTATION PHASES -->
+<div class="page">
+  <div class="accent-bar"></div>
+  <div class="section-num">SECTION 07</div>
+  <h2>Implementation Phases &amp; Timeline</h2>
+  <div class="section-desc">A 6-phase roadmap from current state to multi-EHR, fully automated PA submission. Phases overlap to maximize velocity.</div>
+
+  <div class="cols mb-14">
+    <div>
+      <div class="phase-box">
+        <h4 style="color:var(--emerald-700);">Phase 0: Foundation (Weeks 1&ndash;4)</h4>
+        <ul>
+          <li>Add FHIR R4 libraries (fhirclient, @smile-cdr/fhirts)</li>
+          <li>Create SMART on FHIR launch endpoint (/launch)</li>
+          <li>Implement OAuth 2.0 + PKCE flow</li>
+          <li>Set up FHIR data extraction service layer</li>
+          <li>Begin SOC 2 Type II preparation (parallel)</li>
+        </ul>
+        <div class="milestone">Milestone: SMART launch working in sandbox</div>
+      </div>
+      <div class="phase-box">
+        <h4 style="color:#0369A1;">Phase 1: FHIR Data Auto-Fill (Weeks 2&ndash;8)</h4>
+        <ul>
+          <li>Map FHIR Patient &rarr; Step 1 patient fields</li>
+          <li>Map FHIR Coverage &rarr; Step 3 insurance fields</li>
+          <li>Map FHIR Condition &rarr; Step 2 ICD-10 codes</li>
+          <li>Map FHIR ServiceRequest &rarr; Step 2 CPT/procedure</li>
+          <li>Map FHIR Practitioner &rarr; Step 3 physician fields</li>
+        </ul>
+        <div class="milestone">Milestone: 80%+ of wizard auto-filled from EHR</div>
+      </div>
+      <div class="phase-box">
+        <h4 style="color:#B45309;">Phase 2: Da Vinci CRD (Weeks 6&ndash;12)</h4>
+        <ul>
+          <li>Build CDS Hooks service endpoint</li>
+          <li>Implement order-sign, appointment-book hooks</li>
+          <li>Connect to existing ACR criteria engine</li>
+          <li>Return PA requirement + documentation needs</li>
+        </ul>
+        <div class="milestone">Milestone: Real-time "is PA required?" in EHR</div>
+      </div>
+    </div>
+    <div>
+      <div class="phase-box">
+        <h4 style="color:#6D28D9;">Phase 3: Da Vinci DTR (Weeks 10&ndash;16)</h4>
+        <ul>
+          <li>Build FHIR Questionnaire renderer</li>
+          <li>Integrate CQL execution engine for auto-population</li>
+          <li>Pull clinical docs via DocumentReference</li>
+          <li>Generate QuestionnaireResponse for submission</li>
+        </ul>
+        <div class="milestone">Milestone: Auto-populated documentation package</div>
+      </div>
+      <div class="phase-box">
+        <h4 style="color:#BE123C;">Phase 4: Da Vinci PAS (Weeks 14&ndash;20)</h4>
+        <ul>
+          <li>Build FHIR Bundle assembly (Claim + supporting resources)</li>
+          <li>Implement Claim/$submit operation</li>
+          <li>Parse ClaimResponse for approval/denial/pend</li>
+          <li>Map responses to GreenLight status tracking</li>
+          <li>Add X12 278 fallback via Mirth Connect/Redox</li>
+        </ul>
+        <div class="milestone">Milestone: End-to-end electronic PA submission</div>
+      </div>
+      <div class="phase-box">
+        <h4 style="color:#0F766E;">Phase 5: Epic Production (Weeks 8&ndash;24)</h4>
+        <ul>
+          <li>Secure customer sponsor for Epic activation</li>
+          <li>Complete Epic technical + security review</li>
+          <li>Connection Hub listing</li>
+          <li>First production go-live at pilot site</li>
+        </ul>
+        <div class="milestone">Milestone: Live in Epic production environment</div>
+      </div>
+    </div>
+  </div>
+
+  <h3 class="mb-8">Development Gantt Chart</h3>
+  <div style="margin-bottom:4px;display:flex;font-size:7px;color:var(--text-muted);"><span style="width:100px;"></span><span style="flex:1;display:flex;justify-content:space-between;padding-left:1px;"><span>M1</span><span>M3</span><span>M5</span><span>M7</span><span>M9</span><span>M11</span><span>M13</span><span>M15</span><span>M18</span></span></div>
+  <div class="gantt-row"><span class="gantt-label">SMART on FHIR</span><div class="gantt-track"><div class="gantt-bar" style="left:0%;width:18%;background:var(--emerald-500);"></div></div></div>
+  <div class="gantt-row"><span class="gantt-label">FHIR Auto-Fill</span><div class="gantt-track"><div class="gantt-bar" style="left:5%;width:20%;background:var(--sky-500);"></div></div></div>
+  <div class="gantt-row"><span class="gantt-label">Da Vinci CRD</span><div class="gantt-track"><div class="gantt-bar" style="left:14%;width:18%;background:var(--amber-500);"></div></div></div>
+  <div class="gantt-row"><span class="gantt-label">Da Vinci DTR</span><div class="gantt-track"><div class="gantt-bar" style="left:22%;width:18%;background:var(--purple-500);"></div></div></div>
+  <div class="gantt-row"><span class="gantt-label">Da Vinci PAS</span><div class="gantt-track"><div class="gantt-bar" style="left:32%;width:18%;background:var(--coral-500);"></div></div></div>
+  <div class="gantt-row"><span class="gantt-label">Epic Production</span><div class="gantt-track"><div class="gantt-bar" style="left:18%;width:38%;background:var(--teal-500);"></div></div></div>
+  <div class="gantt-row"><span class="gantt-label">SOC 2 Type II</span><div class="gantt-track"><div class="gantt-bar" style="left:0%;width:55%;background:#94a3b8;"></div></div></div>
+  <div class="gantt-row"><span class="gantt-label">Oracle Health</span><div class="gantt-track"><div class="gantt-bar" style="left:50%;width:30%;background:var(--sky-400);"></div></div></div>
+  <div class="gantt-row"><span class="gantt-label">athenahealth</span><div class="gantt-track"><div class="gantt-bar" style="left:60%;width:25%;background:var(--amber-400);"></div></div></div>
+
+  <div class="page-footer"><span class="footer-logo">green<strong>light</strong> <span style="font-size:7px;color:var(--text-light);font-weight:400;">by Medivis</span></span><span class="footer-page">09</span></div>
+</div>
+
+<!-- PAGE 10: SECURITY & COMPLIANCE -->
+<div class="page">
+  <div class="accent-bar"></div>
+  <div class="section-num">SECTION 08</div>
+  <h2>Security &amp; Compliance Requirements</h2>
+  <div class="section-desc">HIPAA is the floor, SOC 2 is the baseline, HITRUST is the gold standard. Here is the certification pathway and timeline for GreenLight.</div>
+
+  <h3 class="mb-4">Certification Hierarchy</h3>
+  <table>
+    <thead><tr><th>Certification</th><th>What It Covers</th><th class="num">Cost</th><th class="num">Timeline</th><th>When Needed</th></tr></thead>
+    <tbody>
+      <tr><td><strong>HIPAA Program</strong></td><td>Policies, risk assessment, training, BAA templates</td><td class="num">$5&ndash;15K</td><td class="num">4&ndash;6 weeks</td><td><span class="tag tag-rose">Immediate</span></td></tr>
+      <tr><td><strong>BAAs</strong></td><td>Legal agreements with all entities touching PHI</td><td class="num">Legal fees</td><td class="num">1&ndash;2 weeks</td><td><span class="tag tag-rose">Immediate</span></td></tr>
+      <tr><td><strong>SOC 2 Type I</strong></td><td>Point-in-time security controls evaluation</td><td class="num">$30&ndash;50K</td><td class="num">3&ndash;6 months</td><td><span class="tag tag-amber">Enterprise sales</span></td></tr>
+      <tr><td><strong>SOC 2 Type II</strong></td><td>Operational effectiveness over 6&ndash;12 months</td><td class="num">$50&ndash;100K</td><td class="num">6&ndash;12 months</td><td><span class="tag tag-amber">Hospital contracts</span></td></tr>
+      <tr><td><strong>HITRUST e1</strong></td><td>44 essential controls (fastest HITRUST path)</td><td class="num">$80&ndash;150K</td><td class="num">6&ndash;9 months</td><td><span class="tag tag-sky">Large payer/IDN</span></td></tr>
+      <tr><td><strong>HITRUST r2</strong></td><td>Full risk-based assessment (gold standard)</td><td class="num">$150&ndash;500K</td><td class="num">9&ndash;18 months</td><td><span class="tag tag-purple">Enterprise tier</span></td></tr>
+      <tr><td><strong>FedRAMP</strong></td><td>Federal security authorization (NIST 800-53)</td><td class="num">$300K&ndash;1M+</td><td class="num">12&ndash;24 months</td><td><span class="tag tag-teal">Federal contracts</span></td></tr>
+    </tbody>
+  </table>
+
+  <h3 class="mb-4">Recommended Compliance Pathway</h3>
+  <div class="cols">
+    <div>
+      <div class="feature-card fc-rose mb-8">
+        <h4>Phase 1: Immediate (Weeks 1&ndash;6)</h4>
+        <p><strong>HIPAA compliance program:</strong> Formal policies &amp; procedures documentation, workforce training records, risk assessment, incident response plan. <strong>BAA templates:</strong> Execute BAAs with AWS, Neon (database), Vercel (hosting), and any LLM provider touching PHI.</p>
+        <span class="tag tag-rose">Gating requirement</span>
+      </div>
+      <div class="feature-card fc-amber mb-8">
+        <h4>Phase 2: SOC 2 Type II (Months 1&ndash;12)</h4>
+        <p>Start immediately; runs in parallel with all development work. Engage audit firm (Vanta, Drata, or Secureframe can accelerate). 50&ndash;70% control overlap with HITRUST reduces future work. Annual renewal required.</p>
+        <span class="tag tag-amber">Start now</span> <span class="tag tag-amber">Runs in parallel</span>
+      </div>
+    </div>
+    <div>
+      <div class="feature-card fc-sky mb-8">
+        <h4>Phase 3: HITRUST e1 (Months 6&ndash;15)</h4>
+        <p>Required when enterprise health systems and large payers demand it in procurement. 44 controls (essentials). athenahealth specifically requires HITRUST self-assessment within 90 days of marketplace GA. Current version: CSF v11.7.0.</p>
+        <span class="tag tag-sky">Enterprise gate</span>
+      </div>
+      <div class="feature-card fc-purple mb-8">
+        <h4>Phase 4: HITRUST r2 / FedRAMP (Year 2+)</h4>
+        <p>HITRUST r2 for comprehensive enterprise assurance. FedRAMP for federal contracts (VA, CMS, DoD, state Medicaid). Consider only when revenue justifies the investment ($150K&ndash;1M+). ISO 27001 as foundational layer for international.</p>
+        <span class="tag tag-purple">Scale-stage</span>
+      </div>
+    </div>
+  </div>
+
+  <h3 class="mb-4">Technical Security Requirements (All EHR Vendors)</h3>
+  <div class="stat-grid cols-4">
+    <div class="stat-card green"><span class="stat-num" style="font-size:14px;">TLS 1.2+</span><span class="stat-label">Transport Encryption<br>(mandatory)</span></div>
+    <div class="stat-card blue"><span class="stat-num" style="font-size:14px;">AES-256</span><span class="stat-label">Encryption at Rest<br>(recommended)</span></div>
+    <div class="stat-card accent"><span class="stat-num" style="font-size:14px;">OAuth 2.0</span><span class="stat-label">+ PKCE Authentication<br>(mandatory)</span></div>
+    <div class="stat-card amber"><span class="stat-num" style="font-size:14px;">Quarterly</span><span class="stat-label">Penetration Testing<br>Schedule</span></div>
+  </div>
+
+  <div class="page-footer"><span class="footer-logo">green<strong>light</strong> <span style="font-size:7px;color:var(--text-light);font-weight:400;">by Medivis</span></span><span class="footer-page">10</span></div>
+</div>
+
+<!-- PAGE 11: LEGAL AGREEMENTS -->
+<div class="page">
+  <div class="accent-bar"></div>
+  <div class="section-num">SECTION 09</div>
+  <h2>Legal Agreements &amp; Vendor Contracts</h2>
+  <div class="section-desc">Every entity that touches PHI requires a Business Associate Agreement. Here is the complete legal framework required for EHR integration.</div>
+
+  <h3 class="mb-4">Required Agreements</h3>
+  <table>
+    <thead><tr><th>Agreement Type</th><th>Counterparty</th><th>When Needed</th><th>Key Provisions</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Business Associate Agreement (BAA)</strong></td><td>Every entity accessing PHI</td><td><span class="tag tag-rose">Before any PHI</span></td><td>Permitted uses/disclosures, safeguards, breach notification (60 days), subcontractor requirements, termination rights</td></tr>
+      <tr><td><strong>Subprocessor BAAs</strong></td><td>AWS, Neon, Vercel, LLM providers</td><td><span class="tag tag-rose">Immediate</span></td><td>Same as above; required for any cloud provider processing PHI on GreenLight's behalf</td></tr>
+      <tr><td><strong>Epic Vendor Services Agreement</strong></td><td>Epic Systems</td><td><span class="tag tag-amber">Epic listing</span></td><td>Connection Hub terms, data handling, revenue sharing (if applicable), SLA requirements</td></tr>
+      <tr><td><strong>Oracle Health Developer Terms</strong></td><td>Oracle Health</td><td><span class="tag tag-sky">Oracle integration</span></td><td>Ignite API terms, per-site activation agreements</td></tr>
+      <tr><td><strong>athenahealth Partner Agreement</strong></td><td>athenahealth</td><td><span class="tag tag-sky">Marketplace GA</span></td><td>Marketplace terms, HITRUST self-assessment commitment within 90 days</td></tr>
+      <tr><td><strong>Master Services Agreement (MSA)</strong></td><td>Each health system customer</td><td><span class="tag tag-amber">Per customer</span></td><td>Service scope, pricing, support obligations, data ownership, indemnification</td></tr>
+      <tr><td><strong>Service Level Agreement (SLA)</strong></td><td>Each customer</td><td><span class="tag tag-amber">Per customer</span></td><td>Uptime (99.95% target), support response times, data handling, disaster recovery</td></tr>
+      <tr><td><strong>Data Use Agreement (DUA)</strong></td><td>Analytics/research partners</td><td><span class="tag tag-purple">Future</span></td><td>De-identified data usage restrictions, re-identification prohibitions</td></tr>
+      <tr><td><strong>Cyber Liability Insurance</strong></td><td>Insurance carrier</td><td><span class="tag tag-amber">Enterprise sales</span></td><td>Many health systems require proof of cyber insurance as procurement prerequisite</td></tr>
+    </tbody>
+  </table>
+
+  <h3 class="mb-4">BAA Execution Priority</h3>
+  <div class="cols">
+    <div>
+      <h4 style="margin-bottom:6px;">Immediate (Before Any PHI)</h4>
+      <ul class="check-list">
+        <li><strong>AWS</strong> &mdash; BAA available through AWS Artifact (self-service)</li>
+        <li><strong>Neon</strong> (database) &mdash; Contact for BAA; ensure HIPAA-eligible tier</li>
+        <li><strong>Vercel</strong> &mdash; Enterprise plan required for BAA and HIPAA compliance</li>
+        <li><strong>Any LLM provider</strong> &mdash; BAA required if PHI enters prompts (AWS Bedrock has BAA; direct Anthropic API requires separate agreement)</li>
+      </ul>
+    </div>
+    <div>
+      <div class="callout-red">
+        <strong>Critical infrastructure note:</strong> Vercel's standard Hobby/Pro plans do <strong>not</strong> include a BAA. HIPAA-compliant hosting requires either Vercel Enterprise or migrating to a BAA-covered platform (AWS with BAA, Azure with BAA). This must be resolved before any real patient data enters the system. Neon also requires confirming HIPAA eligibility on the current plan tier.
+      </div>
+    </div>
+  </div>
+
+  <div class="callout">
+    <strong>HHS provides model BAA language</strong> at hhs.gov/hipaa. Key requirement: BAAs must be executed <strong>before</strong> any PHI is disclosed to the business associate. Review annually and whenever scope of services changes. All BAAs should include breach notification obligations (within 60 days per HIPAA), subcontractor flow-down requirements, and return/destruction of PHI upon termination.
+  </div>
+
+  <div class="page-footer"><span class="footer-logo">green<strong>light</strong> <span style="font-size:7px;color:var(--text-light);font-weight:400;">by Medivis</span></span><span class="footer-page">11</span></div>
+</div>
+
+<!-- PAGE 12: COST ESTIMATES -->
+<div class="page">
+  <div class="accent-bar"></div>
+  <div class="section-num">SECTION 10</div>
+  <h2>Cost Estimates &amp; Budget</h2>
+  <div class="section-desc">Total estimated investment for multi-EHR integration: $450K&ndash;$950K over 18 months, including development, compliance, and vendor fees.</div>
+
+  <h3 class="mb-4">Development Cost Breakdown</h3>
+  <table>
+    <thead><tr><th>Component</th><th class="num">Low Estimate</th><th class="num">High Estimate</th><th class="num">Timeline</th></tr></thead>
+    <tbody>
+      <tr><td>SMART on FHIR foundation + OAuth</td><td class="num">$40K</td><td class="num">$80K</td><td class="num">4&ndash;8 weeks</td></tr>
+      <tr><td>FHIR data extraction + wizard auto-fill</td><td class="num">$30K</td><td class="num">$60K</td><td class="num">4&ndash;6 weeks</td></tr>
+      <tr><td>Da Vinci CRD (CDS Hooks)</td><td class="num">$35K</td><td class="num">$70K</td><td class="num">4&ndash;6 weeks</td></tr>
+      <tr><td>Da Vinci DTR (Questionnaire + CQL)</td><td class="num">$50K</td><td class="num">$100K</td><td class="num">6&ndash;8 weeks</td></tr>
+      <tr><td>Da Vinci PAS (electronic submission)</td><td class="num">$45K</td><td class="num">$90K</td><td class="num">6&ndash;8 weeks</td></tr>
+      <tr><td>Epic sandbox + certification</td><td class="num">$20K</td><td class="num">$50K</td><td class="num">8&ndash;16 weeks</td></tr>
+      <tr><td>Oracle Health integration</td><td class="num">$35K</td><td class="num">$70K</td><td class="num">8&ndash;12 weeks</td></tr>
+      <tr><td>Additional EHRs (athena, MEDITECH)</td><td class="num">$25K</td><td class="num">$60K</td><td class="num">6&ndash;10 weeks</td></tr>
+      <tr class="total-row"><td><strong>Total Development</strong></td><td class="num"><strong>$280K</strong></td><td class="num"><strong>$580K</strong></td><td class="num">12&ndash;18 months</td></tr>
+    </tbody>
+  </table>
+
+  <h3 class="mb-4">Compliance &amp; Operational Costs</h3>
+  <table>
+    <thead><tr><th>Item</th><th class="num">Low</th><th class="num">High</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td>HIPAA compliance program</td><td class="num">$5K</td><td class="num">$15K</td><td>Policies, risk assessment, training</td></tr>
+      <tr><td>SOC 2 Type II (first year)</td><td class="num">$50K</td><td class="num">$100K</td><td>Includes audit firm + remediation + tooling (Vanta/Drata)</td></tr>
+      <tr><td>HITRUST e1 (when needed)</td><td class="num">$80K</td><td class="num">$150K</td><td>Required by athenahealth within 90 days of GA</td></tr>
+      <tr><td>Penetration testing (annual)</td><td class="num">$10K</td><td class="num">$30K</td><td>Required by Epic and most health systems</td></tr>
+      <tr><td>Cyber liability insurance</td><td class="num">$5K</td><td class="num">$15K</td><td>Annual premium; required by enterprise customers</td></tr>
+      <tr><td>Legal (BAAs, MSAs, vendor agreements)</td><td class="num">$15K</td><td class="num">$40K</td><td>Healthcare attorney review of all agreements</td></tr>
+      <tr><td>HIPAA-compliant hosting upgrade</td><td class="num">$5K</td><td class="num">$20K</td><td>Vercel Enterprise or AWS migration for BAA coverage</td></tr>
+      <tr class="total-row"><td><strong>Total Compliance</strong></td><td class="num"><strong>$170K</strong></td><td class="num"><strong>$370K</strong></td><td></td></tr>
+    </tbody>
+  </table>
+
+  <div class="cols">
+    <div>
+      <div class="fin-total">
+        <span class="stat-num" style="font-size:22px;">$450K &ndash; $950K</span>
+        <span class="stat-label">Total 18-Month Investment (Development + Compliance)</span>
+      </div>
+    </div>
+    <div>
+      <h4 class="mb-4">Ongoing Annual Costs</h4>
+      <table>
+        <thead><tr><th>Item</th><th class="num">Annual</th></tr></thead>
+        <tbody>
+          <tr><td>Epic Connection Hub listing</td><td class="num">~$500</td></tr>
+          <tr><td>SOC 2 Type II renewal audit</td><td class="num">$30&ndash;50K</td></tr>
+          <tr><td>Penetration testing</td><td class="num">$10&ndash;30K</td></tr>
+          <tr><td>HIPAA-compliant hosting</td><td class="num">$12&ndash;36K</td></tr>
+          <tr><td>Integration middleware (if used)</td><td class="num">$12&ndash;60K</td></tr>
+          <tr class="total-row"><td><strong>Total Annual</strong></td><td class="num"><strong>$65&ndash;177K</strong></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="callout">
+    <strong>ROI context:</strong> At GreenLight's $8/PA pricing with a single hospital system processing 15,000 PAs/month, annual revenue is $1.44M. The full EHR integration investment ($450K&ndash;$950K) pays back in 4&ndash;8 months from a single large customer. EHR integration is not optional &mdash; it is the difference between a demo tool and a production-ready platform that health systems will actually deploy.
+  </div>
+
+  <div class="page-footer"><span class="footer-logo">green<strong>light</strong> <span style="font-size:7px;color:var(--text-light);font-weight:400;">by Medivis</span></span><span class="footer-page">12</span></div>
+</div>
+
+</body>
+</html>
