@@ -3,6 +3,7 @@ import Credentials from "next-auth/providers/credentials";
 import { compare } from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { authConfig } from "@/lib/auth.config";
+import { audit } from "@/lib/security/audit-log";
 
 // In-memory rate limiter for login attempts (per email)
 const loginAttempts = new Map<string, { count: number; windowStart: number }>();
@@ -47,12 +48,25 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
           if (!user || !user.isActive) {
             recordFailedAttempt(key, now, windowMs);
+            audit({
+              action: "login_failed",
+              resourceType: "User",
+              userEmail: email,
+              description: !user ? "Failed login attempt — user not found" : "Failed login attempt — inactive user",
+            }).catch(() => {});
             return null;
           }
 
           const isPasswordValid = await compare(password, user.passwordHash);
           if (!isPasswordValid) {
             recordFailedAttempt(key, now, windowMs);
+            audit({
+              action: "login_failed",
+              resourceType: "User",
+              resourceId: user.id,
+              userEmail: email,
+              description: "Failed login attempt — wrong password",
+            }).catch(() => {});
             return null;
           }
 
@@ -64,6 +78,14 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             where: { id: user.id },
             data: { lastLoginAt: new Date() },
           });
+
+          audit({
+            action: "login",
+            resourceType: "User",
+            resourceId: user.id,
+            userEmail: email,
+            description: "Successful login",
+          }).catch(() => {});
 
           return {
             id: user.id,

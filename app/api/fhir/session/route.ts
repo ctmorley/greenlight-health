@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { z } from "zod";
+import { auditPhiAccess } from "@/lib/security/audit-log";
+import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limit";
 
 /**
  * POST /api/fhir/session
@@ -18,10 +20,15 @@ const sessionSchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
+  const rateLimited = checkRateLimit(request, RATE_LIMITS.fhir);
+  if (rateLimited) return rateLimited;
+
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  auditPhiAccess(request, session, "fhir_write", "EhrConnection", null, "Recorded FHIR session").catch(() => {});
 
   const organizationId = session.user.organizationId;
   if (!organizationId) {
@@ -84,11 +91,16 @@ export async function POST(request: NextRequest) {
  *
  * Returns the organization's EHR connections.
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const rateLimited = checkRateLimit(request, RATE_LIMITS.fhir);
+  if (rateLimited) return rateLimited;
+
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  auditPhiAccess(request, session, "fhir_read", "EhrConnection", null, "Listed FHIR connections").catch(() => {});
 
   const organizationId = session.user.organizationId;
   if (!organizationId) {

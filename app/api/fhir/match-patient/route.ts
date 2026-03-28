@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { z } from "zod";
 import type { PlanType } from "@prisma/client";
+import { auditPhiAccess } from "@/lib/security/audit-log";
+import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limit";
 
 /**
  * POST /api/fhir/match-patient
@@ -41,10 +43,15 @@ const matchPatientSchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
+  const rateLimited = checkRateLimit(request, RATE_LIMITS.fhir);
+  if (rateLimited) return rateLimited;
+
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  auditPhiAccess(request, session, "fhir_read", "Patient", null, "FHIR patient match").catch(() => {});
 
   const organizationId = session.user.organizationId;
   if (!organizationId) {

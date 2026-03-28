@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
+import { auditPhiAccess } from "@/lib/security/audit-log";
+import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limit";
 
 const searchQuerySchema = z.object({
   q: z.string().trim().min(2, "Search query must be at least 2 characters"),
@@ -47,10 +49,15 @@ function buildPatientSearchCondition(q: string): Prisma.PatientWhereInput {
 }
 
 export async function GET(request: NextRequest) {
+  const rateLimited = checkRateLimit(request, RATE_LIMITS.api);
+  if (rateLimited) return rateLimited;
+
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  auditPhiAccess(request, session, "view", "Patient", null, "Searched patients").catch(() => {});
 
   const organizationId = session.user.organizationId;
   if (!organizationId) {

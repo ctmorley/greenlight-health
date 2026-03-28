@@ -10,12 +10,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
+import { auditPhiAccess } from "@/lib/security/audit-log";
+import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limit";
 
 export async function GET(request: NextRequest) {
+  const rateLimited = checkRateLimit(request, RATE_LIMITS.api);
+  if (rateLimited) return rateLimited;
+
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  auditPhiAccess(request, session, "view", "ClinicalGuideline", null, "Queried clinical criteria").catch(() => {});
 
   const { searchParams } = request.nextUrl;
   const cptCodesParam = searchParams.get("cpt");

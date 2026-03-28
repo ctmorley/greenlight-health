@@ -2,15 +2,20 @@ import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
+import { auditPhiAccess } from "@/lib/security/audit-log";
+import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limit";
 
 /**
  * POST /api/requests/[id]/submit
  * Submit a draft PA request. Validates completeness, runs AI audit, and transitions to "submitted".
  */
 export async function POST(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const rateLimited = checkRateLimit(request, RATE_LIMITS.submit);
+  if (rateLimited) return rateLimited;
+
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -24,7 +29,9 @@ export async function POST(
   try {
     const { id } = await params;
 
-    const request = await prisma.priorAuthRequest.findFirst({
+    auditPhiAccess(request, session, "pa_submit", "PriorAuthRequest", id, "Submitted PA request").catch(() => {});
+
+    const paReq = await prisma.priorAuthRequest.findFirst({
       where: { id, organizationId },
       include: {
         patient: true,
@@ -34,11 +41,11 @@ export async function POST(
       },
     });
 
-    if (!request) {
+    if (!paReq) {
       return NextResponse.json({ error: "Request not found" }, { status: 404 });
     }
 
-    if (request.status !== "draft") {
+    if (paReq.status !== "draft") {
       return NextResponse.json(
         { error: "Only draft requests can be submitted" },
         { status: 400 }
@@ -49,30 +56,30 @@ export async function POST(
     const auditIssues: Array<{ severity: "error" | "warning" | "info"; field: string; message: string }> = [];
 
     // Check required fields (serviceCategory/serviceType/payerId are nullable for early drafts)
-    if (!request.patientId) {
+    if (!paReq.patientId) {
       auditIssues.push({ severity: "error", field: "patient", message: "Patient is required" });
     }
-    if (!request.serviceCategory) {
+    if (!paReq.serviceCategory) {
       auditIssues.push({ severity: "error", field: "serviceCategory", message: "Service category is required" });
     }
-    if (!request.serviceType) {
+    if (!paReq.serviceType) {
       auditIssues.push({ severity: "error", field: "serviceType", message: "Service type is required" });
     }
-    if (!request.payerId) {
+    if (!paReq.payerId) {
       auditIssues.push({ severity: "error", field: "payer", message: "Payer is required" });
     }
-    if (!request.insuranceId) {
+    if (!paReq.insuranceId) {
       auditIssues.push({ severity: "warning", field: "insurance", message: "No insurance selected. The request will be submitted without insurance information." });
     }
-    if (request.cptCodes.length === 0) {
+    if (paReq.cptCodes.length === 0) {
       auditIssues.push({ severity: "error", field: "cptCodes", message: "At least one CPT code is required" });
     }
-    if (request.icd10Codes.length === 0) {
+    if (paReq.icd10Codes.length === 0) {
       auditIssues.push({ severity: "warning", field: "icd10Codes", message: "No ICD-10 diagnosis codes provided. Most payers require at least one." });
     }
 
     // Check clinical documentation
-    if (!request.clinicalNotes && request.documents.length === 0) {
+    if (!paReq.clinicalNotes && paReq.documents.length === 0) {
       auditIssues.push({
         severity: "warning",
         field: "documentation",
@@ -81,7 +88,7 @@ export async function POST(
     }
 
     // Check procedure description
-    if (!request.procedureDescription) {
+    if (!paReq.procedureDescription) {
       auditIssues.push({
         severity: "warning",
         field: "procedureDescription",
@@ -90,7 +97,7 @@ export async function POST(
     }
 
     // Check scheduled date
-    if (!request.scheduledDate) {
+    if (!paReq.scheduledDate) {
       auditIssues.push({
         severity: "info",
         field: "scheduledDate",
@@ -99,10 +106,10 @@ export async function POST(
     }
 
     // Check code combinations - warn if imaging CPT without relevant ICD-10
-    if (request.serviceCategory === "imaging" && request.icd10Codes.length > 0) {
+    if (paReq.serviceCategory === "imaging" && paReq.icd10Codes.length > 0) {
       // Basic check: make sure ICD-10 codes don't look like screening-only for non-screening procedures
-      const hasScreeningOnly = request.icd10Codes.every((c) => c.startsWith("Z12"));
-      if (hasScreeningOnly && request.serviceType !== "mammography") {
+      const hasScreeningOnly = paReq.icd10Codes.every((c) => c.startsWith("Z12"));
+      if (hasScreeningOnly && paReq.serviceType !== "mammography") {
         auditIssues.push({
           severity: "warning",
           field: "icd10Codes",
@@ -112,7 +119,7 @@ export async function POST(
     }
 
     // Check ordering physician
-    if (!request.orderingPhysicianId) {
+    if (!paReq.orderingPhysicianId) {
       auditIssues.push({
         severity: "info",
         field: "orderingPhysician",
@@ -135,10 +142,10 @@ export async function POST(
     }
 
     // Calculate due date if not set (default: 14 days for routine, 3 for urgent, 1 for emergent)
-    let dueDate = request.dueDate;
+    let dueDate = paReq.dueDate;
     if (!dueDate) {
       const now = new Date();
-      const dueDays = request.urgency === "emergent" ? 1 : request.urgency === "urgent" ? 3 : 14;
+      const dueDays = paReq.urgency === "emergent" ? 1 : paReq.urgency === "urgent" ? 3 : 14;
       dueDate = new Date(now.getTime() + dueDays * 24 * 60 * 60 * 1000);
     }
 

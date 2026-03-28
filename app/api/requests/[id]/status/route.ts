@@ -4,6 +4,8 @@ import { auth } from "@/lib/auth";
 import { z } from "zod";
 import { VALID_TRANSITIONS, STATUS_CHANGE_ROLES } from "@/lib/status-transitions";
 import { VALID_DENIAL_CATEGORY_VALUES, VALID_DENIAL_CODES, isValidCodeForCategory } from "@/lib/denial-reasons";
+import { auditPhiAccess } from "@/lib/security/audit-log";
+import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limit";
 
 const statusUpdateSchema = z.object({
   status: z.enum([
@@ -40,10 +42,15 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const rateLimited = checkRateLimit(request, RATE_LIMITS.api);
+  if (rateLimited) return rateLimited;
+
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  auditPhiAccess(request, session, "update", "PriorAuthRequest", null, "Updated PA request status").catch(() => {});
 
   const organizationId = session.user.organizationId;
   if (!organizationId) {

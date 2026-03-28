@@ -1,11 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
+import { auditPhiAccess } from "@/lib/security/audit-log";
+import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limit";
 
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const rateLimited = checkRateLimit(request, RATE_LIMITS.api);
+  if (rateLimited) return rateLimited;
+
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -18,6 +23,8 @@ export async function GET(
 
   try {
     const { id } = await params;
+
+    auditPhiAccess(request, session, "view", "Patient", id, "Viewed patient detail").catch(() => {});
 
     // Scoped to organization — prevents cross-tenant access
     const patient = await prisma.patient.findFirst({

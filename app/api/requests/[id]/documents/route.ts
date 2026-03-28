@@ -4,6 +4,8 @@ import { auth } from "@/lib/auth";
 import { writeFile, mkdir, readFile } from "fs/promises";
 import path from "path";
 import { resolveDocumentPath } from "@/lib/document-path";
+import { auditPhiAccess } from "@/lib/security/audit-log";
+import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limit";
 
 const VALID_CATEGORIES = [
   "clinical_notes",
@@ -22,9 +24,12 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
  * List documents for a PA request.
  */
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const rateLimited = checkRateLimit(request, RATE_LIMITS.api);
+  if (rateLimited) return rateLimited;
+
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -37,6 +42,8 @@ export async function GET(
 
   try {
     const { id } = await params;
+
+    auditPhiAccess(request, session, "view", "AuthDocument", id, "Listed documents for PA request").catch(() => {});
 
     // Verify request belongs to org
     const paRequest = await prisma.priorAuthRequest.findFirst({
@@ -86,6 +93,9 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const rateLimited = checkRateLimit(request, RATE_LIMITS.api);
+  if (rateLimited) return rateLimited;
+
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -98,6 +108,8 @@ export async function POST(
 
   try {
     const { id } = await params;
+
+    auditPhiAccess(request, session, "create", "AuthDocument", id, "Uploaded/downloaded document for PA request").catch(() => {});
 
     // Verify request belongs to org
     const paRequest = await prisma.priorAuthRequest.findFirst({

@@ -4,6 +4,8 @@ import { auth } from "@/lib/auth";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { generateReferenceNumber } from "@/lib/reference-number";
+import { auditPhiAccess } from "@/lib/security/audit-log";
+import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limit";
 
 const VALID_STATUSES = [
   "draft", "submitted", "pending_review", "approved",
@@ -116,10 +118,15 @@ function buildSearchCondition(search: string): Prisma.PriorAuthRequestWhereInput
 }
 
 export async function GET(request: NextRequest) {
+  const rateLimited = checkRateLimit(request, RATE_LIMITS.api);
+  if (rateLimited) return rateLimited;
+
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  auditPhiAccess(request, session, "view", "PriorAuthRequest", null, "Listed PA requests").catch(() => {});
 
   const organizationId = session.user.organizationId;
   if (!organizationId) {
@@ -287,10 +294,15 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const rateLimited = checkRateLimit(request, RATE_LIMITS.api);
+  if (rateLimited) return rateLimited;
+
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  auditPhiAccess(request, session, "create", "PriorAuthRequest", null, "Created PA request").catch(() => {});
 
   const organizationId = session.user.organizationId;
   if (!organizationId) {

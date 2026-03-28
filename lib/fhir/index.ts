@@ -13,3 +13,14 @@ export type {
 } from "./types";
 export type { FhirSandbox } from "./sandbox";
 export { FHIR_CONTEXT_KEY } from "./types";
+
+// Vendor adapter system
+export type { VendorConfig, ConnectionTestResult } from "./vendors";
+export {
+  VENDOR_REGISTRY,
+  getVendorConfig,
+  getAllVendorConfigs,
+  getVendorsByCapability,
+  VendorAdapter,
+  getAdapterForVendor,
+} from "./vendors";

@@ -5,6 +5,8 @@ import { z } from "zod";
 import type { Prisma, AuthStatus } from "@prisma/client";
 import { assemblePasBundle } from "@/lib/pas/bundle-assembler";
 import { parseClaimResponse, simulateClaimResponse } from "@/lib/pas/claim-response-parser";
+import { auditPhiAccess } from "@/lib/security/audit-log";
+import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limit";
 
 /**
  * POST /api/fhir/submit-pa
@@ -24,10 +26,15 @@ const submitPaSchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
+  const rateLimited = checkRateLimit(request, RATE_LIMITS.submit);
+  if (rateLimited) return rateLimited;
+
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  auditPhiAccess(request, session, "pa_submit_electronic", "PriorAuthRequest", null, "Electronic PA submission via FHIR PAS").catch(() => {});
 
   const organizationId = session.user.organizationId;
   if (!organizationId) {

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { z } from "zod";
+import { auditPhiAccess } from "@/lib/security/audit-log";
+import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limit";
 
 /** Roles allowed to add notes to the timeline. */
 const NOTE_WRITE_ROLES = ["admin", "pa_coordinator", "physician"];
@@ -11,9 +13,12 @@ const NOTE_WRITE_ROLES = ["admin", "pa_coordinator", "physician"];
  * Fetch the audit log / status change timeline for a PA request.
  */
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const rateLimited = checkRateLimit(request, RATE_LIMITS.api);
+  if (rateLimited) return rateLimited;
+
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -26,6 +31,8 @@ export async function GET(
 
   try {
     const { id } = await params;
+
+    auditPhiAccess(request, session, "view", "PriorAuthRequest", id, "Viewed PA request timeline").catch(() => {});
 
     // Verify request belongs to org
     const paRequest = await prisma.priorAuthRequest.findFirst({
@@ -74,10 +81,15 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const rateLimited = checkRateLimit(request, RATE_LIMITS.api);
+  if (rateLimited) return rateLimited;
+
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  auditPhiAccess(request, session, "create", "PriorAuthRequest", null, "Added note to PA request timeline").catch(() => {});
 
   const organizationId = session.user.organizationId;
   if (!organizationId) {

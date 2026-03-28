@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { z } from "zod";
+import { auditPhiAccess } from "@/lib/security/audit-log";
+import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limit";
 
 const queryParamsSchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
@@ -23,10 +25,15 @@ const queryParamsSchema = z.object({
  * All queries are scoped to the authenticated user's organization.
  */
 export async function GET(request: NextRequest) {
+  const rateLimited = checkRateLimit(request, RATE_LIMITS.api);
+  if (rateLimited) return rateLimited;
+
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  auditPhiAccess(request, session, "view", "Denial", null, "Listed denials").catch(() => {});
 
   const organizationId = session.user.organizationId;
   if (!organizationId) {

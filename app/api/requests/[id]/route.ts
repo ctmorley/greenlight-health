@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { z } from "zod";
+import { auditPhiAccess } from "@/lib/security/audit-log";
+import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limit";
 
 const VALID_SERVICE_CATEGORIES = ["imaging", "surgical", "medical"] as const;
 const VALID_SERVICE_TYPES = [
@@ -30,9 +32,12 @@ const updateRequestSchema = z.object({
 });
 
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const rateLimited = checkRateLimit(request, RATE_LIMITS.api);
+  if (rateLimited) return rateLimited;
+
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -46,7 +51,9 @@ export async function GET(
   try {
     const { id } = await params;
 
-    const request = await prisma.priorAuthRequest.findFirst({
+    auditPhiAccess(request, session, "view", "PriorAuthRequest", id, "Viewed PA request detail").catch(() => {});
+
+    const paReq = await prisma.priorAuthRequest.findFirst({
       where: { id, organizationId },
       include: {
         patient: {
@@ -113,61 +120,61 @@ export async function GET(
       },
     });
 
-    if (!request) {
+    if (!paReq) {
       return NextResponse.json({ error: "Request not found" }, { status: 404 });
     }
 
     return NextResponse.json({
-      id: request.id,
-      referenceNumber: request.referenceNumber,
-      status: request.status,
-      urgency: request.urgency,
-      serviceCategory: request.serviceCategory,
-      serviceType: request.serviceType,
-      cptCodes: request.cptCodes,
-      icd10Codes: request.icd10Codes,
-      procedureDescription: request.procedureDescription,
-      clinicalNotes: request.clinicalNotes,
-      rbmVendor: request.rbmVendor,
-      rbmReferenceNumber: request.rbmReferenceNumber,
-      renderingPhysicianNpi: request.renderingPhysicianNpi,
-      facilityName: request.facilityName,
-      approvedUnits: request.approvedUnits,
-      approvedCptCodes: request.approvedCptCodes,
-      aiAuditResult: request.aiAuditResult,
-      draftMetadata: request.draftMetadata,
+      id: paReq.id,
+      referenceNumber: paReq.referenceNumber,
+      status: paReq.status,
+      urgency: paReq.urgency,
+      serviceCategory: paReq.serviceCategory,
+      serviceType: paReq.serviceType,
+      cptCodes: paReq.cptCodes,
+      icd10Codes: paReq.icd10Codes,
+      procedureDescription: paReq.procedureDescription,
+      clinicalNotes: paReq.clinicalNotes,
+      rbmVendor: paReq.rbmVendor,
+      rbmReferenceNumber: paReq.rbmReferenceNumber,
+      renderingPhysicianNpi: paReq.renderingPhysicianNpi,
+      facilityName: paReq.facilityName,
+      approvedUnits: paReq.approvedUnits,
+      approvedCptCodes: paReq.approvedCptCodes,
+      aiAuditResult: paReq.aiAuditResult,
+      draftMetadata: paReq.draftMetadata,
       patient: {
-        id: request.patient.id,
-        name: `${request.patient.firstName} ${request.patient.lastName}`,
-        firstName: request.patient.firstName,
-        lastName: request.patient.lastName,
-        mrn: request.patient.mrn,
-        dob: request.patient.dob.toISOString(),
-        gender: request.patient.gender,
-        phone: request.patient.phone,
-        email: request.patient.email,
+        id: paReq.patient.id,
+        name: `${paReq.patient.firstName} ${paReq.patient.lastName}`,
+        firstName: paReq.patient.firstName,
+        lastName: paReq.patient.lastName,
+        mrn: paReq.patient.mrn,
+        dob: paReq.patient.dob.toISOString(),
+        gender: paReq.patient.gender,
+        phone: paReq.patient.phone,
+        email: paReq.patient.email,
       },
-      payer: request.payer,
-      insurance: request.insurance,
-      createdBy: `${request.createdBy.firstName} ${request.createdBy.lastName}`,
-      assignedTo: request.assignedTo
-        ? `${request.assignedTo.firstName} ${request.assignedTo.lastName}`
+      payer: paReq.payer,
+      insurance: paReq.insurance,
+      createdBy: `${paReq.createdBy.firstName} ${paReq.createdBy.lastName}`,
+      assignedTo: paReq.assignedTo
+        ? `${paReq.assignedTo.firstName} ${paReq.assignedTo.lastName}`
         : null,
-      orderingPhysician: request.orderingPhysician
+      orderingPhysician: paReq.orderingPhysician
         ? {
-            id: request.orderingPhysician.id,
-            name: `${request.orderingPhysician.firstName} ${request.orderingPhysician.lastName}`,
-            npi: request.orderingPhysician.npiNumber,
+            id: paReq.orderingPhysician.id,
+            name: `${paReq.orderingPhysician.firstName} ${paReq.orderingPhysician.lastName}`,
+            npi: paReq.orderingPhysician.npiNumber,
           }
         : null,
-      createdAt: request.createdAt.toISOString(),
-      updatedAt: request.updatedAt.toISOString(),
-      submittedAt: request.submittedAt?.toISOString() || null,
-      decidedAt: request.decidedAt?.toISOString() || null,
-      expiresAt: request.expiresAt?.toISOString() || null,
-      dueDate: request.dueDate?.toISOString() || null,
-      scheduledDate: request.scheduledDate?.toISOString() || null,
-      documents: request.documents.map((d) => ({
+      createdAt: paReq.createdAt.toISOString(),
+      updatedAt: paReq.updatedAt.toISOString(),
+      submittedAt: paReq.submittedAt?.toISOString() || null,
+      decidedAt: paReq.decidedAt?.toISOString() || null,
+      expiresAt: paReq.expiresAt?.toISOString() || null,
+      dueDate: paReq.dueDate?.toISOString() || null,
+      scheduledDate: paReq.scheduledDate?.toISOString() || null,
+      documents: paReq.documents.map((d) => ({
         id: d.id,
         fileName: d.fileName,
         fileType: d.fileType,
@@ -176,7 +183,7 @@ export async function GET(
         uploadedBy: `${d.uploadedBy.firstName} ${d.uploadedBy.lastName}`,
         createdAt: d.createdAt.toISOString(),
       })),
-      timeline: request.statusChanges.map((sc) => ({
+      timeline: paReq.statusChanges.map((sc) => ({
         id: sc.id,
         fromStatus: sc.fromStatus,
         toStatus: sc.toStatus,
@@ -184,7 +191,7 @@ export async function GET(
         changedBy: `${sc.changedBy.firstName} ${sc.changedBy.lastName}`,
         createdAt: sc.createdAt.toISOString(),
       })),
-      denials: request.denials.map((d) => ({
+      denials: paReq.denials.map((d) => ({
         id: d.id,
         denialDate: d.denialDate.toISOString(),
         reasonCode: d.reasonCode,
@@ -192,7 +199,7 @@ export async function GET(
         reasonDescription: d.reasonDescription,
         payerNotes: d.payerNotes,
       })),
-      appeals: request.appeals.map((a) => ({
+      appeals: paReq.appeals.map((a) => ({
         id: a.id,
         appealLevel: a.appealLevel,
         filedDate: a.filedDate.toISOString(),
@@ -213,6 +220,9 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const rateLimited = checkRateLimit(request, RATE_LIMITS.api);
+  if (rateLimited) return rateLimited;
+
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -225,6 +235,9 @@ export async function PATCH(
 
   try {
     const { id } = await params;
+
+    auditPhiAccess(request, session, "update", "PriorAuthRequest", id, "Updated PA request").catch(() => {});
+
     const body = await request.json();
     const parsed = updateRequestSchema.safeParse(body);
 
@@ -340,9 +353,12 @@ export async function PATCH(
 }
 
 export async function DELETE(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const rateLimited = checkRateLimit(request, RATE_LIMITS.api);
+  if (rateLimited) return rateLimited;
+
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -355,6 +371,8 @@ export async function DELETE(
 
   try {
     const { id } = await params;
+
+    auditPhiAccess(request, session, "delete", "PriorAuthRequest", id, "Deleted PA request").catch(() => {});
 
     const existing = await prisma.priorAuthRequest.findFirst({
       where: { id, organizationId },

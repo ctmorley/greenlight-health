@@ -15,6 +15,24 @@ interface EhrConnection {
   createdAt: string;
 }
 
+interface VendorRegistryEntry {
+  vendor: string;
+  displayName: string;
+  description: string;
+  marketShare: string;
+  registrationUrl: string;
+  sandboxUrl: string;
+  marketplaceName: string;
+  fhirVersion: string;
+  supportsCrd: boolean;
+  supportsDtr: boolean;
+  supportsPas: boolean;
+  supportsSmartV2: boolean;
+  estimatedCertTimeline: string;
+  annualListingCost: string;
+  requiresCustomerSponsor: boolean;
+}
+
 const VENDOR_LABELS: Record<string, string> = {
   epic: "Epic",
   oracle_health: "Oracle Health",
@@ -30,8 +48,128 @@ const VENDOR_COLORS: Record<string, string> = {
   oracle_health: "bg-sky-500/10 text-sky-400 border-sky-500/20",
   meditech: "bg-purple-500/10 text-purple-400 border-purple-500/20",
   athenahealth: "bg-amber-500/10 text-amber-400 border-amber-500/20",
+  veradigm: "bg-teal-500/10 text-teal-400 border-teal-500/20",
+  eclinicalworks: "bg-indigo-500/10 text-indigo-400 border-indigo-500/20",
   other: "bg-white/10 text-text-secondary border-white/10",
 };
+
+const VENDOR_DOT_COLORS: Record<string, string> = {
+  epic: "bg-red-400",
+  oracle_health: "bg-sky-400",
+  meditech: "bg-purple-400",
+  athenahealth: "bg-amber-400",
+  veradigm: "bg-teal-400",
+  eclinicalworks: "bg-indigo-400",
+};
+
+/**
+ * Vendor registry data — sourced from lib/fhir/vendors/registry.ts.
+ * Defined inline to avoid importing server-only code into a client component.
+ */
+const VENDOR_REGISTRY: VendorRegistryEntry[] = [
+  {
+    vendor: "epic",
+    displayName: "Epic",
+    description: "Largest US EHR vendor, dominant in academic medical centers and large health systems.",
+    marketShare: "~38%",
+    registrationUrl: "https://fhir.epic.com/",
+    sandboxUrl: "https://fhir.epic.com/interconnect-fhir-oauth/api/FHIR/R4",
+    marketplaceName: "App Orchard / Showroom",
+    fhirVersion: "R4",
+    supportsCrd: true,
+    supportsDtr: true,
+    supportsPas: true,
+    supportsSmartV2: true,
+    estimatedCertTimeline: "6-12 months",
+    annualListingCost: "~$500/yr",
+    requiresCustomerSponsor: true,
+  },
+  {
+    vendor: "oracle_health",
+    displayName: "Oracle Health (Cerner)",
+    description: "Second-largest US EHR vendor, strong in federal/VA systems and large hospitals.",
+    marketShare: "~25%",
+    registrationUrl: "https://code.cerner.com/",
+    sandboxUrl: "https://fhir-myrecord.cerner.com/r4/ec2458f2-1e24-41c8-b71b-0e701af7583d",
+    marketplaceName: "Code Console / App Gallery",
+    fhirVersion: "R4",
+    supportsCrd: false,
+    supportsDtr: false,
+    supportsPas: false,
+    supportsSmartV2: true,
+    estimatedCertTimeline: "4-8 weeks",
+    annualListingCost: "Free",
+    requiresCustomerSponsor: false,
+  },
+  {
+    vendor: "meditech",
+    displayName: "MEDITECH",
+    description: "Third-largest US EHR vendor, strong in community hospitals.",
+    marketShare: "~16%",
+    registrationUrl: "https://ehr.meditech.com/alliance-program",
+    sandboxUrl: "https://ehr.meditech.com/alliance-program",
+    marketplaceName: "Alliance Program",
+    fhirVersion: "R4",
+    supportsCrd: false,
+    supportsDtr: false,
+    supportsPas: false,
+    supportsSmartV2: false,
+    estimatedCertTimeline: "3-6 months",
+    annualListingCost: "Varies",
+    requiresCustomerSponsor: false,
+  },
+  {
+    vendor: "athenahealth",
+    displayName: "athenahealth",
+    description: "Cloud-native EHR focused on ambulatory practices.",
+    marketShare: "~10%",
+    registrationUrl: "https://developer.athenahealth.com/",
+    sandboxUrl: "https://developer.athenahealth.com/",
+    marketplaceName: "Marketplace",
+    fhirVersion: "R4",
+    supportsCrd: true,
+    supportsDtr: false,
+    supportsPas: false,
+    supportsSmartV2: true,
+    estimatedCertTimeline: "4-8 weeks",
+    annualListingCost: "Free",
+    requiresCustomerSponsor: false,
+  },
+  {
+    vendor: "veradigm",
+    displayName: "Veradigm (Allscripts)",
+    description: "Mid-market EHR for hospitals and ambulatory practices.",
+    marketShare: "~5%",
+    registrationUrl: "https://developer.veradigm.com/",
+    sandboxUrl: "https://developer.veradigm.com/",
+    marketplaceName: "App Expo",
+    fhirVersion: "R4",
+    supportsCrd: false,
+    supportsDtr: false,
+    supportsPas: false,
+    supportsSmartV2: false,
+    estimatedCertTimeline: "4-8 weeks",
+    annualListingCost: "Varies",
+    requiresCustomerSponsor: false,
+  },
+  {
+    vendor: "eclinicalworks",
+    displayName: "eClinicalWorks",
+    description: "Large ambulatory EHR serving 150,000+ physicians.",
+    marketShare: "~5%",
+    registrationUrl: "https://developer.eclinicalworks.com/",
+    sandboxUrl: "https://developer.eclinicalworks.com/",
+    marketplaceName: "Developer Portal",
+    fhirVersion: "R4",
+    supportsCrd: false,
+    supportsDtr: false,
+    supportsPas: false,
+    supportsSmartV2: false,
+    estimatedCertTimeline: "4-12 weeks",
+    annualListingCost: "Varies",
+    requiresCustomerSponsor: false,
+  },
+];
 
 export function EhrConnectionsTab() {
   const [connections, setConnections] = useState<EhrConnection[]>([]);
@@ -185,19 +323,94 @@ export function EhrConnectionsTab() {
         </div>
       )}
 
-      {/* Supported EHR vendors */}
-      <Card variant="glass" padding="md">
-        <h3 className="text-sm font-semibold text-text-primary mb-3">Supported EHR Vendors</h3>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-          {Object.entries(VENDOR_LABELS).filter(([k]) => k !== "other").map(([key, label]) => (
-            <div key={key} className="flex items-center gap-2 p-2 rounded-lg bg-white/5">
-              <div className={`w-2 h-2 rounded-full ${key === "epic" ? "bg-red-400" : key === "oracle_health" ? "bg-sky-400" : key === "meditech" ? "bg-purple-400" : key === "athenahealth" ? "bg-amber-400" : "bg-white/30"}`} />
-              <span className="text-xs text-text-secondary">{label}</span>
-              <Badge variant="info" size="sm" className="ml-auto">FHIR R4</Badge>
-            </div>
+      {/* EHR Vendor Registry */}
+      <div className="space-y-4">
+        <div>
+          <h2 className="text-lg font-semibold font-display text-text-primary">EHR Vendor Registry</h2>
+          <p className="text-sm text-text-muted mt-1">
+            Supported EHR vendors with FHIR R4 integration capabilities and developer registration links.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          {VENDOR_REGISTRY.map((vendor) => (
+            <Card key={vendor.vendor} variant="glass" padding="md" className="flex flex-col">
+              {/* Vendor Header */}
+              <div className="flex items-center gap-3 mb-3">
+                <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${VENDOR_DOT_COLORS[vendor.vendor] || "bg-white/30"}`} />
+                <div className="min-w-0">
+                  <h3 className="text-sm font-semibold text-text-primary truncate">{vendor.displayName}</h3>
+                  <p className="text-[10px] text-text-muted">{vendor.marketShare} market share</p>
+                </div>
+                <span className={`ml-auto inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold border flex-shrink-0 ${VENDOR_COLORS[vendor.vendor] || VENDOR_COLORS.other}`}>
+                  {vendor.fhirVersion}
+                </span>
+              </div>
+
+              {/* Description */}
+              <p className="text-xs text-text-muted leading-relaxed mb-3">
+                {vendor.description}
+              </p>
+
+              {/* Capability Badges */}
+              <div className="flex flex-wrap gap-1.5 mb-3">
+                <Badge variant={vendor.supportsCrd ? "success" : "default"} size="sm">
+                  CRD {vendor.supportsCrd ? "Yes" : "No"}
+                </Badge>
+                <Badge variant={vendor.supportsDtr ? "success" : "default"} size="sm">
+                  DTR {vendor.supportsDtr ? "Yes" : "No"}
+                </Badge>
+                <Badge variant={vendor.supportsPas ? "success" : "default"} size="sm">
+                  PAS {vendor.supportsPas ? "Yes" : "No"}
+                </Badge>
+                {vendor.supportsSmartV2 && (
+                  <Badge variant="info" size="sm">SMART v2</Badge>
+                )}
+              </div>
+
+              {/* Certification Info */}
+              <div className="flex items-center gap-4 text-[10px] text-text-muted mb-4">
+                <span>Cert: {vendor.estimatedCertTimeline}</span>
+                <span>Cost: {vendor.annualListingCost}</span>
+                {vendor.requiresCustomerSponsor && (
+                  <span className="text-amber-400">Sponsor required</span>
+                )}
+              </div>
+
+              {/* Marketplace */}
+              <p className="text-[10px] text-text-muted mb-3">
+                Marketplace: {vendor.marketplaceName}
+              </p>
+
+              {/* Actions */}
+              <div className="mt-auto flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-1"
+                  onClick={() => window.open(vendor.registrationUrl, "_blank")}
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                  </svg>
+                  Register
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-1"
+                  onClick={() => window.open(vendor.sandboxUrl, "_blank")}
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5.25 14.25h13.5m-13.5 0a3 3 0 0 1-3-3m3 3a3 3 0 1 0 0 6h13.5a3 3 0 1 0 0-6m-16.5-3a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3" />
+                  </svg>
+                  Sandbox
+                </Button>
+              </div>
+            </Card>
           ))}
         </div>
-      </Card>
+      </div>
     </div>
   );
 }

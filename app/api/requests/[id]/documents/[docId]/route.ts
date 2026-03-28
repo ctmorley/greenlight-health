@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { readFile } from "fs/promises";
 import { resolveDocumentPath } from "@/lib/document-path";
+import { auditPhiAccess } from "@/lib/security/audit-log";
+import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limit";
 
 /**
  * GET /api/requests/[id]/documents/[docId]
@@ -12,6 +14,9 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string; docId: string }> }
 ) {
+  const rateLimited = checkRateLimit(request, RATE_LIMITS.api);
+  if (rateLimited) return rateLimited;
+
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -24,6 +29,8 @@ export async function GET(
 
   try {
     const { id, docId } = await params;
+
+    auditPhiAccess(request, session, "view", "AuthDocument", docId, "Downloaded document").catch(() => {});
 
     // Verify the PA request belongs to the user's org
     const paRequest = await prisma.priorAuthRequest.findFirst({
