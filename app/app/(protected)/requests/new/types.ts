@@ -140,9 +140,20 @@ export interface WizardState {
   // Step 4 - Documentation
   clinicalNotes: string;
   files: UploadedFile[];
+  /** DTR QuestionnaireResponse data (Da Vinci DTR) */
+  dtrResponses: DtrResponseSummary[];
   // Tracking
   draftId: string | null;
   referenceNumber: string | null;
+}
+
+/** Lightweight DTR response summary stored in wizard state */
+export interface DtrResponseSummary {
+  questionnaireId: string;
+  questionnaireTitle: string;
+  status: "in-progress" | "completed";
+  answeredCount: number;
+  totalCount: number;
 }
 
 export const INITIAL_STATE: WizardState = {
@@ -164,6 +175,7 @@ export const INITIAL_STATE: WizardState = {
   scheduledDate: "",
   clinicalNotes: "",
   files: [],
+  dtrResponses: [],
   draftId: null,
   referenceNumber: null,
 };

@@ -91,6 +91,7 @@ export function useDraftPersistence({ editDraftId }: UseDraftPersistenceOptions)
             category: d.category,
             uploaded: true,
           })),
+          dtrResponses: [],
           draftId: editDraftId,
           referenceNumber: data.referenceNumber,
         });
