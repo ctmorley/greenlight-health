@@ -6,34 +6,28 @@ const nextConfig: NextConfig = {
 
   // ─── Security Headers (HIPAA / SOC 2 / HITRUST) ─────────────
   headers: async () => [
+    // ─── Global security headers (all routes) ──────────────────
     {
       source: "/(.*)",
       headers: [
-        // Prevent clickjacking (HITRUST 09.s)
         { key: "X-Frame-Options", value: "DENY" },
-        // Prevent MIME sniffing
         { key: "X-Content-Type-Options", value: "nosniff" },
-        // Enable HSTS (SOC 2 CC6.7)
-        {
-          key: "Strict-Transport-Security",
-          value: "max-age=63072000; includeSubDomains; preload",
-        },
-        // Referrer policy — don't leak PHI in referrer headers
+        { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
         { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-        // Permissions policy — disable unnecessary browser features
-        {
-          key: "Permissions-Policy",
-          value: "camera=(), microphone=(), geolocation=(), payment=()",
-        },
-        // XSS protection (legacy browsers)
+        { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), payment=()" },
         { key: "X-XSS-Protection", value: "1; mode=block" },
-        // Content Security Policy
+      ],
+    },
+    // ─── Strict CSP for app routes (PHI) ───────────────────────
+    {
+      source: "/app/:path*",
+      headers: [
         {
           key: "Content-Security-Policy",
           value: [
             "default-src 'self'",
-            "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://cdn.tailwindcss.com https://cdn.jsdelivr.net",
-            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.tailwindcss.com",
+            "script-src 'self' 'unsafe-eval' 'unsafe-inline'",
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
             "font-src 'self' https://fonts.gstatic.com",
             "img-src 'self' data: blob:",
             "connect-src 'self' https://*.fhir.org https://launch.smarthealthit.org https://hapi.fhir.org",
@@ -41,6 +35,16 @@ const nextConfig: NextConfig = {
             "base-uri 'self'",
             "form-action 'self'",
           ].join("; "),
+        },
+      ],
+    },
+    // ─── Strict CSP for API routes ─────────────────────────────
+    {
+      source: "/api/:path*",
+      headers: [
+        {
+          key: "Content-Security-Policy",
+          value: "default-src 'none'; frame-ancestors 'none'",
         },
       ],
     },
