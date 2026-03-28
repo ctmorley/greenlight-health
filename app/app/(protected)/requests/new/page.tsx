@@ -2,7 +2,7 @@
 
 import { useSearchParams } from "next/navigation";
 import { useRouter } from "next/navigation";
-import { Suspense, useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState, useCallback } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { StepIndicator } from "@/components/wizard/step-indicator";
@@ -136,6 +136,46 @@ function NewPARequestWizard() {
     }
   }, [isEhrLaunch, loadingDraft, applyFhirData, matchPatient, setState]);
 
+  // ─── Electronic PAS Submission ──────────────────────────────
+  const [pasSubmitting, setPasSubmitting] = useState(false);
+  const [pasResult, setPasResult] = useState<{
+    status: string;
+    authorizationNumber: string | null;
+    denialReason: string | null;
+    payerNotes: string | null;
+  } | null>(null);
+
+  const handleElectronicSubmit = useCallback(async () => {
+    setPasSubmitting(true);
+    setPasResult(null);
+    try {
+      // Ensure draft is saved first
+      const draftId = await saveDraft(5);
+      if (!draftId) throw new Error("Draft must be saved before submitting");
+
+      const res = await fetch("/api/fhir/submit-pa", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ requestId: draftId }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Electronic submission failed");
+
+      setPasResult(data.result);
+
+      if (data.result.status === "approved") {
+        // Redirect to request detail after brief delay
+        setTimeout(() => router.push(`/app/requests/${draftId}`), 2000);
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Electronic submission failed";
+      setPasResult({ status: "error", authorizationNumber: null, denialReason: msg, payerNotes: null });
+    } finally {
+      setPasSubmitting(false);
+    }
+  }, [saveDraft, router]);
+
   if (loadingDraft) {
     return <WizardSkeleton />;
   }
@@ -221,13 +261,51 @@ function NewPARequestWizard() {
           <Step4Documentation state={state} setState={setState} />
         )}
         {currentStep === 5 && (
-          <Step5Review
-            state={state}
-            auditIssues={auditIssues}
-            submitError={submitError}
-            clinicalCriteria={clinicalCriteria}
-            loadingCriteria={loadingCriteria}
-          />
+          <>
+            <Step5Review
+              state={state}
+              auditIssues={auditIssues}
+              submitError={submitError}
+              clinicalCriteria={clinicalCriteria}
+              loadingCriteria={loadingCriteria}
+            />
+            {/* PAS Electronic Submission Result */}
+            {pasResult && (
+              <div className={`mt-4 p-4 rounded-xl border ${
+                pasResult.status === "approved" ? "bg-emerald-500/10 border-emerald-500/20" :
+                pasResult.status === "denied" ? "bg-red-500/10 border-red-500/20" :
+                pasResult.status === "error" ? "bg-red-500/10 border-red-500/20" :
+                "bg-amber-500/10 border-amber-500/20"
+              }`}>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className={`text-sm font-semibold ${
+                    pasResult.status === "approved" ? "text-emerald-400" :
+                    pasResult.status === "denied" || pasResult.status === "error" ? "text-red-400" :
+                    "text-amber-400"
+                  }`}>
+                    {pasResult.status === "approved" ? "Approved" :
+                     pasResult.status === "denied" ? "Denied" :
+                     pasResult.status === "error" ? "Submission Error" :
+                     "Pended for Review"}
+                  </span>
+                  {pasResult.authorizationNumber && (
+                    <span className="text-xs font-mono text-emerald-400 bg-emerald-500/20 px-2 py-0.5 rounded">
+                      Auth #{pasResult.authorizationNumber}
+                    </span>
+                  )}
+                </div>
+                {pasResult.payerNotes && (
+                  <p className="text-sm text-text-secondary">{pasResult.payerNotes}</p>
+                )}
+                {pasResult.denialReason && pasResult.status !== "error" && (
+                  <p className="text-sm text-red-400 mt-1">{pasResult.denialReason}</p>
+                )}
+                {pasResult.status === "error" && (
+                  <p className="text-sm text-red-400">{pasResult.denialReason}</p>
+                )}
+              </div>
+            )}
+          </>
         )}
       </Card>
 
@@ -268,17 +346,30 @@ function NewPARequestWizard() {
               </svg>
             </Button>
           ) : (
-            <Button
-              variant="primary"
-              onClick={handleSubmit}
-              isLoading={submitting}
-              disabled={auditIssues.some((i) => i.severity === "error")}
-            >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 12 3.269 3.125A59.769 59.769 0 0 1 21.485 12 59.768 59.768 0 0 1 3.27 20.875L5.999 12Zm0 0h7.5" />
-              </svg>
-              Submit PA Request
-            </Button>
+            <>
+              <Button
+                variant="secondary"
+                onClick={handleElectronicSubmit}
+                isLoading={pasSubmitting}
+                disabled={auditIssues.some((i) => i.severity === "error") || !!pasResult}
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 7.5h-.75A2.25 2.25 0 0 0 4.5 9.75v7.5a2.25 2.25 0 0 0 2.25 2.25h7.5a2.25 2.25 0 0 0 2.25-2.25v-7.5a2.25 2.25 0 0 0-2.25-2.25h-.75m0-3-3-3m0 0-3 3m3-3v11.25m6-2.25h.75a2.25 2.25 0 0 1 2.25 2.25v7.5a2.25 2.25 0 0 1-2.25 2.25h-7.5a2.25 2.25 0 0 1-2.25-2.25v-7.5a2.25 2.25 0 0 1 2.25-2.25h.75" />
+                </svg>
+                Submit via FHIR
+              </Button>
+              <Button
+                variant="primary"
+                onClick={handleSubmit}
+                isLoading={submitting}
+                disabled={auditIssues.some((i) => i.severity === "error")}
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 12 3.269 3.125A59.769 59.769 0 0 1 21.485 12 59.768 59.768 0 0 1 3.27 20.875L5.999 12Zm0 0h7.5" />
+                </svg>
+                Submit PA Request
+              </Button>
+            </>
           )}
         </div>
       </div>
