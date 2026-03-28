@@ -156,7 +156,10 @@ tailwind.config = {
       <a href="#roi" class="hover:text-white transition">ROI Calculator</a>
       <a href="#pricing" class="hover:text-white transition">Pricing</a>
     </div>
-    <a href="#cta" class="hidden md:inline-flex px-5 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold transition">Get a Demo</a>
+    <div class="hidden md:flex items-center gap-3">
+      <a href="/app/login" class="px-5 py-2.5 rounded-lg border border-white/10 hover:border-emerald-500/30 text-slate-300 hover:text-white text-sm font-semibold transition">Log In</a>
+      <a href="#cta" class="px-5 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold transition">Get a Demo</a>
+    </div>
   </div>
 </nav>
 
@@ -524,10 +527,10 @@ tailwind.config = {
       </h2>
       <p class="text-slate-400 text-lg max-w-xl mx-auto mb-10">Get a custom ROI report for your imaging center, surgical center, or hospital system.</p>
       <div class="flex flex-col sm:flex-row items-center justify-center gap-3 max-w-md mx-auto mb-4">
-        <input type="email" placeholder="you@hospital.com" class="w-full sm:flex-1 px-5 py-3.5 rounded-lg bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500/50 transition">
-        <button class="pulse-cta w-full sm:w-auto px-8 py-3.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold transition whitespace-nowrap">Get Report</button>
+        <input id="cta-email" type="email" placeholder="you@hospital.com" class="w-full sm:flex-1 px-5 py-3.5 rounded-lg bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500/50 transition">
+        <button onclick="submitReport()" class="pulse-cta w-full sm:w-auto px-8 py-3.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold transition whitespace-nowrap">Get Report</button>
       </div>
-      <p class="text-xs text-slate-600">No commitment. Custom savings analysis delivered within 24 hours.</p>
+      <p id="cta-msg" class="text-xs text-slate-600">No commitment. Custom savings analysis delivered within 24 hours.</p>
     </div>
   </div>
 </section>
@@ -698,6 +701,25 @@ const observer = new IntersectionObserver((entries) => {
 }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
 
 document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+// --- CTA Report Submission ---
+function submitReport() {
+  const email = document.getElementById('cta-email').value.trim();
+  const msg = document.getElementById('cta-msg');
+  if (!email || !email.includes('@')) {
+    msg.textContent = 'Please enter a valid email address.';
+    msg.style.color = '#FB7185';
+    return;
+  }
+  msg.textContent = 'Sending...';
+  msg.style.color = '#34D399';
+  // Simulate submission (replace with real endpoint later)
+  setTimeout(() => {
+    msg.innerHTML = 'Thanks! We\'ll send your custom ROI report to <strong style="color:#fff;">' + email + '</strong> within 24 hours.';
+    msg.style.color = '#34D399';
+    document.getElementById('cta-email').value = '';
+  }, 800);
+}
 </script>
 </body>
 </html>
