@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GreenLight by Medivis — SOC 2 & HITRUST Certification Strategy & Roadmap</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --emerald-700: #059669; --emerald-500: #10B981; --emerald-300: #34D399;
+    --emerald-50: #ECFDF5; --emerald-100: #D1FAE5;
+    --sky-500: #0EA5E9; --sky-400: #38BDF8; --sky-50: #F0F9FF;
+    --coral-500: #F43F5E; --coral-400: #FB7185; --coral-50: #FFF1F2;
+    --amber-500: #F59E0B; --amber-400: #FBBF24; --amber-50: #FFFBEB;
+    --purple-500: #8B5CF6; --purple-50: #F5F3FF;
+    --teal-500: #14B8A6; --teal-50: #F0FDFA;
+    --text-dark: #1a1a2e; --text-body: #475569; --text-muted: #64748b; --text-light: #94a3b8;
+    --bg-light: #F8FAFC; --bg-mid: #F1F5F9; --bg-border: #E2E8F0;
+  }
+  @page { size: A4; margin: 0; }
+  body { font-family: 'Inter', -apple-system, sans-serif; font-size: 10px; line-height: 1.5; color: var(--text-body); background: #E2E8F0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  h1, h2, h3, h4, h5 { font-family: 'Plus Jakarta Sans', 'Inter', sans-serif; color: var(--text-dark); line-height: 1.25; }
+  h1 { font-size: 28px; font-weight: 800; letter-spacing: -0.5px; }
+  h2 { font-size: 20px; font-weight: 700; margin-bottom: 6px; letter-spacing: -0.3px; }
+  h3 { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+  h4 { font-size: 12px; font-weight: 600; margin-bottom: 3px; }
+  .num { font-family: 'JetBrains Mono', monospace; }
+  .page { width: 210mm; height: 297mm; margin: 20px auto; background: #fff; position: relative; overflow: hidden; page-break-after: always; padding: 18mm 22mm 16mm 22mm; box-shadow: 0 4px 24px rgba(0,0,0,0.10); }
+  @media print { body { background: #fff; } .page { margin: 0; box-shadow: none; } }
+  .cover { padding: 0; background: linear-gradient(145deg, #022c22 0%, #064e3b 30%, #065f46 50%, #047857 75%, #059669 100%); color: #fff; display: table; width: 210mm; height: 297mm; table-layout: fixed; }
+  .cover-row { display: table-row; }
+  .cover-cell { display: table-cell; vertical-align: middle; padding: 0 28mm; }
+  .cover-cell-top { display: table-cell; vertical-align: top; padding: 20mm 28mm 0; height: 1px; }
+  .cover-cell-bot { display: table-cell; vertical-align: bottom; padding: 0 28mm 8mm; height: 1px; }
+  .cover-classification { font-size: 9px; font-weight: 600; letter-spacing: 2.5px; text-transform: uppercase; color: rgba(255,255,255,0.5); margin-bottom: 20px; }
+  .cover-logo { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 30px; font-weight: 300; margin-bottom: 24px; color: var(--emerald-300); }
+  .cover-logo strong { font-weight: 800; color: #fff; }
+  .cover h1 { font-size: 34px; font-weight: 800; color: #fff; margin-bottom: 12px; line-height: 1.15; max-width: 480px; }
+  .cover-subtitle { font-size: 14px; color: rgba(255,255,255,0.7); font-weight: 400; max-width: 440px; line-height: 1.55; }
+  .cover-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
+  .cover-stat { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 16px 14px; }
+  .cover-stat .stat-num { font-family: 'JetBrains Mono', monospace; font-size: 22px; font-weight: 700; color: var(--emerald-300); display: block; margin-bottom: 4px; }
+  .cover-stat .stat-label { font-size: 8.5px; color: rgba(255,255,255,0.55); font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1.3; }
+  .cover-footer-inner { display: flex; justify-content: space-between; align-items: center; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.08); }
+  .accent-bar { height: 4px; background: linear-gradient(90deg, var(--emerald-700), var(--emerald-500), var(--emerald-300)); border-radius: 2px; margin-bottom: 20px; }
+  .accent-line { height: 2px; width: 48px; background: linear-gradient(90deg, var(--emerald-700), var(--emerald-300)); border-radius: 1px; margin-bottom: 12px; }
+  .section-num { font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700; color: var(--emerald-700); margin-bottom: 2px; letter-spacing: 1px; }
+  .section-desc { font-size: 10.5px; color: var(--text-muted); margin-bottom: 16px; line-height: 1.6; }
+  table { width: 100%; border-collapse: collapse; font-size: 9px; margin-bottom: 14px; }
+  th { background: var(--emerald-50); color: var(--emerald-700); font-weight: 600; text-align: left; padding: 7px 10px; font-size: 8.5px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid var(--emerald-300); }
+  td { padding: 7px 10px; border-bottom: 1px solid var(--bg-border); color: var(--text-body); vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  td.num, th.num { font-family: 'JetBrains Mono', monospace; text-align: right; }
+  tr.total-row td { font-weight: 700; color: var(--text-dark); border-top: 2px solid var(--emerald-500); background: var(--emerald-50); }
+  .stat-grid { display: grid; gap: 10px; margin-bottom: 14px; }
+  .stat-grid.cols-4 { grid-template-columns: repeat(4, 1fr); }
+  .stat-grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
+  .stat-grid.cols-2 { grid-template-columns: repeat(2, 1fr); }
+  .stat-card { background: var(--bg-light); border: 1px solid var(--bg-border); border-radius: 8px; padding: 14px; text-align: center; }
+  .stat-card .stat-num { font-family: 'JetBrains Mono', monospace; font-size: 20px; font-weight: 700; color: var(--text-dark); display: block; margin-bottom: 4px; line-height: 1.1; }
+  .stat-card .stat-label { font-size: 8px; color: var(--text-muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1.3; }
+  .stat-card.accent { background: linear-gradient(135deg, var(--emerald-50), #d1fae5); border-color: var(--emerald-300); }
+  .stat-card.accent .stat-num { color: var(--emerald-700); }
+  .stat-card.green { background: var(--emerald-50); border-color: var(--emerald-300); }
+  .stat-card.green .stat-num { color: var(--emerald-700); }
+  .stat-card.red { background: var(--coral-50); border-color: var(--coral-400); }
+  .stat-card.red .stat-num { color: var(--coral-500); }
+  .stat-card.blue { background: var(--sky-50); border-color: var(--sky-400); }
+  .stat-card.blue .stat-num { color: var(--sky-500); }
+  .stat-card.amber { background: var(--amber-50); border-color: var(--amber-400); }
+  .stat-card.amber .stat-num { color: var(--amber-500); }
+  .stat-card.purple { background: var(--purple-50); border-color: #c4b5fd; }
+  .stat-card.purple .stat-num { color: var(--purple-500); }
+  .callout { background: var(--emerald-50); border-left: 4px solid var(--emerald-500); border-radius: 0 8px 8px 0; padding: 14px 16px; margin-bottom: 14px; font-size: 9.5px; line-height: 1.65; color: var(--text-body); }
+  .callout strong { color: var(--text-dark); }
+  .callout-green { background: var(--emerald-50); border-left: 4px solid var(--emerald-500); border-radius: 0 8px 8px 0; padding: 14px 16px; margin-bottom: 14px; font-size: 9.5px; line-height: 1.65; }
+  .callout-green strong { color: var(--emerald-700); }
+  .callout-red { background: var(--coral-50); border-left: 4px solid var(--coral-500); border-radius: 0 8px 8px 0; padding: 14px 16px; margin-bottom: 14px; font-size: 9.5px; line-height: 1.65; }
+  .callout-red strong { color: var(--coral-500); }
+  .callout-sky { background: var(--sky-50); border-left: 4px solid var(--sky-500); border-radius: 0 8px 8px 0; padding: 14px 16px; margin-bottom: 14px; font-size: 9.5px; line-height: 1.65; }
+  .callout-sky strong { color: #0369A1; }
+  .callout-amber { background: var(--amber-50); border-left: 4px solid var(--amber-500); border-radius: 0 8px 8px 0; padding: 14px 16px; margin-bottom: 14px; font-size: 9.5px; line-height: 1.65; }
+  .callout-amber strong { color: #B45309; }
+  .callout-purple { background: var(--purple-50); border-left: 4px solid var(--purple-500); border-radius: 0 8px 8px 0; padding: 14px 16px; margin-bottom: 14px; font-size: 9.5px; line-height: 1.65; }
+  .callout-purple strong { color: #6D28D9; }
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 14px; }
+  .cols-3-2 { display: grid; grid-template-columns: 3fr 2fr; gap: 16px; margin-bottom: 14px; }
+  .cols-2-3 { display: grid; grid-template-columns: 2fr 3fr; gap: 16px; margin-bottom: 14px; }
+  .page-footer { position: absolute; bottom: 0; left: 0; right: 0; padding: 10px 22mm; display: flex; justify-content: space-between; align-items: center; font-size: 8px; color: var(--text-light); border-top: 1px solid var(--bg-border); }
+  .page-footer .footer-logo { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 10px; font-weight: 300; color: var(--text-light); }
+  .page-footer .footer-logo strong { font-weight: 700; color: var(--emerald-500); }
+  .page-footer .footer-page { font-family: 'JetBrains Mono', monospace; font-size: 8px; color: var(--text-light); }
+  .toc-list { list-style: none; margin-bottom: 14px; }
+  .toc-item { display: flex; align-items: baseline; padding: 9px 0; border-bottom: 1px solid var(--bg-border); }
+  .toc-item:last-child { border-bottom: none; }
+  .toc-num { font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; color: var(--emerald-700); width: 36px; flex-shrink: 0; }
+  .toc-title { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 11.5px; font-weight: 600; color: var(--text-dark); flex: 1; }
+  .toc-page { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--text-muted); margin-left: 12px; }
+  .tag { display: inline-block; font-size: 7.5px; font-weight: 600; padding: 2px 7px; border-radius: 4px; margin-right: 4px; margin-top: 4px; letter-spacing: 0.2px; }
+  .tag-emerald { background: var(--emerald-50); color: var(--emerald-700); border: 1px solid #a7f3d0; }
+  .tag-sky { background: var(--sky-50); color: #0369A1; border: 1px solid #bae6fd; }
+  .tag-amber { background: var(--amber-50); color: #B45309; border: 1px solid #fde68a; }
+  .tag-rose { background: var(--coral-50); color: #BE123C; border: 1px solid #fecdd3; }
+  .tag-purple { background: var(--purple-50); color: #6D28D9; border: 1px solid #ddd6fe; }
+  .tag-teal { background: var(--teal-50); color: #0F766E; border: 1px solid #99f6e4; }
+  .feature-card { border-radius: 8px; padding: 14px; border: 1px solid var(--bg-border); background: #fff; margin-bottom: 8px; }
+  .feature-card h4 { font-size: 11px; margin-bottom: 4px; }
+  .feature-card p { font-size: 8.5px; line-height: 1.5; color: var(--text-muted); margin-bottom: 6px; }
+  .feature-card.fc-emerald { border-left: 3px solid var(--emerald-500); background: var(--emerald-50); }
+  .feature-card.fc-emerald h4 { color: var(--emerald-700); }
+  .feature-card.fc-sky { border-left: 3px solid var(--sky-500); background: var(--sky-50); }
+  .feature-card.fc-sky h4 { color: #0369A1; }
+  .feature-card.fc-amber { border-left: 3px solid var(--amber-500); background: var(--amber-50); }
+  .feature-card.fc-amber h4 { color: #B45309; }
+  .feature-card.fc-rose { border-left: 3px solid var(--coral-500); background: var(--coral-50); }
+  .feature-card.fc-rose h4 { color: #BE123C; }
+  .feature-card.fc-purple { border-left: 3px solid var(--purple-500); background: var(--purple-50); }
+  .feature-card.fc-purple h4 { color: #6D28D9; }
+  .feature-card.fc-teal { border-left: 3px solid var(--teal-500); background: var(--teal-50); }
+  .feature-card.fc-teal h4 { color: #0F766E; }
+  .phase-box { border-radius: 8px; padding: 12px 14px; margin-bottom: 10px; border: 1px solid var(--bg-border); background: var(--bg-light); }
+  .phase-box h4 { font-size: 10.5px; color: var(--emerald-700); margin-bottom: 4px; }
+  .phase-box ul { font-size: 8.5px; line-height: 1.55; padding-left: 14px; color: var(--text-body); }
+  .phase-box .milestone { font-size: 8px; font-weight: 600; color: var(--emerald-700); margin-top: 4px; }
+  .gantt-row { display: flex; align-items: center; margin-bottom: 5px; font-size: 7.5px; }
+  .gantt-label { width: 110px; flex-shrink: 0; font-weight: 500; color: var(--text-body); text-align: right; padding-right: 8px; font-size: 7.5px; }
+  .gantt-track { flex: 1; height: 14px; position: relative; border-left: 1px solid var(--bg-border); }
+  .gantt-bar { position: absolute; height: 10px; top: 2px; border-radius: 3px; opacity: 0.85; }
+  .gantt-milestone { position: absolute; top: 0px; width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-bottom: 10px solid var(--coral-500); }
+  .fin-total { background: linear-gradient(135deg, var(--emerald-50), #d1fae5); border: 2px solid var(--emerald-500); border-radius: 8px; padding: 12px 16px; text-align: center; margin-bottom: 14px; }
+  .fin-total .stat-num { font-family: 'JetBrains Mono', monospace; font-size: 28px; font-weight: 700; color: var(--emerald-700); }
+  .fin-total .stat-label { font-size: 9px; color: var(--text-muted); font-weight: 500; }
+  ul.feature-list { list-style: none; padding: 0; font-size: 9px; line-height: 1.6; }
+  ul.feature-list li { padding: 3px 0 3px 14px; position: relative; }
+  ul.feature-list li::before { content: ''; position: absolute; left: 0; top: 8px; width: 6px; height: 6px; background: var(--emerald-500); border-radius: 50%; }
+  ul.check-list { list-style: none; padding: 0; font-size: 9px; line-height: 1.6; }
+  ul.check-list li { padding: 2px 0 2px 16px; position: relative; }
+  ul.check-list li::before { content: '\2713'; position: absolute; left: 0; color: var(--emerald-500); font-weight: 700; }
+  ul.x-list { list-style: none; padding: 0; font-size: 9px; line-height: 1.6; }
+  ul.x-list li { padding: 2px 0 2px 16px; position: relative; }
+  ul.x-list li::before { content: '\2717'; position: absolute; left: 0; color: var(--coral-500); font-weight: 700; }
+  .mb-4 { margin-bottom: 4px; } .mb-8 { margin-bottom: 8px; } .mb-12 { margin-bottom: 12px; }
+  .mb-14 { margin-bottom: 14px; } .mb-16 { margin-bottom: 16px; } .mb-20 { margin-bottom: 20px; }
+  .text-sm { font-size: 9px; } .text-xs { font-size: 8px; } .text-muted { color: var(--text-muted); }
+  .risk-row-high td:first-child { border-left: 3px solid var(--coral-500); }
+  .risk-row-med td:first-child { border-left: 3px solid var(--amber-500); }
+  .risk-row-low td:first-child { border-left: 3px solid var(--emerald-500); }
+</style>
+</head>
+<body>
+
+<!-- PAGE 1: COVER -->
+<div class="cover" style="page-break-after:always;">
+  <div class="cover-row"><div class="cover-cell-top"><div class="cover-classification">CONFIDENTIAL &mdash; COMPLIANCE STRATEGY DOCUMENT</div></div></div>
+  <div class="cover-row">
+    <div class="cover-cell">
+      <div class="cover-logo">green<strong>light</strong> <span style="font-size:12px;font-weight:400;color:rgba(255,255,255,0.4);letter-spacing:0.04em;">by Medivis</span></div>
+      <h1>SOC 2 &amp; HITRUST<br>Certification Strategy<br>&amp; Roadmap</h1>
+      <div class="cover-subtitle">Technical Requirements, Implementation Timeline, Budget Estimates &amp; Compliance Framework Mapping</div>
+    </div>
+  </div>
+  <div class="cover-row">
+    <div class="cover-cell-bot">
+      <div class="cover-stats">
+        <div class="cover-stat"><span class="stat-num">12 mo</span><span class="stat-label">SOC 2 Type II<br>Certification</span></div>
+        <div class="cover-stat"><span class="stat-num">18 mo</span><span class="stat-label">HITRUST r2<br>Full Assessment</span></div>
+        <div class="cover-stat"><span class="stat-num">90+</span><span class="stat-label">Controls to Map<br>&amp; Evidence</span></div>
+        <div class="cover-stat"><span class="stat-num">$250&ndash;500K</span><span class="stat-label">Total 2-Year<br>Investment</span></div>
+      </div>
+      <div class="cover-footer-inner">
+        <span>Prepared: March 2026</span>
+        <span>Classification: Confidential &mdash; Version 1.0</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PAGE 2: TABLE OF CONTENTS -->
+<div class="page">
+  <div class="accent-bar"></div>
+  <div class="section-num">CONTENTS</div>
+  <h2 style="margin-bottom: 24px;">Table of Contents</h2>
+  <ul class="toc-list">
+    <li class="toc-item"><span class="toc-num">01</span><span class="toc-title">Executive Summary &amp; Current State Assessment</span><span class="toc-page">03</span></li>
+    <li class="toc-item"><span class="toc-num">02</span><span class="toc-title">SOC 2 Trust Services Criteria Mapping</span><span class="toc-page">04</span></li>
+    <li class="toc-item"><span class="toc-num">03</span><span class="toc-title">HITRUST CSF Control Domain Mapping</span><span class="toc-page">05</span></li>
+    <li class="toc-item"><span class="toc-num">04</span><span class="toc-title">Certification Pathway &amp; Timeline</span><span class="toc-page">06</span></li>
+    <li class="toc-item"><span class="toc-num">05</span><span class="toc-title">Technical Requirements &mdash; What to Build</span><span class="toc-page">07</span></li>
+    <li class="toc-item"><span class="toc-num">06</span><span class="toc-title">Policy &amp; Procedure Requirements</span><span class="toc-page">08</span></li>
+    <li class="toc-item"><span class="toc-num">07</span><span class="toc-title">Vendor &amp; Tool Requirements</span><span class="toc-page">09</span></li>
+    <li class="toc-item"><span class="toc-num">08</span><span class="toc-title">Budget Estimates &amp; Financial Planning</span><span class="toc-page">10</span></li>
+    <li class="toc-item"><span class="toc-num">09</span><span class="toc-title">Risk Assessment Summary</span><span class="toc-page">11</span></li>
+    <li class="toc-item"><span class="toc-num">10</span><span class="toc-title">Recommended Action Plan &mdash; Next 30/60/90 Days</span><span class="toc-page">12</span></li>
+  </ul>
+
+  <div class="callout" style="margin-top: 16px;">
+    <strong>How to read this document:</strong> This roadmap is designed for leadership, investors, and enterprise prospects. Sections 01&ndash;03 cover the current state and framework mappings. Sections 04&ndash;06 detail the technical and procedural work required. Sections 07&ndash;08 cover vendor selection and budgets. Sections 09&ndash;10 provide the risk assessment and immediate action plan.
+  </div>
+
+  <div class="stat-grid cols-3" style="margin-top: 18px;">
+    <div class="stat-card accent"><span class="stat-num" style="font-size:16px;">70%+</span><span class="stat-label">Technical Controls<br>Already Implemented</span></div>
+    <div class="stat-card blue"><span class="stat-num" style="font-size:16px;">Sprint 13</span><span class="stat-label">Security Hardening<br>Completed</span></div>
+    <div class="stat-card amber"><span class="stat-num" style="font-size:16px;">~30%</span><span class="stat-label">Policy &amp; Process<br>Work Remaining</span></div>
+  </div>
+
+  <div class="page-footer"><span class="footer-logo">green<strong>light</strong> <span style="font-size:7px;color:var(--text-light);font-weight:400;">by Medivis</span></span><span class="footer-page">02</span></div>
+</div>
+
+<!-- PAGE 3: EXECUTIVE SUMMARY & CURRENT STATE -->
+<div class="page">
+  <div class="accent-bar"></div>
+  <div class="section-num">SECTION 01</div>
+  <h2>Executive Summary &amp; Current State Assessment</h2>
+  <div class="section-desc">GreenLight has invested heavily in security engineering from Sprint 13. The compliance gap is predominantly in policy documentation, process formalization, and third-party assessments &mdash; not in technical controls.</div>
+
+  <div class="callout mb-14">
+    <strong>The GreenLight advantage:</strong> Most healthcare startups begin their SOC 2 journey at 0% technical control implementation. GreenLight has completed 70%+ of the technical security controls through Sprint 13&rsquo;s security hardening sprint. The remaining work is primarily organizational: writing policies, implementing endpoint management, conducting training, and engaging auditors. This dramatically compresses the timeline and reduces remediation costs.
+  </div>
+
+  <h3 class="mb-8">What Exists vs. What Needs to Be Built</h3>
+  <div class="cols">
+    <div>
+      <h4 style="color:var(--emerald-700); margin-bottom:6px;">Implemented (Sprint 13 &amp; Prior)</h4>
+      <ul class="check-list">
+        <li>AES-256-GCM encryption for PHI at rest</li>
+        <li>HIPAA audit logging (all PHI access events)</li>
+        <li>Role-based access control (RBAC)</li>
+        <li>Rate limiting on all API endpoints</li>
+        <li>Security headers (HSTS, CSP, X-Frame-Options)</li>
+        <li>CI/CD pipeline with security scanning</li>
+        <li>Incident response plan (initial draft)</li>
+        <li>BAA checklist and tracking system</li>
+        <li>Data flow diagram (PHI lifecycle)</li>
+        <li>TLS 1.2+ transport encryption</li>
+        <li>Input validation and sanitization</li>
+        <li>Session management with secure tokens</li>
+      </ul>
+    </div>
+    <div>
+      <h4 style="color:var(--coral-500); margin-bottom:6px;">Not Yet Built / Formalized</h4>
+      <ul class="x-list">
+        <li>Formal written security policies (13 required)</li>
+        <li>Endpoint management / MDM solution</li>
+        <li>Employee security awareness training</li>
+        <li>Annual penetration testing</li>
+        <li>Vendor risk assessment program</li>
+        <li>Formal access review process (quarterly)</li>
+        <li>Background check program</li>
+        <li>Business continuity / disaster recovery testing</li>
+        <li>Change management formal process</li>
+        <li>MFA enforcement across all systems</li>
+        <li>Vulnerability scanning (continuous)</li>
+        <li>Risk management framework documentation</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3 class="mb-4">Control Implementation Readiness by Category</h3>
+  <div class="stat-grid cols-4">
+    <div class="stat-card green"><span class="stat-num" style="font-size:16px;">85%</span><span class="stat-label">Data Encryption<br>&amp; Protection</span></div>
+    <div class="stat-card green"><span class="stat-num" style="font-size:16px;">75%</span><span class="stat-label">Access Control<br>&amp; Authentication</span></div>
+    <div class="stat-card amber"><span class="stat-num" style="font-size:16px;">60%</span><span class="stat-label">Audit Logging<br>&amp; Monitoring</span></div>
+    <div class="stat-card red"><span class="stat-num" style="font-size:16px;">15%</span><span class="stat-label">Policy &amp; Governance<br>Documentation</span></div>
+  </div>
+
+  <div class="callout-sky">
+    <strong>Strategic insight:</strong> The compliance landscape has shifted. Enterprise health systems and payers now require SOC 2 Type II as a <em>minimum</em> procurement gate, and HITRUST r2 as the gold standard. athenahealth requires HITRUST self-assessment within 90 days of marketplace GA. Starting the compliance program now ensures GreenLight is not blocked on enterprise sales when the EHR integrations are production-ready.
+  </div>
+
+  <div class="page-footer"><span class="footer-logo">green<strong>light</strong> <span style="font-size:7px;color:var(--text-light);font-weight:400;">by Medivis</span></span><span class="footer-page">03</span></div>
+</div>
+
+<!-- PAGE 4: SOC 2 TRUST SERVICES CRITERIA MAPPING -->
+<div class="page">
+  <div class="accent-bar"></div>
+  <div class="section-num">SECTION 02</div>
+  <h2>SOC 2 Trust Services Criteria Mapping</h2>
+  <div class="section-desc">SOC 2 evaluates controls across 5 Trust Services Criteria. GreenLight should certify against Security (CC), Availability (A1), and Confidentiality (C1) &mdash; the three categories most relevant to healthcare SaaS.</div>
+
+  <div class="stat-grid cols-3 mb-14">
+    <div class="stat-card accent"><span class="stat-num" style="font-size:14px;">Security</span><span class="stat-label">CC1&ndash;CC9 &bull; Required<br>Common Criteria</span></div>
+    <div class="stat-card blue"><span class="stat-num" style="font-size:14px;">Availability</span><span class="stat-label">A1 &bull; Recommended<br>Uptime &amp; Recovery</span></div>
+    <div class="stat-card purple"><span class="stat-num" style="font-size:14px;">Confidentiality</span><span class="stat-label">C1 &bull; Recommended<br>PHI Protection</span></div>
+  </div>
+
+  <h3 class="mb-4">Security Common Criteria (CC1&ndash;CC9)</h3>
+  <table>
+    <thead><tr><th style="width:10%;">Criteria</th><th style="width:22%;">Category</th><th style="width:28%;">Key Controls</th><th style="width:15%;">Status</th><th style="width:25%;">Evidence</th></tr></thead>
+    <tbody>
+      <tr><td><strong>CC1</strong></td><td>Control Environment</td><td>Org structure, ethics, oversight, HR policies</td><td><span class="tag tag-rose">Not started</span></td><td>Policies to be written</td></tr>
+      <tr><td><strong>CC2</strong></td><td>Communication &amp; Information</td><td>Internal/external communication, reporting</td><td><span class="tag tag-amber">Partial</span></td><td>Incident response draft exists</td></tr>
+      <tr><td><strong>CC3</strong></td><td>Risk Assessment</td><td>Risk identification, analysis, mitigation</td><td><span class="tag tag-rose">Not started</span></td><td>Risk register needed</td></tr>
+      <tr><td><strong>CC4</strong></td><td>Monitoring Activities</td><td>Ongoing evaluation, deficiency remediation</td><td><span class="tag tag-amber">Partial</span></td><td>CI/CD scanning, audit logs</td></tr>
+      <tr><td><strong>CC5</strong></td><td>Control Activities</td><td>Technical controls, change management</td><td><span class="tag tag-emerald">Implemented</span></td><td>RBAC, encryption, security headers</td></tr>
+      <tr><td><strong>CC6</strong></td><td>Logical &amp; Physical Access</td><td>Access provisioning, authentication, MFA</td><td><span class="tag tag-amber">Partial</span></td><td>RBAC done; MFA, access reviews needed</td></tr>
+      <tr><td><strong>CC7</strong></td><td>System Operations</td><td>Vulnerability mgmt, incident detection, response</td><td><span class="tag tag-amber">Partial</span></td><td>Rate limiting, IRP draft; pen test needed</td></tr>
+      <tr><td><strong>CC8</strong></td><td>Change Management</td><td>Change authorization, testing, approval</td><td><span class="tag tag-amber">Partial</span></td><td>CI/CD exists; formal process needed</td></tr>
+      <tr><td><strong>CC9</strong></td><td>Risk Mitigation</td><td>Vendor management, business continuity</td><td><span class="tag tag-rose">Not started</span></td><td>Vendor risk program needed</td></tr>
+    </tbody>
+  </table>
+
+  <h3 class="mb-4">Availability &amp; Confidentiality Criteria</h3>
+  <table>
+    <thead><tr><th style="width:10%;">Criteria</th><th style="width:22%;">Category</th><th style="width:28%;">Key Controls</th><th style="width:15%;">Status</th><th style="width:25%;">Evidence</th></tr></thead>
+    <tbody>
+      <tr><td><strong>A1.1</strong></td><td>Capacity Management</td><td>Performance monitoring, capacity planning</td><td><span class="tag tag-amber">Partial</span></td><td>Vercel auto-scaling; monitoring needed</td></tr>
+      <tr><td><strong>A1.2</strong></td><td>Recovery Operations</td><td>Backup, recovery testing, DR plan</td><td><span class="tag tag-amber">Partial</span></td><td>Neon backups; DR testing needed</td></tr>
+      <tr><td><strong>A1.3</strong></td><td>Recovery Testing</td><td>Annual BCP/DR testing</td><td><span class="tag tag-rose">Not started</span></td><td>DR plan and test needed</td></tr>
+      <tr><td><strong>C1.1</strong></td><td>Confidential Information</td><td>Data classification, encryption, access controls</td><td><span class="tag tag-emerald">Implemented</span></td><td>AES-256-GCM, RBAC, data flow diagram</td></tr>
+      <tr><td><strong>C1.2</strong></td><td>Disposal of Data</td><td>Data retention, secure disposal procedures</td><td><span class="tag tag-rose">Not started</span></td><td>Retention policy needed</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout-green">
+    <strong>Summary:</strong> Of the 14 criteria areas above, 2 are fully implemented, 7 are partially implemented (technical controls exist but formal processes need documentation), and 5 require new work. The heaviest lift is CC1 (governance policies), CC3 (risk assessment), and CC9 (vendor management) &mdash; all organizational, not technical.
+  </div>
+
+  <div class="page-footer"><span class="footer-logo">green<strong>light</strong> <span style="font-size:7px;color:var(--text-light);font-weight:400;">by Medivis</span></span><span class="footer-page">04</span></div>
+</div>
+
+<!-- PAGE 5: HITRUST CSF CONTROL DOMAINS -->
+<div class="page">
+  <div class="accent-bar"></div>
+  <div class="section-num">SECTION 03</div>
+  <h2>HITRUST CSF Control Domain Mapping</h2>
+  <div class="section-desc">HITRUST CSF v11 organizes controls into 14 domains. The e1 (essentials) assessment covers 44 core controls across these domains. GreenLight&rsquo;s Sprint 13 work provides significant coverage.</div>
+
+  <div class="stat-grid cols-4 mb-12">
+    <div class="stat-card green"><span class="stat-num">26</span><span class="stat-label">e1 Controls<br>Implemented</span></div>
+    <div class="stat-card amber"><span class="stat-num">10</span><span class="stat-label">e1 Controls<br>Partial</span></div>
+    <div class="stat-card red"><span class="stat-num">8</span><span class="stat-label">e1 Controls<br>Not Started</span></div>
+    <div class="stat-card accent"><span class="stat-num">44</span><span class="stat-label">Total e1<br>Essential Controls</span></div>
+  </div>
+
+  <table>
+    <thead><tr><th style="width:5%;">ID</th><th style="width:20%;">Domain</th><th style="width:7%;">e1 Ctrls</th><th style="width:13%;">Status</th><th style="width:30%;">GreenLight Coverage</th><th style="width:25%;">Gap / Action Needed</th></tr></thead>
+    <tbody>
+      <tr><td><strong>02</strong></td><td>Information Protection Program</td><td class="num">5</td><td><span class="tag tag-rose">1 of 5</span></td><td>Incident response draft exists</td><td>Security program charter, risk assessment, policy suite</td></tr>
+      <tr><td><strong>03</strong></td><td>Endpoint Protection</td><td class="num">3</td><td><span class="tag tag-rose">0 of 3</span></td><td>No MDM deployed</td><td>Deploy endpoint management (Jamf/Kandji), anti-malware</td></tr>
+      <tr><td><strong>04</strong></td><td>Portable Media Security</td><td class="num">2</td><td><span class="tag tag-emerald">2 of 2</span></td><td>Cloud-only architecture; no portable media in use</td><td>Document policy prohibiting portable media for PHI</td></tr>
+      <tr><td><strong>05</strong></td><td>Mobile Device Security</td><td class="num">2</td><td><span class="tag tag-amber">1 of 2</span></td><td>Web app only; no native mobile app</td><td>Mobile device policy needed</td></tr>
+      <tr><td><strong>06</strong></td><td>Wireless Security</td><td class="num">2</td><td><span class="tag tag-amber">1 of 2</span></td><td>TLS 1.2+ on all connections</td><td>Wireless security policy for remote workers</td></tr>
+      <tr><td><strong>07</strong></td><td>Configuration Management</td><td class="num">4</td><td><span class="tag tag-emerald">3 of 4</span></td><td>CI/CD pipeline, infrastructure-as-code, security scanning</td><td>Formal change management process documentation</td></tr>
+      <tr><td><strong>08</strong></td><td>Vulnerability Management</td><td class="num">3</td><td><span class="tag tag-amber">1 of 3</span></td><td>CI/CD security scanning</td><td>Continuous vuln scanning, pen testing, remediation SLAs</td></tr>
+      <tr><td><strong>09</strong></td><td>Network Protection</td><td class="num">3</td><td><span class="tag tag-emerald">2 of 3</span></td><td>Security headers, rate limiting, TLS</td><td>Network segmentation documentation</td></tr>
+      <tr><td><strong>10</strong></td><td>Transmission Protection</td><td class="num">3</td><td><span class="tag tag-emerald">3 of 3</span></td><td>TLS 1.2+, AES-256-GCM, HSTS enforced</td><td>Fully covered</td></tr>
+      <tr><td><strong>11</strong></td><td>Password Management</td><td class="num">3</td><td><span class="tag tag-emerald">2 of 3</span></td><td>Secure session tokens, password validation</td><td>Formal password policy + MFA enforcement</td></tr>
+      <tr><td><strong>12</strong></td><td>Access Control</td><td class="num">5</td><td><span class="tag tag-emerald">3 of 5</span></td><td>RBAC, session management, input validation</td><td>Quarterly access reviews, least-privilege audit</td></tr>
+      <tr><td><strong>13</strong></td><td>Audit Logging &amp; Monitoring</td><td class="num">4</td><td><span class="tag tag-emerald">3 of 4</span></td><td>HIPAA audit logging, PHI access tracking</td><td>Log retention policy, alerting rules, SIEM integration</td></tr>
+      <tr><td><strong>14</strong></td><td>Education, Training &amp; Awareness</td><td class="num">3</td><td><span class="tag tag-rose">0 of 3</span></td><td>No training program exists</td><td>Security awareness training platform, annual training</td></tr>
+      <tr><td><strong>15</strong></td><td>Third Party Assurance</td><td class="num">2</td><td><span class="tag tag-rose">0 of 2</span></td><td>BAA checklist exists but no vendor risk program</td><td>Vendor risk assessments, third-party security reviews</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout-amber">
+    <strong>e1 vs. r2 strategy:</strong> The HITRUST e1 assessment (44 controls) is the fastest path to certification and sufficient for most initial enterprise sales. The r2 assessment adds risk-based controls (190+ total) and is the &ldquo;gold standard&rdquo; that large IDNs and national payers require. Recommendation: achieve e1 first (Month 9&ndash;12), then pursue r2 (Month 12&ndash;18) while revenue justifies the investment.
+  </div>
+
+  <div class="page-footer"><span class="footer-logo">green<strong>light</strong> <span style="font-size:7px;color:var(--text-light);font-weight:400;">by Medivis</span></span><span class="footer-page">05</span></div>
+</div>
+
+<!-- PAGE 6: CERTIFICATION PATHWAY & TIMELINE -->
+<div class="page">
+  <div class="accent-bar"></div>
+  <div class="section-num">SECTION 04</div>
+  <h2>Certification Pathway &amp; Timeline</h2>
+  <div class="section-desc">A parallel-track approach targeting SOC 2 Type II in 9&ndash;12 months and HITRUST r2 in 18 months. The observation periods overlap to maximize velocity.</div>
+
+  <div class="cols mb-14">
+    <div>
+      <div class="phase-box">
+        <h4 style="color:var(--emerald-700);">Months 1&ndash;2: Foundation &amp; Setup</h4>
+        <ul>
+          <li>Select and deploy compliance platform (Vanta/Drata/Secureframe)</li>
+          <li>Write core security policies (Information Security, Access Control, Change Mgmt)</li>
+          <li>Begin automated evidence collection</li>
+          <li>Engage SOC 2 audit firm and HITRUST assessor</li>
+          <li>Deploy endpoint management solution</li>
+        </ul>
+        <div class="milestone">Milestone: Compliance platform live, 5+ policies approved</div>
+      </div>
+      <div class="phase-box">
+        <h4 style="color:#0369A1;">Months 2&ndash;3: Gap Remediation</h4>
+        <ul>
+          <li>Deploy MFA enforcement across all systems</li>
+          <li>Complete employee security awareness training</li>
+          <li>Schedule and execute first penetration test</li>
+          <li>Implement continuous vulnerability scanning</li>
+          <li>Conduct formal risk assessment</li>
+          <li>Establish vendor risk assessment program</li>
+        </ul>
+        <div class="milestone">Milestone: All critical gaps remediated</div>
+      </div>
+      <div class="phase-box">
+        <h4 style="color:#B45309;">Month 3: SOC 2 Type I Audit</h4>
+        <ul>
+          <li>Point-in-time assessment of control design</li>
+          <li>Auditor evaluates all documented controls</li>
+          <li>Produces Type I report (design effectiveness)</li>
+          <li>Identifies any remaining remediation items</li>
+        </ul>
+        <div class="milestone">Milestone: SOC 2 Type I report issued</div>
+      </div>
+    </div>
+    <div>
+      <div class="phase-box">
+        <h4 style="color:#6D28D9;">Months 3&ndash;9: SOC 2 Type II Observation</h4>
+        <ul>
+          <li>6-month observation period begins</li>
+          <li>Continuous evidence collection via compliance platform</li>
+          <li>Quarterly access reviews executed</li>
+          <li>Ongoing vulnerability scanning and remediation</li>
+          <li>Incident response tabletop exercises</li>
+        </ul>
+        <div class="milestone">Milestone: Observation period complete</div>
+      </div>
+      <div class="phase-box">
+        <h4 style="color:#0F766E;">Months 6&ndash;9: HITRUST e1 Self-Assessment</h4>
+        <ul>
+          <li>Map 44 essential controls to evidence</li>
+          <li>Complete HITRUST MyCSF portal entries</li>
+          <li>Internal readiness review</li>
+          <li>Submit for HITRUST e1 validated assessment</li>
+        </ul>
+        <div class="milestone">Milestone: HITRUST e1 assessment submitted</div>
+      </div>
+      <div class="phase-box">
+        <h4 style="color:#BE123C;">Months 9&ndash;12: Certifications Issued</h4>
+        <ul>
+          <li>Month 9: SOC 2 Type II report issued</li>
+          <li>Month 9&ndash;12: HITRUST e1 certification issued</li>
+          <li>Begin HITRUST r2 scoping (190+ controls)</li>
+        </ul>
+        <div class="milestone">Milestone: SOC 2 Type II + HITRUST e1 certified</div>
+      </div>
+      <div class="phase-box">
+        <h4 style="color:var(--text-dark);">Months 12&ndash;18: HITRUST r2 Full Assessment</h4>
+        <ul>
+          <li>Complete risk-based control implementation</li>
+          <li>Engage authorized external assessor</li>
+          <li>Full r2 assessment and HITRUST QA review</li>
+          <li>HITRUST r2 certification issued</li>
+        </ul>
+        <div class="milestone">Milestone: HITRUST r2 &mdash; gold standard achieved</div>
+      </div>
+    </div>
+  </div>
+
+  <h3 class="mb-8">Certification Timeline Gantt Chart</h3>
+  <div style="margin-bottom:4px;display:flex;font-size:7px;color:var(--text-muted);"><span style="width:110px;"></span><span style="flex:1;display:flex;justify-content:space-between;padding-left:1px;"><span>M1</span><span>M3</span><span>M5</span><span>M7</span><span>M9</span><span>M11</span><span>M13</span><span>M15</span><span>M18</span></span></div>
+  <div class="gantt-row"><span class="gantt-label">Platform Setup</span><div class="gantt-track"><div class="gantt-bar" style="left:0%;width:11%;background:var(--emerald-500);"></div></div></div>
+  <div class="gantt-row"><span class="gantt-label">Policy Creation</span><div class="gantt-track"><div class="gantt-bar" style="left:0%;width:16.5%;background:var(--emerald-300);"></div></div></div>
+  <div class="gantt-row"><span class="gantt-label">Gap Remediation</span><div class="gantt-track"><div class="gantt-bar" style="left:5.5%;width:11%;background:var(--amber-500);"></div></div></div>
+  <div class="gantt-row"><span class="gantt-label">Pen Test</span><div class="gantt-track"><div class="gantt-bar" style="left:11%;width:5.5%;background:var(--coral-500);"></div></div></div>
+  <div class="gantt-row"><span class="gantt-label">SOC 2 Type I</span><div class="gantt-track"><div class="gantt-bar" style="left:14%;width:5.5%;background:var(--sky-500);"></div></div></div>
+  <div class="gantt-row"><span class="gantt-label">SOC 2 Type II Obs.</span><div class="gantt-track"><div class="gantt-bar" style="left:16.5%;width:33%;background:var(--sky-400);"></div></div></div>
+  <div class="gantt-row"><span class="gantt-label">SOC 2 Type II Report</span><div class="gantt-track"><div class="gantt-bar" style="left:49.5%;width:2%;background:var(--sky-500);"></div></div></div>
+  <div class="gantt-row"><span class="gantt-label">HITRUST e1 Assess.</span><div class="gantt-track"><div class="gantt-bar" style="left:33%;width:22%;background:var(--purple-500);"></div></div></div>
+  <div class="gantt-row"><span class="gantt-label">HITRUST e1 Cert.</span><div class="gantt-track"><div class="gantt-bar" style="left:50%;width:16.5%;background:#8B5CF6;"></div></div></div>
+  <div class="gantt-row"><span class="gantt-label">HITRUST r2 Full</span><div class="gantt-track"><div class="gantt-bar" style="left:66.5%;width:33.5%;background:var(--teal-500);"></div></div></div>
+
+  <div class="page-footer"><span class="footer-logo">green<strong>light</strong> <span style="font-size:7px;color:var(--text-light);font-weight:400;">by Medivis</span></span><span class="footer-page">06</span></div>
+</div>
+
+<!-- PAGE 7: TECHNICAL REQUIREMENTS -->
+<div class="page">
+  <div class="accent-bar"></div>
+  <div class="section-num">SECTION 05</div>
+  <h2>Technical Requirements &mdash; What to Build</h2>
+  <div class="section-desc">Remaining technical work to close compliance gaps. Organized by priority and effort. Most items are configuration/deployment rather than new application code.</div>
+
+  <div class="cols mb-14">
+    <div>
+      <div class="feature-card fc-rose mb-8">
+        <h4>P0: MFA Enforcement</h4>
+        <p>Enforce multi-factor authentication across all systems: production infrastructure, source code (GitHub), compliance platform, cloud consoles (Vercel, Neon). Use Azure AD / Entra ID or Okta as identity provider.</p>
+        <p><strong>Effort:</strong> 1&ndash;2 days &bull; <strong>Blocks:</strong> SOC 2 CC6, HITRUST 11, 12</p>
+        <span class="tag tag-rose">Critical</span> <span class="tag tag-rose">Week 1</span>
+      </div>
+      <div class="feature-card fc-rose mb-8">
+        <h4>P0: Endpoint Management (MDM)</h4>
+        <p>Deploy MDM solution (Jamf for macOS, Kandji, or Microsoft Intune) on all developer and employee devices. Enforce disk encryption, screen lock, OS patching, and remote wipe capability.</p>
+        <p><strong>Effort:</strong> 1&ndash;2 weeks &bull; <strong>Blocks:</strong> HITRUST 03, 05</p>
+        <span class="tag tag-rose">Critical</span> <span class="tag tag-rose">Week 1&ndash;2</span>
+      </div>
+      <div class="feature-card fc-amber mb-8">
+        <h4>P1: Continuous Vulnerability Scanning</h4>
+        <p>Implement automated vulnerability scanning beyond CI/CD. Options: Qualys, Tenable, or Snyk for application-level scanning. Run scheduled scans weekly with automated ticket creation for findings.</p>
+        <p><strong>Effort:</strong> 2&ndash;3 days &bull; <strong>Blocks:</strong> SOC 2 CC7, HITRUST 08</p>
+        <span class="tag tag-amber">High</span> <span class="tag tag-amber">Week 2&ndash;3</span>
+      </div>
+      <div class="feature-card fc-amber mb-8">
+        <h4>P1: Monitoring &amp; Alerting Rules</h4>
+        <p>Configure alert rules for security events: failed login attempts (&gt;5 in 10 min), unauthorized PHI access attempts, bulk data export, elevated privilege usage, after-hours access patterns. Route to PagerDuty or Opsgenie.</p>
+        <p><strong>Effort:</strong> 3&ndash;5 days &bull; <strong>Blocks:</strong> SOC 2 CC4, CC7, HITRUST 13</p>
+        <span class="tag tag-amber">High</span> <span class="tag tag-amber">Week 2&ndash;4</span>
+      </div>
+    </div>
+    <div>
+      <div class="feature-card fc-sky mb-8">
+        <h4>P1: Database Audit Logging Enhancement</h4>
+        <p>Enable comprehensive database audit logging on Neon PostgreSQL. Track all DDL changes, privileged operations, and schema modifications. Ensure log retention meets SOC 2 requirements (minimum 1 year).</p>
+        <p><strong>Effort:</strong> 1&ndash;2 days &bull; <strong>Blocks:</strong> SOC 2 CC4, HITRUST 13</p>
+        <span class="tag tag-sky">Medium</span> <span class="tag tag-sky">Week 3&ndash;4</span>
+      </div>
+      <div class="feature-card fc-sky mb-8">
+        <h4>P1: Backup Verification Testing</h4>
+        <p>Implement automated backup restoration testing. Verify Neon database backups can be restored to a point-in-time. Document RPO (Recovery Point Objective) and RTO (Recovery Time Objective). Run monthly.</p>
+        <p><strong>Effort:</strong> 2&ndash;3 days &bull; <strong>Blocks:</strong> SOC 2 A1, HITRUST 07</p>
+        <span class="tag tag-sky">Medium</span> <span class="tag tag-sky">Week 3&ndash;4</span>
+      </div>
+      <div class="feature-card fc-emerald mb-8">
+        <h4>P2: Container &amp; Dependency Scanning in CI/CD</h4>
+        <p>Add container image scanning (Trivy or Snyk Container) to the existing CI/CD pipeline. Scan for known CVEs in base images and dependencies. Block deployments with critical/high findings.</p>
+        <p><strong>Effort:</strong> 1 day &bull; <strong>Blocks:</strong> SOC 2 CC8, HITRUST 07, 08</p>
+        <span class="tag tag-emerald">Enhancement</span> <span class="tag tag-emerald">Week 4&ndash;6</span>
+      </div>
+      <div class="feature-card fc-emerald mb-8">
+        <h4>P2: Network Segmentation Review</h4>
+        <p>Document and verify network segmentation between application tiers. Ensure database is not directly accessible from the internet. Review Vercel/Neon network isolation. Document firewall rules and access paths.</p>
+        <p><strong>Effort:</strong> 1&ndash;2 days &bull; <strong>Blocks:</strong> SOC 2 CC6, HITRUST 09</p>
+        <span class="tag tag-emerald">Enhancement</span> <span class="tag tag-emerald">Week 4&ndash;6</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout">
+    <strong>Total estimated technical effort:</strong> 4&ndash;6 weeks of engineering time, much of it parallelizable. The largest items (MDM deployment, vulnerability scanning, monitoring rules) are configuration work, not new application development. No changes to the GreenLight core application codebase are required &mdash; these are infrastructure and tooling items.
+  </div>
+
+  <div class="page-footer"><span class="footer-logo">green<strong>light</strong> <span style="font-size:7px;color:var(--text-light);font-weight:400;">by Medivis</span></span><span class="footer-page">07</span></div>
+</div>
+
+<!-- PAGE 8: POLICY & PROCEDURE REQUIREMENTS -->
+<div class="page">
+  <div class="accent-bar"></div>
+  <div class="section-num">SECTION 06</div>
+  <h2>Policy &amp; Procedure Requirements</h2>
+  <div class="section-desc">SOC 2 and HITRUST require formal, board-approved written policies. Compliance platforms (Vanta, Drata, Secureframe) provide templates that reduce writing time from weeks to days per policy.</div>
+
+  <table>
+    <thead><tr><th style="width:24%;">Policy</th><th style="width:8%;">SOC 2</th><th style="width:8%;">HITRUST</th><th style="width:10%;">Owner</th><th style="width:10%;">Est. Time</th><th style="width:10%;">Template</th><th style="width:30%;">Key Contents</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Information Security Policy</strong></td><td>CC1</td><td>02</td><td>CISO / CTO</td><td>2&ndash;3 days</td><td><span class="tag tag-emerald">Yes</span></td><td>Security program charter, objectives, scope, roles</td></tr>
+      <tr><td><strong>Acceptable Use Policy</strong></td><td>CC1, CC6</td><td>02, 12</td><td>CTO</td><td>1&ndash;2 days</td><td><span class="tag tag-emerald">Yes</span></td><td>Permitted system use, prohibited activities, monitoring</td></tr>
+      <tr><td><strong>Data Classification Policy</strong></td><td>C1</td><td>02, 04</td><td>CTO</td><td>1&ndash;2 days</td><td><span class="tag tag-emerald">Yes</span></td><td>PHI, PII, confidential, internal, public classifications</td></tr>
+      <tr><td><strong>Access Control Policy</strong></td><td>CC6</td><td>11, 12</td><td>CTO</td><td>2&ndash;3 days</td><td><span class="tag tag-emerald">Yes</span></td><td>Least privilege, provisioning, deprovisioning, reviews</td></tr>
+      <tr><td><strong>Change Management Policy</strong></td><td>CC8</td><td>07</td><td>CTO</td><td>2&ndash;3 days</td><td><span class="tag tag-emerald">Yes</span></td><td>Change request, approval, testing, rollback procedures</td></tr>
+      <tr><td><strong>Incident Response Policy</strong></td><td>CC2, CC7</td><td>02, 13</td><td>CTO</td><td>1 day</td><td><span class="tag tag-amber">Draft exists</span></td><td>Detection, containment, eradication, recovery, lessons</td></tr>
+      <tr><td><strong>Business Continuity / DR Policy</strong></td><td>A1</td><td>02, 07</td><td>CTO</td><td>2&ndash;3 days</td><td><span class="tag tag-emerald">Yes</span></td><td>RPO/RTO targets, failover, backup, testing schedule</td></tr>
+      <tr><td><strong>Vendor Management Policy</strong></td><td>CC9</td><td>15</td><td>CTO / Ops</td><td>2&ndash;3 days</td><td><span class="tag tag-emerald">Yes</span></td><td>Vendor assessment, risk scoring, annual reviews, BAAs</td></tr>
+      <tr><td><strong>Data Retention &amp; Disposal Policy</strong></td><td>C1</td><td>02, 04</td><td>CTO</td><td>1&ndash;2 days</td><td><span class="tag tag-emerald">Yes</span></td><td>Retention periods, disposal methods, crypto-shredding</td></tr>
+      <tr><td><strong>Employee Security Policy</strong></td><td>CC1</td><td>14</td><td>HR / CTO</td><td>1&ndash;2 days</td><td><span class="tag tag-emerald">Yes</span></td><td>Background checks, onboarding, offboarding, training</td></tr>
+      <tr><td><strong>Physical Security Policy</strong></td><td>CC6</td><td>02</td><td>CTO / Ops</td><td>1 day</td><td><span class="tag tag-emerald">Yes</span></td><td>Remote work security, home office, visitor policy</td></tr>
+      <tr><td><strong>Risk Management Policy</strong></td><td>CC3</td><td>02</td><td>CTO</td><td>2&ndash;3 days</td><td><span class="tag tag-emerald">Yes</span></td><td>Risk identification, assessment, treatment, register</td></tr>
+      <tr><td><strong>Privacy Policy (HIPAA NPP)</strong></td><td>P1</td><td>02</td><td>Legal / CTO</td><td>3&ndash;5 days</td><td><span class="tag tag-amber">Partial</span></td><td>Notice of Privacy Practices, patient rights, uses/disclosures</td></tr>
+    </tbody>
+  </table>
+
+  <div class="cols">
+    <div>
+      <div class="stat-grid cols-2">
+        <div class="stat-card accent"><span class="stat-num" style="font-size:16px;">13</span><span class="stat-label">Policies<br>Required</span></div>
+        <div class="stat-card blue"><span class="stat-num" style="font-size:16px;">4&ndash;6 wk</span><span class="stat-label">Total Writing<br>Timeline</span></div>
+      </div>
+    </div>
+    <div>
+      <div class="callout-green" style="margin-top:0;">
+        <strong>Compliance platform advantage:</strong> Vanta, Drata, and Secureframe all provide pre-written, attorney-reviewed policy templates customized for healthcare SaaS companies. Using templates reduces per-policy writing time from 1&ndash;2 weeks to 1&ndash;3 days. Templates cover 11 of 13 required policies. Budget 4&ndash;6 weeks total for the complete policy suite.
+      </div>
+    </div>
+  </div>
+
+  <div class="callout-red">
+    <strong>Critical requirement:</strong> Policies must be formally approved by leadership (CEO/CTO sign-off), distributed to all employees, and acknowledged in writing. Annual policy reviews are required. The compliance platform automates distribution, acknowledgment tracking, and review scheduling. Without this evidence, the SOC 2 auditor will issue a finding.
+  </div>
+
+  <div class="page-footer"><span class="footer-logo">green<strong>light</strong> <span style="font-size:7px;color:var(--text-light);font-weight:400;">by Medivis</span></span><span class="footer-page">08</span></div>
+</div>
+
+<!-- PAGE 9: VENDOR & TOOL REQUIREMENTS -->
+<div class="page">
+  <div class="accent-bar"></div>
+  <div class="section-num">SECTION 07</div>
+  <h2>Vendor &amp; Tool Requirements</h2>
+  <div class="section-desc">The compliance toolchain required to achieve and maintain SOC 2 Type II and HITRUST certifications. Organized by priority and annual cost.</div>
+
+  <table>
+    <thead><tr><th style="width:20%;">Tool / Vendor</th><th style="width:18%;">Purpose</th><th style="width:12%;">Annual Cost</th><th style="width:10%;">Priority</th><th style="width:40%;">Recommended Options &amp; Notes</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Compliance Platform</strong></td><td>Automated evidence collection, policy management, audit readiness</td><td class="num">$10&ndash;25K/yr</td><td><span class="tag tag-rose">P0</span></td><td><strong>Vanta</strong> (best HITRUST support), <strong>Drata</strong> (best UI), or <strong>Secureframe</strong> (best for startups). All support SOC 2 + HITRUST. Vanta recommended for dual-certification path.</td></tr>
+      <tr><td><strong>SOC 2 Audit Firm</strong></td><td>Independent Type I + Type II audit</td><td class="num">$15&ndash;30K/yr</td><td><span class="tag tag-rose">P0</span></td><td><strong>Prescient Assurance</strong>, <strong>Johanson Group</strong>, <strong>Schellman</strong>, or <strong>A-LIGN</strong>. Choose a firm experienced with healthcare SaaS. Many compliance platforms have preferred auditor partnerships with discounted rates.</td></tr>
+      <tr><td><strong>Penetration Testing</strong></td><td>Annual security assessment</td><td class="num">$5&ndash;15K/test</td><td><span class="tag tag-rose">P0</span></td><td><strong>Cobalt</strong> (pentest-as-a-service), <strong>Synack</strong>, or <strong>HackerOne</strong>. Minimum annual; quarterly recommended. Must include web app, API, and infrastructure testing.</td></tr>
+      <tr><td><strong>Endpoint Management</strong></td><td>MDM, disk encryption, patching</td><td class="num">$5&ndash;10/device/mo</td><td><span class="tag tag-rose">P0</span></td><td><strong>Jamf</strong> (macOS-focused), <strong>Kandji</strong> (modern macOS), or <strong>Microsoft Intune</strong> (cross-platform). Jamf if all-Mac team; Intune if mixed OS. Integrates with compliance platform.</td></tr>
+      <tr><td><strong>Security Training</strong></td><td>Employee awareness, phishing simulation</td><td class="num">$2&ndash;5K/yr</td><td><span class="tag tag-amber">P1</span></td><td><strong>KnowBe4</strong> (most comprehensive), <strong>Curricula</strong> (startup-friendly), or <strong>Hoxhunt</strong>. Annual training + quarterly phishing simulations. Most compliance platforms include basic training modules.</td></tr>
+      <tr><td><strong>Background Checks</strong></td><td>Pre-employment screening</td><td class="num">$30&ndash;50/employee</td><td><span class="tag tag-amber">P1</span></td><td><strong>Checkr</strong> or <strong>GoodHire</strong>. Required for all employees with PHI access. Criminal, education, and employment verification. Run at hire and annual re-check for sensitive roles.</td></tr>
+      <tr><td><strong>Cyber Liability Insurance</strong></td><td>Breach coverage, regulatory defense</td><td class="num">$3&ndash;10K/yr</td><td><span class="tag tag-amber">P1</span></td><td><strong>Coalition</strong>, <strong>Cowbell</strong>, or <strong>At-Bay</strong>. Required by most enterprise customers in procurement. $1&ndash;5M coverage typical. SOC 2 certification reduces premiums 10&ndash;30%.</td></tr>
+      <tr><td><strong>HITRUST Ext. Assessor</strong></td><td>Authorized assessor for r2</td><td class="num">$30&ndash;50K</td><td><span class="tag tag-sky">P2</span></td><td><strong>Coalfire</strong>, <strong>Schellman</strong>, <strong>A-LIGN</strong>, or <strong>LBMC</strong>. Must be HITRUST-authorized. Required for r2 validated assessment. e1 can be done without external assessor if using compliance platform.</td></tr>
+      <tr><td><strong>SIEM (Optional)</strong></td><td>Centralized log management, threat detection</td><td class="num">Usage-based</td><td><span class="tag tag-sky">P2</span></td><td><strong>Datadog Security</strong>, <strong>Elastic SIEM</strong>, or <strong>Panther</strong>. Not strictly required for SOC 2 Type II but strengthens CC7 posture. Consider when processing volume warrants investment.</td></tr>
+    </tbody>
+  </table>
+
+  <h3 class="mb-4">Recommended Vendor Stack</h3>
+  <div class="cols">
+    <div>
+      <div class="feature-card fc-emerald">
+        <h4>Optimal Stack (Best-in-Class)</h4>
+        <p><strong>Compliance:</strong> Vanta ($15K/yr) &bull; <strong>Audit:</strong> Prescient Assurance ($20K) &bull; <strong>Pen Test:</strong> Cobalt ($8K) &bull; <strong>MDM:</strong> Kandji ($8/dev/mo) &bull; <strong>Training:</strong> Curricula ($3K/yr) &bull; <strong>Insurance:</strong> Coalition ($5K/yr)</p>
+        <p style="font-weight:600; color:var(--emerald-700); margin-top:4px;">Year 1 total: ~$60K</p>
+      </div>
+    </div>
+    <div>
+      <div class="feature-card fc-sky">
+        <h4>Budget Stack (Startup-Friendly)</h4>
+        <p><strong>Compliance:</strong> Secureframe ($10K/yr) &bull; <strong>Audit:</strong> Johanson Group ($15K) &bull; <strong>Pen Test:</strong> Cobalt ($5K) &bull; <strong>MDM:</strong> Mosyle ($4/dev/mo) &bull; <strong>Training:</strong> Platform-included &bull; <strong>Insurance:</strong> At-Bay ($3K/yr)</p>
+        <p style="font-weight:600; color:#0369A1; margin-top:4px;">Year 1 total: ~$38K</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout">
+    <strong>Vendor consolidation note:</strong> Many compliance platforms bundle security training, policy templates, vendor risk assessments, and evidence collection into a single platform. Vanta&rsquo;s HITRUST module automates MyCSF data entry and maps SOC 2 evidence directly to HITRUST controls &mdash; reducing duplicate work by 50&ndash;70% when pursuing both certifications.
+  </div>
+
+  <div class="page-footer"><span class="footer-logo">green<strong>light</strong> <span style="font-size:7px;color:var(--text-light);font-weight:400;">by Medivis</span></span><span class="footer-page">09</span></div>
+</div>
+
+<!-- PAGE 10: BUDGET ESTIMATES -->
+<div class="page">
+  <div class="accent-bar"></div>
+  <div class="section-num">SECTION 08</div>
+  <h2>Budget Estimates &amp; Financial Planning</h2>
+  <div class="section-desc">Total estimated 2-year investment for SOC 2 Type II + HITRUST r2 certifications: $250K&ndash;$500K. This includes all tooling, assessments, and personnel costs.</div>
+
+  <div class="stat-grid cols-4 mb-12">
+    <div class="stat-card accent"><span class="stat-num" style="font-size:16px;">$115&ndash;215K</span><span class="stat-label">Year 1 Costs<br>SOC 2 + HITRUST e1</span></div>
+    <div class="stat-card blue"><span class="stat-num" style="font-size:16px;">$135&ndash;285K</span><span class="stat-label">Year 2 Costs<br>HITRUST r2 + Renewals</span></div>
+    <div class="stat-card amber"><span class="stat-num" style="font-size:16px;">$75&ndash;150K</span><span class="stat-label">Annual Ongoing<br>Maintenance</span></div>
+    <div class="stat-card purple"><span class="stat-num" style="font-size:16px;">$250&ndash;500K</span><span class="stat-label">Total 2-Year<br>Investment</span></div>
+  </div>
+
+  <h3 class="mb-4">Year 1: SOC 2 Type I + Type II + HITRUST e1</h3>
+  <table>
+    <thead><tr><th>Category</th><th style="width:18%;">Item</th><th class="num">Low Estimate</th><th class="num">High Estimate</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Platform</strong></td><td>Compliance platform (Vanta/Drata)</td><td class="num">$10K</td><td class="num">$25K</td><td>Annual license; includes policy templates</td></tr>
+      <tr><td><strong>Audit</strong></td><td>SOC 2 Type I + Type II audit</td><td class="num">$15K</td><td class="num">$30K</td><td>Single firm for both; bundled pricing</td></tr>
+      <tr><td><strong>Audit</strong></td><td>HITRUST e1 assessment fees</td><td class="num">$15K</td><td class="num">$30K</td><td>MyCSF license + validated assessment</td></tr>
+      <tr><td><strong>Tools</strong></td><td>Endpoint management (MDM)</td><td class="num">$3K</td><td class="num">$8K</td><td>$5&ndash;10/device/month; 5&ndash;15 devices</td></tr>
+      <tr><td><strong>Tools</strong></td><td>Vulnerability scanning</td><td class="num">$3K</td><td class="num">$8K</td><td>Snyk, Qualys, or Tenable</td></tr>
+      <tr><td><strong>Pen Test</strong></td><td>Penetration testing (1&ndash;2 tests)</td><td class="num">$5K</td><td class="num">$15K</td><td>Web app + API + infrastructure</td></tr>
+      <tr><td><strong>Personnel</strong></td><td>Part-time compliance lead</td><td class="num">$30K</td><td class="num">$50K</td><td>Contractor or fractional CISO; 6&ndash;12 months</td></tr>
+      <tr><td><strong>Training</strong></td><td>Security awareness + phishing</td><td class="num">$2K</td><td class="num">$5K</td><td>Annual training for all employees</td></tr>
+      <tr><td><strong>Legal</strong></td><td>Policy review + HIPAA counsel</td><td class="num">$10K</td><td class="num">$20K</td><td>Attorney review of policies and BAAs</td></tr>
+      <tr><td><strong>Insurance</strong></td><td>Cyber liability insurance</td><td class="num">$3K</td><td class="num">$10K</td><td>$1&ndash;5M coverage</td></tr>
+      <tr><td><strong>Background</strong></td><td>Employee background checks</td><td class="num">$500</td><td class="num">$2K</td><td>$30&ndash;50 per employee</td></tr>
+      <tr><td><strong>Misc</strong></td><td>Monitoring / alerting tools</td><td class="num">$3K</td><td class="num">$8K</td><td>PagerDuty, Datadog, or similar</td></tr>
+      <tr class="total-row"><td colspan="2"><strong>Year 1 Total</strong></td><td class="num"><strong>$99.5K</strong></td><td class="num"><strong>$211K</strong></td><td></td></tr>
+    </tbody>
+  </table>
+
+  <h3 class="mb-4">Year 2: HITRUST r2 + Renewals</h3>
+  <table>
+    <thead><tr><th>Category</th><th style="width:18%;">Item</th><th class="num">Low Estimate</th><th class="num">High Estimate</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Audit</strong></td><td>HITRUST r2 external assessor</td><td class="num">$30K</td><td class="num">$50K</td><td>Authorized external assessor required</td></tr>
+      <tr><td><strong>Audit</strong></td><td>HITRUST r2 assessment fees</td><td class="num">$25K</td><td class="num">$50K</td><td>MyCSF license + QA review</td></tr>
+      <tr><td><strong>Audit</strong></td><td>SOC 2 Type II renewal</td><td class="num">$12K</td><td class="num">$25K</td><td>Annual renewal audit</td></tr>
+      <tr><td><strong>Platform</strong></td><td>Compliance platform renewal</td><td class="num">$10K</td><td class="num">$25K</td><td>Annual license</td></tr>
+      <tr><td><strong>Pen Test</strong></td><td>Penetration testing (annual)</td><td class="num">$5K</td><td class="num">$15K</td><td>Annual requirement</td></tr>
+      <tr><td><strong>Personnel</strong></td><td>Compliance lead (continued)</td><td class="num">$30K</td><td class="num">$60K</td><td>Ongoing compliance management</td></tr>
+      <tr><td><strong>Tools</strong></td><td>Tool renewals (MDM, scanning, training)</td><td class="num">$8K</td><td class="num">$20K</td><td>All tool subscriptions</td></tr>
+      <tr><td><strong>Insurance</strong></td><td>Cyber insurance renewal</td><td class="num">$3K</td><td class="num">$10K</td><td>Rates improve with SOC 2</td></tr>
+      <tr><td><strong>Legal</strong></td><td>Annual policy review + updates</td><td class="num">$5K</td><td class="num">$10K</td><td>Required annual review cycle</td></tr>
+      <tr class="total-row"><td colspan="2"><strong>Year 2 Total</strong></td><td class="num"><strong>$128K</strong></td><td class="num"><strong>$265K</strong></td><td></td></tr>
+    </tbody>
+  </table>
+
+  <div class="fin-total">
+    <span class="stat-num" style="font-size:22px;">$228K &ndash; $476K</span>
+    <span class="stat-label">Total 2-Year Investment &mdash; SOC 2 Type II + HITRUST e1 + HITRUST r2</span>
+  </div>
+
+  <div class="page-footer"><span class="footer-logo">green<strong>light</strong> <span style="font-size:7px;color:var(--text-light);font-weight:400;">by Medivis</span></span><span class="footer-page">10</span></div>
+</div>
+
+<!-- PAGE 11: RISK ASSESSMENT SUMMARY -->
+<div class="page">
+  <div class="accent-bar"></div>
+  <div class="section-num">SECTION 09</div>
+  <h2>Risk Assessment Summary</h2>
+  <div class="section-desc">Top 10 compliance and security risks for GreenLight, with likelihood, impact, current mitigations, and recommended additional controls. This assessment informs the SOC 2 CC3 risk register.</div>
+
+  <table>
+    <thead><tr><th style="width:4%;">#</th><th style="width:16%;">Risk</th><th style="width:9%;">Likelihood</th><th style="width:9%;">Impact</th><th style="width:27%;">Current Mitigation</th><th style="width:35%;">Recommended Additional Controls</th></tr></thead>
+    <tbody>
+      <tr class="risk-row-high"><td><strong>1</strong></td><td>PHI breach via cloud misconfiguration</td><td><span class="tag tag-amber">Medium</span></td><td><span class="tag tag-rose">Critical</span></td><td>AES-256-GCM encryption, TLS 1.2+, security headers</td><td>Cloud security posture management (CSPM), automated config drift detection, quarterly cloud security review</td></tr>
+      <tr class="risk-row-high"><td><strong>2</strong></td><td>Unauthorized access via credential compromise</td><td><span class="tag tag-amber">Medium</span></td><td><span class="tag tag-rose">Critical</span></td><td>RBAC, session management, rate limiting</td><td>MFA enforcement (P0), SSO integration, credential rotation policy, impossible travel detection</td></tr>
+      <tr class="risk-row-high"><td><strong>3</strong></td><td>Third-party vendor data breach</td><td><span class="tag tag-amber">Medium</span></td><td><span class="tag tag-rose">High</span></td><td>BAA checklist exists</td><td>Vendor risk assessment program, annual vendor security reviews, vendor SOC 2 report collection</td></tr>
+      <tr class="risk-row-med"><td><strong>4</strong></td><td>Employee device compromise</td><td><span class="tag tag-amber">Medium</span></td><td><span class="tag tag-amber">High</span></td><td>None (no MDM)</td><td>Deploy MDM (P0), enforce disk encryption, remote wipe capability, OS patching enforcement</td></tr>
+      <tr class="risk-row-med"><td><strong>5</strong></td><td>Audit logging gaps &mdash; undetected PHI access</td><td><span class="tag tag-emerald">Low</span></td><td><span class="tag tag-rose">High</span></td><td>HIPAA audit logging for PHI events</td><td>SIEM integration, log integrity monitoring, alerting rules for anomalous access patterns</td></tr>
+      <tr class="risk-row-med"><td><strong>6</strong></td><td>Delayed breach notification (&gt;60 days HIPAA)</td><td><span class="tag tag-emerald">Low</span></td><td><span class="tag tag-rose">Critical</span></td><td>Incident response plan (draft)</td><td>Formalize IRP, conduct tabletop exercises, define escalation matrix, automate notification workflows</td></tr>
+      <tr class="risk-row-med"><td><strong>7</strong></td><td>Inadequate backup / recovery failure</td><td><span class="tag tag-emerald">Low</span></td><td><span class="tag tag-rose">High</span></td><td>Neon automated backups</td><td>Monthly backup restore testing, documented RPO/RTO, geographic redundancy, DR runbook</td></tr>
+      <tr class="risk-row-med"><td><strong>8</strong></td><td>Social engineering / phishing attacks</td><td><span class="tag tag-amber">Medium</span></td><td><span class="tag tag-amber">Medium</span></td><td>None (no training program)</td><td>Security awareness training (P1), quarterly phishing simulations, email security (DMARC/DKIM)</td></tr>
+      <tr class="risk-row-low"><td><strong>9</strong></td><td>Regulatory changes (CMS, state privacy laws)</td><td><span class="tag tag-amber">Medium</span></td><td><span class="tag tag-amber">Medium</span></td><td>CMS-0057-F tracking</td><td>Regulatory monitoring service, legal counsel on retainer, quarterly compliance review meetings</td></tr>
+      <tr class="risk-row-low"><td><strong>10</strong></td><td>API / FHIR endpoint exploitation</td><td><span class="tag tag-emerald">Low</span></td><td><span class="tag tag-amber">High</span></td><td>Rate limiting, input validation, CSP headers</td><td>API security gateway, FHIR-specific penetration testing, OAuth scope enforcement review</td></tr>
+    </tbody>
+  </table>
+
+  <h3 class="mb-4">Risk Heatmap Summary</h3>
+  <div class="cols">
+    <div>
+      <div class="stat-grid cols-3">
+        <div class="stat-card red"><span class="stat-num" style="font-size:18px;">3</span><span class="stat-label">Critical Risks<br>(Immediate Action)</span></div>
+        <div class="stat-card amber"><span class="stat-num" style="font-size:18px;">4</span><span class="stat-label">High Risks<br>(30-Day Action)</span></div>
+        <div class="stat-card green"><span class="stat-num" style="font-size:18px;">3</span><span class="stat-label">Medium Risks<br>(60-Day Action)</span></div>
+      </div>
+    </div>
+    <div>
+      <div class="callout-red" style="margin-top:0;">
+        <strong>Top priority:</strong> Risks #1&ndash;#4 are the highest combined likelihood + impact. MFA enforcement and endpoint management (both P0 items from Section 05) directly mitigate risks #2 and #4. The vendor risk assessment program addresses risk #3. These three actions eliminate or significantly reduce 4 of the top 5 risks.
+      </div>
+    </div>
+  </div>
+
+  <div class="callout">
+    <strong>Risk register maintenance:</strong> This assessment should be reviewed quarterly and updated as controls are implemented. The compliance platform maintains a living risk register that maps directly to SOC 2 CC3 and HITRUST 02 evidence requirements. Each risk should have an assigned owner, a target remediation date, and a residual risk rating after controls are applied.
+  </div>
+
+  <div class="page-footer"><span class="footer-logo">green<strong>light</strong> <span style="font-size:7px;color:var(--text-light);font-weight:400;">by Medivis</span></span><span class="footer-page">11</span></div>
+</div>
+
+<!-- PAGE 12: RECOMMENDED ACTION PLAN — NEXT 30/60/90 DAYS -->
+<div class="page">
+  <div class="accent-bar"></div>
+  <div class="section-num">SECTION 10</div>
+  <h2>Recommended Action Plan &mdash; Next 30/60/90 Days</h2>
+  <div class="section-desc">Concrete, time-bound action items to initiate the compliance program. Each item has an owner, estimated effort, and the certification requirement it satisfies.</div>
+
+  <div class="cols mb-14">
+    <div>
+      <div class="feature-card fc-rose mb-8">
+        <h4>Days 1&ndash;30: Foundation Sprint</h4>
+        <ul class="feature-list" style="font-size:8.5px;">
+          <li><strong>Sign compliance platform contract</strong> (Vanta recommended) &mdash; enables automated evidence collection from day 1</li>
+          <li><strong>Write 5 core policies:</strong> Information Security, Access Control, Change Management, Acceptable Use, Data Classification</li>
+          <li><strong>Deploy endpoint management</strong> (Kandji/Jamf) on all team devices &mdash; closes HITRUST 03 gap</li>
+          <li><strong>Enforce MFA</strong> across GitHub, Vercel, Neon, and all cloud consoles</li>
+          <li><strong>Schedule penetration test</strong> for Day 45&ndash;60 window</li>
+          <li><strong>Engage SOC 2 audit firm</strong> &mdash; begin readiness assessment</li>
+          <li><strong>Initiate background checks</strong> for all current employees</li>
+        </ul>
+        <div class="milestone" style="color:var(--coral-500);">Deliverable: Compliance platform live, 5 policies approved, MDM deployed, MFA enforced</div>
+      </div>
+
+      <div class="feature-card fc-amber mb-8">
+        <h4>Days 31&ndash;60: Remediation Sprint</h4>
+        <ul class="feature-list" style="font-size:8.5px;">
+          <li><strong>Complete remaining 8 policies:</strong> Incident Response (finalize), BCP/DR, Vendor Management, Data Retention, Employee Security, Physical Security, Risk Management, Privacy</li>
+          <li><strong>Execute penetration test</strong> and remediate critical/high findings</li>
+          <li><strong>Deploy continuous vulnerability scanning</strong> (Snyk or Qualys)</li>
+          <li><strong>Launch employee security training</strong> for all team members</li>
+          <li><strong>Conduct formal risk assessment</strong> and populate risk register</li>
+          <li><strong>Begin SOC 2 Type I readiness assessment</strong> with audit firm</li>
+          <li><strong>Obtain cyber liability insurance</strong> policy</li>
+        </ul>
+        <div class="milestone" style="color:#B45309;">Deliverable: All 13 policies approved, pen test complete, training complete, risk register live</div>
+      </div>
+    </div>
+    <div>
+      <div class="feature-card fc-emerald mb-8">
+        <h4>Days 61&ndash;90: Audit Launch Sprint</h4>
+        <ul class="feature-list" style="font-size:8.5px;">
+          <li><strong>SOC 2 Type I audit begins</strong> &mdash; point-in-time control assessment</li>
+          <li><strong>Begin SOC 2 Type II observation period</strong> (6 months) immediately after Type I</li>
+          <li><strong>Start HITRUST e1 self-assessment</strong> in MyCSF portal</li>
+          <li><strong>Execute all outstanding BAAs</strong> (Vercel Enterprise, Neon HIPAA tier, any new vendors)</li>
+          <li><strong>Implement quarterly access review process</strong> &mdash; first review in this window</li>
+          <li><strong>Configure monitoring and alerting rules</strong> (failed logins, PHI export, privilege escalation)</li>
+          <li><strong>Conduct first backup restoration test</strong> and document RPO/RTO</li>
+          <li><strong>Begin vendor risk assessments</strong> for all critical vendors</li>
+        </ul>
+        <div class="milestone" style="color:var(--emerald-700);">Deliverable: SOC 2 Type I report, Type II observation active, HITRUST e1 scoping complete</div>
+      </div>
+
+      <div class="callout-sky mb-8">
+        <strong>Parallel execution with EHR integration:</strong> Compliance work runs alongside the EHR integration sprints &mdash; they do not block each other. SMART on FHIR, Da Vinci CRD, DTR, and PAS development continues uninterrupted. The compliance platform automates most evidence collection from the existing CI/CD pipeline and production infrastructure. Engineering time commitment for compliance: ~10&ndash;15% of one engineer&rsquo;s time.
+      </div>
+
+      <div class="callout-purple">
+        <strong>After 90 days, GreenLight will have:</strong> a SOC 2 Type I report (usable for enterprise sales immediately), an active Type II observation period, all required policies in place, endpoint management deployed, MFA enforced, pen test completed, and the HITRUST e1 assessment underway. This positions GreenLight as compliance-ready for Epic, athenahealth, and enterprise health system procurement processes.
+      </div>
+    </div>
+  </div>
+
+  <div class="stat-grid cols-4">
+    <div class="stat-card accent"><span class="stat-num" style="font-size:14px;">Day 1</span><span class="stat-label">Sign Compliance<br>Platform</span></div>
+    <div class="stat-card blue"><span class="stat-num" style="font-size:14px;">Day 90</span><span class="stat-label">SOC 2 Type I<br>Report Issued</span></div>
+    <div class="stat-card amber"><span class="stat-num" style="font-size:14px;">Month 9</span><span class="stat-label">SOC 2 Type II<br>Report Issued</span></div>
+    <div class="stat-card purple"><span class="stat-num" style="font-size:14px;">Month 18</span><span class="stat-label">HITRUST r2<br>Certified</span></div>
+  </div>
+
+  <div class="page-footer"><span class="footer-logo">green<strong>light</strong> <span style="font-size:7px;color:var(--text-light);font-weight:400;">by Medivis</span></span><span class="footer-page">12</span></div>
+</div>
+
+</body>
+</html>
