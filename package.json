@@ -12,6 +12,7 @@
     "db:migrate": "prisma migrate deploy",
     "db:push": "prisma db push",
     "db:seed": "prisma db seed",
+    "db:seed-acr": "tsx prisma/seed-acr.ts",
     "db:setup": "./scripts/db-setup.sh",
     "test": "npx playwright test --workers=1",
     "test:smoke": "npx playwright test --project=smoke",

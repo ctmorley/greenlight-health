@@ -166,9 +166,12 @@ model Payer {
   isActive             Boolean   @default(true)
   createdAt            DateTime  @default(now())
 
-  rules      PayerRule[]
-  insurances PatientInsurance[]
-  requests   PriorAuthRequest[]
+  rules              PayerRule[]
+  insurances         PatientInsurance[]
+  requests           PriorAuthRequest[]
+  clinicalPolicies   PayerClinicalPolicy[]
+  docRequirements    DocumentationRequirement[]
+  denialPatterns     DenialPattern[]
 
   @@map("payers")
 }
@@ -195,6 +198,132 @@ model PayerRule {
   payer Payer @relation(fields: [payerId], references: [id])
 
   @@map("payer_rules")
+}
+
+// ─── ACR Appropriateness Criteria ────────────────────────────
+
+enum AppropriatenessRating {
+  usually_not_appropriate    // ACR 1-3
+  may_be_appropriate         // ACR 4-6
+  usually_appropriate        // ACR 7-9
+}
+
+enum EvidenceStrength {
+  strong
+  moderate
+  limited
+  insufficient
+  consensus
+}
+
+model ClinicalGuideline {
+  id                    String                @id @default(cuid())
+  source                String                @default("ACR")         // ACR, EviCore, Carelon, CMS, etc.
+  sourceVersion         String?                                       // e.g., "2024 Update"
+  topicId               String?                                       // ACR topic ID
+  condition             String                                        // e.g., "Acute Low Back Pain"
+  variant               String                                        // Clinical scenario description
+  procedure             String                                        // e.g., "MRI lumbar spine without IV contrast"
+  cptCodes              String[]                                      // Mapped CPT codes for this procedure
+  icd10Codes            String[]                                      // Common ICD-10 codes for this condition
+  rating                Int                                           // 1-9 scale
+  ratingCategory        AppropriatenessRating                         // Derived from rating
+  evidenceStrength      EvidenceStrength      @default(limited)
+  radiationLevel        Int?                                          // 0-5 relative radiation level
+  radiationDose         String?                                       // e.g., "1-10 mSv"
+  panelSpecialty        String?                                       // e.g., "Musculoskeletal"
+  narrative             String?                                       // Guideline narrative text
+  references            Json?                                         // PubMed references
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+
+  payerPolicies         PayerClinicalPolicy[]
+
+  @@index([condition])
+  @@index([cptCodes])
+  @@index([rating])
+  @@index([source, topicId])
+  @@map("clinical_guidelines")
+}
+
+// ─── Payer Clinical Policy ──────────────────────────────────
+
+model PayerClinicalPolicy {
+  id                    String              @id @default(cuid())
+  payerId               String
+  guidelineId           String?
+  serviceCategory       ServiceCategory
+  cptCode               String?                                       // Specific CPT, or null for category-wide
+  policyName            String                                        // e.g., "Lumbar MRI Policy"
+  policySource          String              @default("payer_manual")  // payer_manual, evicore, carelon, nia, cms
+  requiresPA            Boolean             @default(true)
+  minAcrRating          Int?                                          // Minimum ACR rating for auto-approval
+  requiredDocuments     String[]                                      // e.g., ["clinical_notes", "prior_imaging"]
+  conservativeTxDays    Int?                                          // Minimum conservative treatment days
+  requiresReferral      Boolean             @default(false)
+  requiresPeerReview    Boolean             @default(false)
+  additionalCriteria    Json?                                         // Structured criteria beyond the standard fields
+  commonDenialReasons   String[]                                      // Known denial reasons for this policy
+  approvalRate          Float?                                        // Historical approval rate (0-1)
+  avgTurnaroundDays     Int?                                          // Historical avg response time
+  effectiveDate         DateTime            @default(now())
+  expirationDate        DateTime?
+  isActive              Boolean             @default(true)
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+
+  payer                 Payer               @relation(fields: [payerId], references: [id])
+  guideline             ClinicalGuideline?  @relation(fields: [guidelineId], references: [id])
+
+  @@index([payerId, cptCode])
+  @@index([payerId, serviceCategory])
+  @@map("payer_clinical_policies")
+}
+
+// ─── Documentation Requirement ──────────────────────────────
+
+model DocumentationRequirement {
+  id                    String              @id @default(cuid())
+  payerId               String?                                       // null = universal requirement
+  rbmVendor             RbmVendor?                                    // EviCore, Carelon, NIA
+  serviceCategory       ServiceCategory
+  serviceType           ServiceType?
+  cptCode               String?
+  documentType          String                                        // e.g., "clinical_notes", "prior_imaging_report"
+  description           String                                        // Human-readable description
+  isRequired            Boolean             @default(true)
+  conditionalLogic      Json?                                         // When this doc is required (e.g., only if patient > 65)
+  createdAt             DateTime            @default(now())
+
+  payer                 Payer?              @relation(fields: [payerId], references: [id])
+
+  @@index([payerId, serviceCategory])
+  @@index([cptCode])
+  @@map("documentation_requirements")
+}
+
+// ─── Denial Pattern ─────────────────────────────────────────
+
+model DenialPattern {
+  id                    String              @id @default(cuid())
+  payerId               String?
+  rbmVendor             RbmVendor?
+  serviceCategory       ServiceCategory?
+  cptCode               String?
+  icd10Code             String?
+  reasonCategory        DenialReasonCategory
+  reasonDescription     String
+  frequency             Int                 @default(0)             // How often this denial occurs
+  preventionTip         String?                                     // How to avoid this denial
+  requiredEvidence      String[]                                    // What to include to prevent this denial
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+
+  payer                 Payer?              @relation(fields: [payerId], references: [id])
+
+  @@index([payerId, cptCode])
+  @@index([reasonCategory])
+  @@map("denial_patterns")
 }
 
 // ─── Prior Auth Request ──────────────────────────────────────
