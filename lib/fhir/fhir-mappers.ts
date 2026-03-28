@@ -5,6 +5,9 @@ import type {
   ICoverage,
   ICondition,
   IServiceRequest,
+  IPractitioner,
+  IDocumentReference,
+  IObservation,
 } from "@smile-cdr/fhirts/dist/FHIR-R4/interfaces/IModel";
 
 /** Minimal FHIR Reference type (not separately exported by @smile-cdr/fhirts) */
@@ -18,6 +21,9 @@ import type {
   FhirCoverageData,
   FhirConditionData,
   FhirServiceRequestData,
+  FhirPractitionerData,
+  FhirDocumentData,
+  FhirObservationData,
   FhirContext,
 } from "./types";
 
@@ -36,7 +42,7 @@ export async function extractFhirContext(
   }
 
   // Fetch resources in parallel — each one is best-effort
-  const [patient, coverages, conditions, serviceRequests] =
+  const [patient, coverages, conditions, serviceRequests, documents, observations] =
     await Promise.allSettled([
       client.patient.read() as Promise<IPatient>,
       client
@@ -54,7 +60,43 @@ export async function extractFhirContext(
           `ServiceRequest?patient=${patientId}&status=active,draft&_sort=-_lastUpdated&_count=5`
         )
         .catch(() => null),
+      client
+        .request<IBundle>(
+          `DocumentReference?patient=${patientId}&status=current&_sort=-date&_count=10`
+        )
+        .catch(() => null),
+      client
+        .request<IBundle>(
+          `Observation?patient=${patientId}&category=laboratory&_sort=-date&_count=20`
+        )
+        .catch(() => null),
     ]);
+
+  // Extract the service request first so we can resolve the requester
+  const sr =
+    serviceRequests.status === "fulfilled" && serviceRequests.value
+      ? mapFirstServiceRequest(serviceRequests.value)
+      : null;
+
+  // Try to resolve the ordering practitioner from the ServiceRequest.requester
+  let practitioner: FhirPractitionerData | null = null;
+  if (serviceRequests.status === "fulfilled" && serviceRequests.value) {
+    const srResource = serviceRequests.value.entry?.find(
+      (e) => e.resource?.resourceType === "ServiceRequest"
+    )?.resource as IServiceRequest | undefined;
+
+    if (srResource?.requester?.reference) {
+      practitioner = await fetchPractitioner(client, srResource.requester.reference);
+    }
+  }
+
+  // Fallback: try fhirUser from the auth context (the logged-in clinician)
+  if (!practitioner && client.state.tokenResponse?.fhirUser) {
+    const fhirUser = client.state.tokenResponse.fhirUser as string;
+    if (fhirUser.includes("Practitioner")) {
+      practitioner = await fetchPractitioner(client, fhirUser);
+    }
+  }
 
   return {
     fhirBaseUrl: client.state.serverUrl,
@@ -71,11 +113,16 @@ export async function extractFhirContext(
       conditions.status === "fulfilled" && conditions.value
         ? mapConditions(conditions.value)
         : [],
-    serviceRequest:
-      serviceRequests.status === "fulfilled" && serviceRequests.value
-        ? mapFirstServiceRequest(serviceRequests.value)
-        : null,
-    practitioner: null, // Phase 2: requires user/Practitioner.read scope
+    serviceRequest: sr,
+    practitioner,
+    documents:
+      documents.status === "fulfilled" && documents.value
+        ? mapDocuments(documents.value)
+        : [],
+    observations:
+      observations.status === "fulfilled" && observations.value
+        ? mapObservations(observations.value)
+        : [],
     createdAt: new Date().toISOString(),
   };
 }
@@ -261,6 +308,113 @@ function mapFirstServiceRequest(
           ? String(resource.occurrencePeriod.start)
           : null),
   };
+}
+
+// ─── Phase 2 Mappers: Practitioner, DocumentReference, Observation ──
+
+async function fetchPractitioner(
+  client: Client,
+  reference: string
+): Promise<FhirPractitionerData | null> {
+  try {
+    const resource = await client.request<IPractitioner>(reference);
+    if (!resource || resource.resourceType !== "Practitioner") return null;
+
+    const officialName =
+      resource.name?.find((n) => n.use === "official") || resource.name?.[0];
+    const name = officialName
+      ? `${officialName.given?.join(" ") || ""} ${officialName.family || ""}`.trim()
+      : "";
+
+    // Extract NPI from identifiers
+    const npi =
+      resource.identifier?.find(
+        (id) => id.system === "http://hl7.org/fhir/sid/us-npi"
+      )?.value || null;
+
+    // Extract specialty from qualification
+    const specialty =
+      resource.qualification?.[0]?.code?.coding?.[0]?.display ||
+      resource.qualification?.[0]?.code?.text ||
+      null;
+
+    return {
+      fhirId: resource.id || "",
+      name,
+      npi,
+      specialty,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function mapDocuments(bundle: IBundle): FhirDocumentData[] {
+  if (!bundle.entry) return [];
+
+  return bundle.entry
+    .map((e) => e.resource as IDocumentReference | undefined)
+    .filter((r): r is IDocumentReference => r?.resourceType === "DocumentReference")
+    .map((resource) => {
+      const typeCoding = resource.type?.coding?.[0];
+      const content = resource.content?.[0];
+
+      return {
+        fhirId: resource.id || "",
+        type: typeCoding?.display || resource.type?.text || "Clinical Document",
+        description: resource.description || null,
+        date: resource.date ? String(resource.date) : null,
+        status: resource.status || "current",
+        contentUrl: content?.attachment?.url || null,
+        contentType: content?.attachment?.contentType || null,
+      };
+    })
+    .slice(0, 10); // Limit to 10 most recent
+}
+
+function mapObservations(bundle: IBundle): FhirObservationData[] {
+  if (!bundle.entry) return [];
+
+  return bundle.entry
+    .map((e) => e.resource as IObservation | undefined)
+    .filter((r): r is IObservation => r?.resourceType === "Observation")
+    .map((resource) => {
+      const coding = resource.code?.coding?.[0];
+
+      // Extract value — handle different FHIR value types
+      let value: string | null = null;
+      let unit: string | null = null;
+
+      if (resource.valueQuantity) {
+        value = String(resource.valueQuantity.value ?? "");
+        unit = resource.valueQuantity.unit || resource.valueQuantity.code || null;
+      } else if (resource.valueString) {
+        value = resource.valueString;
+      } else if (resource.valueCodeableConcept) {
+        value = resource.valueCodeableConcept.text ||
+          resource.valueCodeableConcept.coding?.[0]?.display || null;
+      }
+
+      const category =
+        resource.category?.[0]?.coding?.[0]?.code || null;
+
+      return {
+        fhirId: resource.id || "",
+        code: coding?.code || "",
+        display: coding?.display || resource.code?.text || "",
+        value,
+        unit,
+        date: resource.effectiveDateTime
+          ? String(resource.effectiveDateTime)
+          : resource.effectivePeriod?.start
+            ? String(resource.effectivePeriod.start)
+            : null,
+        status: resource.status || "final",
+        category,
+      };
+    })
+    .filter((o) => o.code) // Only observations with codes
+    .slice(0, 20); // Limit to 20 most recent
 }
 
 // ─── Helpers ─────────────────────────────────────────────────

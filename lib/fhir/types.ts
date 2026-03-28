@@ -26,6 +26,12 @@ export interface FhirContext {
   /** Practitioner who placed the order */
   practitioner: FhirPractitionerData | null;
 
+  /** Recent clinical documents from the EHR */
+  documents: FhirDocumentData[];
+
+  /** Recent lab results / observations */
+  observations: FhirObservationData[];
+
   /** Timestamp when this context was created */
   createdAt: string;
 }
@@ -76,6 +82,29 @@ export interface FhirPractitionerData {
   fhirId: string;
   name: string;
   npi: string | null;
+  specialty: string | null;
+}
+
+export interface FhirDocumentData {
+  fhirId: string;
+  type: string;
+  description: string | null;
+  date: string | null;
+  status: string;
+  /** Content URL or inline data reference */
+  contentUrl: string | null;
+  contentType: string | null;
+}
+
+export interface FhirObservationData {
+  fhirId: string;
+  code: string;
+  display: string;
+  value: string | null;
+  unit: string | null;
+  date: string | null;
+  status: string;
+  category: string | null;
 }
 
 /** Key for storing/retrieving FhirContext in sessionStorage */

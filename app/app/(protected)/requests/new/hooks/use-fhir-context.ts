@@ -142,6 +142,40 @@ export function useFhirContext(): UseFhirContextResult {
         }
       }
 
+      // ── Practitioner (Step 3) ──
+      if (fhirContext.practitioner) {
+        if (fhirContext.practitioner.npi && !currentState.renderingPhysicianNpi) {
+          updates.renderingPhysicianNpi = fhirContext.practitioner.npi;
+          filled.add("renderingPhysicianNpi");
+        }
+      }
+
+      // ── Clinical Notes from Documents (Step 4) ──
+      if (fhirContext.documents.length > 0 && !currentState.clinicalNotes) {
+        const docSummary = fhirContext.documents
+          .slice(0, 5)
+          .map((d) => `[${d.type}] ${d.description || "No description"} (${d.date?.split("T")[0] || "unknown date"})`)
+          .join("\n");
+        if (docSummary) {
+          updates.clinicalNotes = `--- EHR Clinical Documents ---\n${docSummary}`;
+          filled.add("clinicalNotes");
+        }
+      }
+
+      // ── Lab Values from Observations (Step 4 context) ──
+      if (fhirContext.observations.length > 0 && !currentState.clinicalNotes) {
+        const labSummary = fhirContext.observations
+          .filter((o) => o.value)
+          .slice(0, 10)
+          .map((o) => `${o.display}: ${o.value}${o.unit ? ` ${o.unit}` : ""} (${o.date?.split("T")[0] || ""})`)
+          .join("\n");
+        if (labSummary) {
+          const existing = updates.clinicalNotes || "";
+          updates.clinicalNotes = `${existing}\n\n--- EHR Lab Results ---\n${labSummary}`.trim();
+          filled.add("clinicalNotes");
+        }
+      }
+
       setFhirFilledFields(filled);
       return { ...currentState, ...updates };
     },

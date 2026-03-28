@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { z } from "zod";
+import type { PlanType } from "@prisma/client";
 
 /**
  * POST /api/fhir/match-patient
@@ -32,6 +33,8 @@ const matchPatientSchema = z.object({
       planName: z.string().nullable().optional(),
       memberId: z.string().nullable().optional(),
       groupNumber: z.string().nullable().optional(),
+      subscriberId: z.string().nullable().optional(),
+      relationship: z.string().nullable().optional(),
     })
     .nullable()
     .optional(),
@@ -73,6 +76,23 @@ export async function POST(request: NextRequest) {
       });
 
       if (mrnMatch) {
+        // Update insurance from FHIR coverage if patient has no insurance
+        if (mrnMatch.insurances.length === 0 && data.coverage) {
+          await syncInsuranceFromCoverage(mrnMatch.id, data.coverage, organizationId);
+          // Re-fetch with updated insurance
+          const updated = await prisma.patient.findUnique({
+            where: { id: mrnMatch.id },
+            include: { insurances: { include: { payer: { select: { id: true, name: true } } } } },
+          });
+          if (updated) {
+            return NextResponse.json({
+              matched: true,
+              matchType: "mrn",
+              patient: formatPatient(updated),
+            });
+          }
+        }
+
         return NextResponse.json({
           matched: true,
           matchType: "mrn",
@@ -105,6 +125,22 @@ export async function POST(request: NextRequest) {
           data: { mrn: data.mrn },
         });
         nameMatch.mrn = data.mrn;
+      }
+
+      // Sync insurance if patient has none but FHIR has coverage
+      if (nameMatch.insurances.length === 0 && data.coverage) {
+        await syncInsuranceFromCoverage(nameMatch.id, data.coverage, organizationId);
+        const updated = await prisma.patient.findUnique({
+          where: { id: nameMatch.id },
+          include: { insurances: { include: { payer: { select: { id: true, name: true } } } } },
+        });
+        if (updated) {
+          return NextResponse.json({
+            matched: true,
+            matchType: "name_dob",
+            patient: formatPatient(updated),
+          });
+        }
       }
 
       return NextResponse.json({
@@ -140,8 +176,8 @@ export async function POST(request: NextRequest) {
                 create: {
                   payerId: payerMatch.id,
                   planName: data.coverage.planName || `${payerMatch.name} Plan`,
-                  planType: "other",
-                  memberId: data.coverage.memberId || "PENDING",
+                  planType: detectPlanType(data.coverage.planName || null, payerMatch.name),
+                  memberId: data.coverage.memberId || data.coverage.subscriberId || "PENDING",
                   groupNumber: data.coverage.groupNumber || null,
                   isPrimary: true,
                   effectiveDate: new Date(),
@@ -220,6 +256,66 @@ function formatPatient(p: PatientWithInsurances) {
       payer: ins.payer,
     })),
   };
+}
+
+/**
+ * Syncs insurance from FHIR Coverage data to an existing patient record.
+ * Creates a new insurance record if the patient doesn't have matching coverage.
+ */
+async function syncInsuranceFromCoverage(
+  patientId: string,
+  coverage: { payerName: string; payerIdentifier?: string | null; planName?: string | null; memberId?: string | null; groupNumber?: string | null; subscriberId?: string | null },
+  _organizationId: string
+) {
+  const payerMatch = await fuzzyMatchPayer(coverage.payerName, coverage.payerIdentifier || null);
+  if (!payerMatch) return;
+
+  // Check if patient already has insurance with this payer
+  const existing = await prisma.patientInsurance.findFirst({
+    where: { patientId, payerId: payerMatch.id },
+  });
+
+  if (existing) {
+    // Update member ID if FHIR has one and existing is placeholder
+    if (coverage.memberId && existing.memberId === "PENDING") {
+      await prisma.patientInsurance.update({
+        where: { id: existing.id },
+        data: { memberId: coverage.memberId },
+      });
+    }
+    return;
+  }
+
+  // Create new insurance record
+  await prisma.patientInsurance.create({
+    data: {
+      patientId,
+      payerId: payerMatch.id,
+      planName: coverage.planName || `${payerMatch.name} Plan`,
+      planType: detectPlanType(coverage.planName || null, payerMatch.name),
+      memberId: coverage.memberId || coverage.subscriberId || "PENDING",
+      groupNumber: coverage.groupNumber || null,
+      isPrimary: true,
+      effectiveDate: new Date(),
+    },
+  });
+}
+
+/**
+ * Detects insurance plan type from plan name and payer name keywords.
+ */
+function detectPlanType(planName: string | null, payerName: string): PlanType {
+  const combined = `${planName || ""} ${payerName}`.toLowerCase();
+
+  if (combined.includes("medicare")) return "medicare";
+  if (combined.includes("medicaid") || combined.includes("medi-cal")) return "medicaid";
+  if (combined.includes("tricare")) return "tricare";
+  if (combined.includes("hmo")) return "hmo";
+  if (combined.includes("ppo")) return "ppo";
+  if (combined.includes("epo")) return "epo";
+  if (combined.includes("pos") && !combined.includes("post")) return "pos";
+
+  return "other";
 }
 
 /**

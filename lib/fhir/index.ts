@@ -8,6 +8,8 @@ export type {
   FhirConditionData,
   FhirServiceRequestData,
   FhirPractitionerData,
+  FhirDocumentData,
+  FhirObservationData,
 } from "./types";
 export type { FhirSandbox } from "./sandbox";
 export { FHIR_CONTEXT_KEY } from "./types";

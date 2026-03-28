@@ -2,16 +2,22 @@
 
 /**
  * FHIR scopes GreenLight requests during EHR launch.
- * Phase 1: Patient, Coverage, Condition, ServiceRequest (core PA data)
+ * Phase 1: Patient, Coverage, Condition, ServiceRequest
+ * Phase 2: Practitioner, DocumentReference, Observation
  */
 export const SMART_SCOPES = [
   "launch",
   "openid",
   "fhirUser",
+  // Phase 1 — core PA data
   "patient/Patient.read",
   "patient/Coverage.read",
   "patient/Condition.read",
   "patient/ServiceRequest.read",
+  // Phase 2 — clinical context
+  "user/Practitioner.read",
+  "patient/DocumentReference.read",
+  "patient/Observation.read",
 ].join(" ");
 
 /**
