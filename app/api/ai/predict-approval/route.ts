@@ -3,6 +3,7 @@ import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { auditPhiAccess } from "@/lib/security/audit-log";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limit";
+import { guardSubscription } from "@/lib/billing";
 import { isAiConfigured, NotFoundError } from "@/lib/ai";
 import { assembleApprovalContext } from "@/lib/ai/approval-predictor";
 
@@ -36,6 +37,9 @@ export async function POST(request: NextRequest) {
   if (!organizationId) {
     return NextResponse.json({ error: "No organization context" }, { status: 403 });
   }
+
+  const blocked = await guardSubscription(organizationId, "ai_call");
+  if (blocked) return blocked;
 
   try {
     const body = await request.json();

@@ -2,13 +2,29 @@
  * Notification Service
  *
  * Dispatches in-app and email notifications for PA lifecycle events.
- * In-app notifications are stored in the database. Email sending is
- * stubbed for now (logs to console) — plug in a transactional email
- * provider (e.g., Resend, SendGrid) in production.
+ * In-app notifications are stored in the database. Email is sent via
+ * Resend (resend.com). If the RESEND_API_KEY is not configured, email
+ * sending gracefully falls back to console logging.
  */
 
 import { prisma } from "@/lib/prisma";
+import { Resend } from "resend";
 import { getEmailTemplate } from "./templates";
+
+// ─── Resend Client ───────────────────────────────────────────
+
+let resendClient: Resend | null = null;
+
+function getResend(): Resend | null {
+  if (resendClient) return resendClient;
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) return null;
+  resendClient = new Resend(apiKey);
+  return resendClient;
+}
+
+const FROM_EMAIL =
+  process.env.NOTIFICATION_FROM_EMAIL || "GreenLight Health <notifications@greenlighthealth.com>";
 
 // ─── Notification Event Types ─────────────────────────────
 
@@ -81,9 +97,7 @@ export async function dispatchNotification(
     }
 
     // Create in-app notification
-    let emailSent = false;
     if (inAppEnabled) {
-      // If email is also enabled, we'll mark it after attempting to send
       const notification = await prisma.notification.create({
         data: {
           userId: params.userId,
@@ -100,7 +114,7 @@ export async function dispatchNotification(
 
       // Send email if enabled
       if (emailEnabled) {
-        emailSent = await sendNotificationEmail(
+        const emailSent = await sendNotificationEmail(
           params.userId,
           params.type,
           {
@@ -138,13 +152,13 @@ export async function dispatchNotification(
   }
 }
 
-// ─── Email Sending (Stub) ─────────────────────────────────
+// ─── Email Sending ───────────────────────────────────────────
 
 /**
- * Sends a notification email to the user. Currently logs to console.
- * Replace with a transactional email provider in production.
+ * Sends a notification email to the user via Resend.
+ * Falls back to console logging when RESEND_API_KEY is not configured.
  *
- * @returns true if email was "sent" successfully
+ * @returns true if email was sent successfully
  */
 async function sendNotificationEmail(
   userId: string,
@@ -171,10 +185,26 @@ async function sendNotificationEmail(
 
     const template = getEmailTemplate(type, data);
 
-    // Production: Replace with actual email sending (Resend, SendGrid, etc.)
-    console.log(
-      `[NOTIFICATION EMAIL] To: ${user.email} | Subject: ${template.subject}`
-    );
+    const resend = getResend();
+    if (!resend) {
+      // No API key configured — log and return true so notification record still tracks intent
+      console.log(
+        `[NOTIFICATION EMAIL] (no Resend key) To: ${user.email} | Subject: ${template.subject}`
+      );
+      return true;
+    }
+
+    const { error } = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: user.email,
+      subject: template.subject,
+      html: template.body,
+    });
+
+    if (error) {
+      console.error("[RESEND EMAIL ERROR]", error);
+      return false;
+    }
 
     return true;
   } catch (error) {

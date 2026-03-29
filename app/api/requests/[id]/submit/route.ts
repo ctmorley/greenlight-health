@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { auditPhiAccess } from "@/lib/security/audit-log";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limit";
+import { dispatchNotification } from "@/lib/notifications/service";
 
 /**
  * POST /api/requests/[id]/submit
@@ -181,6 +182,21 @@ export async function POST(
 
       return [req, statusChange] as const;
     });
+
+    // Dispatch notification (non-blocking)
+    dispatchNotification({
+      userId: session.user.id,
+      organizationId,
+      type: "pa_submitted",
+      title: "PA Submitted",
+      message: `Prior authorization ${updated.referenceNumber} has been submitted for review.`,
+      resourceType: "PriorAuthRequest",
+      resourceId: updated.id,
+      referenceNumber: updated.referenceNumber,
+      patientName: paReq.patient
+        ? `${paReq.patient.firstName} ${paReq.patient.lastName}`
+        : undefined,
+    }).catch(() => {});
 
     return NextResponse.json({
       submitted: true,

@@ -6,5 +6,6 @@ export { TimelineCard } from "./TimelineCard";
 export { DenialsCard } from "./DenialsCard";
 export { AppealsCard } from "./AppealsCard";
 export { StatusActions } from "./StatusActions";
+export { AiAssistantPanel } from "./AiAssistantPanel";
 export type { RequestDetail, TimelineEntry, DocumentEntry, DenialEntry, AppealEntry, Toast } from "./types";
 export { serviceTypeLabels, urgencyConfig, formatDate } from "./helpers";

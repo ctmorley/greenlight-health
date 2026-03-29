@@ -13,6 +13,7 @@ import {
   PatientInfoCard,
   PayerRoutingCard,
   ServiceDetailsCard,
+  AiAssistantPanel,
   DocumentsCard,
   TimelineCard,
   DenialsCard,
@@ -309,6 +310,9 @@ export default function RequestDetailPage() {
 
       {/* ═══════════════ Service Details ═══════════════ */}
       <ServiceDetailsCard request={request} />
+
+      {/* ═══════════════ AI Assistant ═══════════════ */}
+      <AiAssistantPanel request={request} addToast={addToast} />
 
       {/* ═══════════════ Denials (if any) ═══════════════ */}
       <DenialsCard

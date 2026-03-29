@@ -6,6 +6,7 @@ import { z } from "zod";
 import { generateReferenceNumber } from "@/lib/reference-number";
 import { auditPhiAccess } from "@/lib/security/audit-log";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limit";
+import { guardSubscription } from "@/lib/billing";
 
 const VALID_STATUSES = [
   "draft", "submitted", "pending_review", "approved",
@@ -308,6 +309,10 @@ export async function POST(request: NextRequest) {
   if (!organizationId) {
     return NextResponse.json({ error: "No organization context" }, { status: 403 });
   }
+
+  // Check subscription limits
+  const blocked = await guardSubscription(organizationId, "create_pa");
+  if (blocked) return blocked;
 
   try {
     const body = await request.json();

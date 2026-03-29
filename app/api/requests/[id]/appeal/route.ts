@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { z } from "zod";
 import { auditPhiAccess } from "@/lib/security/audit-log";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limit";
+import { dispatchNotification } from "@/lib/notifications/service";
 
 const createAppealSchema = z.object({
   denialId: z.string().min(1).optional(),
@@ -158,6 +159,18 @@ export async function POST(
       appealReason: appeal.appealReason,
       status: appeal.status,
     };
+
+    // Dispatch notification (non-blocking)
+    dispatchNotification({
+      userId: session.user.id,
+      organizationId,
+      type: "appeal_filed",
+      title: "Appeal Filed",
+      message: `A ${appealLevel} level appeal has been filed for PA request ${existing.referenceNumber}.`,
+      resourceType: "PriorAuthRequest",
+      resourceId: id,
+      referenceNumber: existing.referenceNumber,
+    }).catch(() => {});
 
     // Return both flat fields and legacy `appeal` envelope for backward compatibility
     return NextResponse.json({

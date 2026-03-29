@@ -11,6 +11,7 @@ const registerSchema = z.object({
   lastName: z.string().optional().default("User").transform((v) => v.trim() || "User"),
   email: z.string().email("Invalid email address").transform((v) => v.trim().toLowerCase()),
   password: z.string().min(8, "Password must be at least 8 characters"),
+  planId: z.enum(["starter", "professional"]).optional(),
 });
 
 function isDatabaseConnectionError(error: unknown): boolean {
@@ -68,11 +69,33 @@ export async function POST(req: NextRequest) {
       return { organization, user };
     });
 
+    // If a plan was selected, create a Stripe checkout session
+    let checkoutUrl: string | null = null;
+    if (data.planId) {
+      try {
+        const { createCheckoutSession, isStripeConfigured } = await import("@/lib/billing");
+        if (isStripeConfigured()) {
+          const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+          checkoutUrl = await createCheckoutSession({
+            organizationId: result.organization.id,
+            planId: data.planId,
+            billingPeriod: "monthly",
+            successUrl: `${appUrl}/app/dashboard?welcome=true`,
+            cancelUrl: `${appUrl}/app/settings?tab=billing`,
+          });
+        }
+      } catch (err) {
+        // Billing setup failure shouldn't block registration
+        console.error("Post-registration checkout error:", err);
+      }
+    }
+
     return NextResponse.json(
       {
         message: "Registration successful",
         organizationId: result.organization.id,
         userId: result.user.id,
+        checkoutUrl,
       },
       { status: 201 }
     );

@@ -10,7 +10,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 
 /** Default model for all AI requests */
-export const AI_MODEL = "claude-sonnet-4-20250514";
+export const AI_MODEL = "claude-opus-4-20250514";
 
 /** Maximum tokens for generation responses */
 export const AI_MAX_TOKENS = 4096;
