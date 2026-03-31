@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
-import { readFile } from "fs/promises";
+import { readFile, unlink } from "fs/promises";
 import { resolveDocumentPath } from "@/lib/document-path";
 import { auditPhiAccess } from "@/lib/security/audit-log";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limit";
@@ -81,5 +81,68 @@ export async function GET(
   } catch (error) {
     console.error("Download document error:", error);
     return NextResponse.json({ error: "Failed to download document" }, { status: 500 });
+  }
+}
+
+/**
+ * DELETE /api/requests/[id]/documents/[docId]
+ * Delete a specific document from a PA request.
+ */
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string; docId: string }> }
+) {
+  const rateLimited = checkRateLimit(request, RATE_LIMITS.api);
+  if (rateLimited) return rateLimited;
+
+  const session = await auth();
+  if (!session?.user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const organizationId = session.user.organizationId;
+  if (!organizationId) {
+    return NextResponse.json({ error: "No organization context" }, { status: 403 });
+  }
+
+  try {
+    const { id, docId } = await params;
+
+    auditPhiAccess(request, session, "delete", "AuthDocument", docId, "Deleted document").catch(() => {});
+
+    // Verify the PA request belongs to the user's org
+    const paRequest = await prisma.priorAuthRequest.findFirst({
+      where: { id, organizationId },
+      select: { id: true, status: true },
+    });
+
+    if (!paRequest) {
+      return NextResponse.json({ error: "Request not found" }, { status: 404 });
+    }
+
+    // Fetch the document record
+    const document = await prisma.authDocument.findFirst({
+      where: { id: docId, priorAuthId: id },
+    });
+
+    if (!document) {
+      return NextResponse.json({ error: "Document not found" }, { status: 404 });
+    }
+
+    // Try to delete the physical file (non-blocking)
+    try {
+      const absolutePath = resolveDocumentPath(document.filePath);
+      await unlink(absolutePath);
+    } catch {
+      // File may not exist on disk — still delete the record
+    }
+
+    // Delete the database record
+    await prisma.authDocument.delete({ where: { id: docId } });
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("Delete document error:", error);
+    return NextResponse.json({ error: "Failed to delete document" }, { status: 500 });
   }
 }

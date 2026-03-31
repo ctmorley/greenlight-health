@@ -7,6 +7,70 @@ import { VALID_DENIAL_CATEGORY_VALUES, VALID_DENIAL_CODES, isValidCodeForCategor
 import { auditPhiAccess } from "@/lib/security/audit-log";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limit";
 
+/**
+ * GET /api/requests/[id]/status
+ * Get the current status info for a PA request.
+ */
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const rateLimited = checkRateLimit(request, RATE_LIMITS.api);
+  if (rateLimited) return rateLimited;
+
+  const session = await auth();
+  if (!session?.user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const organizationId = session.user.organizationId;
+  if (!organizationId) {
+    return NextResponse.json({ error: "No organization context" }, { status: 403 });
+  }
+
+  try {
+    const { id } = await params;
+
+    const paRequest = await prisma.priorAuthRequest.findFirst({
+      where: { id, organizationId },
+      select: {
+        id: true,
+        referenceNumber: true,
+        status: true,
+        urgency: true,
+        submittedAt: true,
+        decidedAt: true,
+        expiresAt: true,
+        dueDate: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    if (!paRequest) {
+      return NextResponse.json({ error: "Request not found" }, { status: 404 });
+    }
+
+    auditPhiAccess(request, session, "view", "PriorAuthRequest", id, "Viewed PA request status").catch(() => {});
+
+    return NextResponse.json({
+      id: paRequest.id,
+      referenceNumber: paRequest.referenceNumber,
+      status: paRequest.status,
+      urgency: paRequest.urgency,
+      submittedAt: paRequest.submittedAt?.toISOString() || null,
+      decidedAt: paRequest.decidedAt?.toISOString() || null,
+      expiresAt: paRequest.expiresAt?.toISOString() || null,
+      dueDate: paRequest.dueDate?.toISOString() || null,
+      createdAt: paRequest.createdAt.toISOString(),
+      updatedAt: paRequest.updatedAt.toISOString(),
+    });
+  } catch (error) {
+    console.error("Get status error:", error);
+    return NextResponse.json({ error: "Failed to fetch status" }, { status: 500 });
+  }
+}
+
 const statusUpdateSchema = z.object({
   status: z.enum([
     "submitted",

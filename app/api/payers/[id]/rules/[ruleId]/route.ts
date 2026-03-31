@@ -1,6 +1,52 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
+import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limit";
+
+/**
+ * GET /api/payers/[id]/rules/[ruleId]
+ * Get a single payer rule.
+ */
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string; ruleId: string }> }
+) {
+  const rateLimited = checkRateLimit(request, RATE_LIMITS.api);
+  if (rateLimited) return rateLimited;
+
+  const session = await auth();
+  if (!session?.user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  try {
+    const { id, ruleId } = await params;
+
+    const rule = await prisma.payerRule.findFirst({
+      where: { id: ruleId, payerId: id },
+    });
+    if (!rule) {
+      return NextResponse.json({ error: "Rule not found" }, { status: 404 });
+    }
+
+    return NextResponse.json({
+      rule: {
+        id: rule.id,
+        payerId: rule.payerId,
+        serviceCategory: rule.serviceCategory,
+        cptCode: rule.cptCode,
+        requiresPA: rule.requiresPA,
+        clinicalCriteria: rule.clinicalCriteria,
+        validFrom: rule.validFrom.toISOString(),
+        validTo: rule.validTo?.toISOString() || null,
+        createdAt: rule.createdAt.toISOString(),
+      },
+    });
+  } catch (error) {
+    console.error("Get rule error:", error);
+    return NextResponse.json({ error: "Failed to fetch rule" }, { status: 500 });
+  }
+}
 
 /**
  * PATCH /api/payers/[id]/rules/[ruleId]
@@ -10,6 +56,9 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string; ruleId: string }> }
 ) {
+  const rateLimited = checkRateLimit(request, RATE_LIMITS.api);
+  if (rateLimited) return rateLimited;
+
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -59,6 +108,9 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string; ruleId: string }> }
 ) {
+  const rateLimited = checkRateLimit(request, RATE_LIMITS.api);
+  if (rateLimited) return rateLimited;
+
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

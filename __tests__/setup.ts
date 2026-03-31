@@ -2,7 +2,21 @@
  * Global test setup for Vitest.
  * Mocks external services and shared utilities to prevent real HTTP calls.
  */
-import { vi } from "vitest";
+import { vi, beforeAll, afterAll } from "vitest";
+
+// ─── Network guard: prevent real HTTP requests in tests ─────
+// Override global fetch to prevent any real HTTP calls from leaking out.
+const originalFetch = globalThis.fetch;
+beforeAll(() => {
+  globalThis.fetch = ((...args: Parameters<typeof fetch>) => {
+    const url = typeof args[0] === "string" ? args[0] : args[0] instanceof URL ? args[0].toString() : (args[0] as Request).url;
+    throw new Error(`[TEST NETWORK GUARD] Real HTTP request blocked: ${url}. All external calls must be mocked.`);
+  }) as typeof fetch;
+});
+
+afterAll(() => {
+  globalThis.fetch = originalFetch;
+});
 
 // ─── Mock @/lib/auth ─────────────────────────────────────────
 // The default mock returns null (unauthenticated). Tests override via mockSession().
@@ -80,6 +94,19 @@ vi.mock("@/lib/status-tracker/checker", () => ({
     responseTimeMs: 150,
     createdAt: new Date().toISOString(),
   }),
+}));
+
+// ─── Mock @/lib/document-path ────────────────────────────────
+vi.mock("@/lib/document-path", () => ({
+  resolveDocumentPath: vi.fn().mockImplementation((filePath: string) => `/mock/uploads/${filePath}`),
+}));
+
+// ─── Mock fs/promises ────────────────────────────────────────
+vi.mock("fs/promises", () => ({
+  readFile: vi.fn().mockResolvedValue(Buffer.from("mock-file-content")),
+  writeFile: vi.fn().mockResolvedValue(undefined),
+  mkdir: vi.fn().mockResolvedValue(undefined),
+  unlink: vi.fn().mockResolvedValue(undefined),
 }));
 
 // ─── Mock Stripe SDK ─────────────────────────────────────────

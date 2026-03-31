@@ -128,6 +128,7 @@ export function createMockPayer(overrides: Record<string, unknown> = {}) {
   const id = uid();
   return {
     id,
+    organizationId: "org-1",
     name: `Test Payer ${id}`,
     payerId: `PAYER-${id}`,
     type: "commercial" as const,

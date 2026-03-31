@@ -139,7 +139,7 @@ export async function POST(
           issues: auditIssues,
           timestamp: new Date().toISOString(),
         },
-      }, { status: 422 });
+      }, { status: 400 });
     }
 
     // Calculate due date if not set (default: 14 days for routine, 3 for urgent, 1 for emergent)

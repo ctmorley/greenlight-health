@@ -108,17 +108,16 @@ describe("POST /api/register", () => {
     expect(response.status).toBe(400);
   });
 
-  it("handles race condition with P2002 unique constraint", async () => {
+  it("returns 409 on P2002 unique constraint race condition", async () => {
     prismaMock.user.findUnique.mockResolvedValueOnce(null);
 
-    // Simulate a Prisma unique constraint violation during transaction
-    const p2002Error = Object.assign(new Error("Unique constraint failed"), {
-      code: "P2002",
-      clientVersion: "6.4.0",
-    });
-    Object.setPrototypeOf(p2002Error, Error.prototype);
-    // Add the right constructor name check
-    (p2002Error as Record<string, unknown>).constructor = { name: "PrismaClientKnownRequestError" };
+    // Simulate a Prisma PrismaClientKnownRequestError with P2002 code
+    // We need to use the actual Prisma error class for instanceof to work
+    const { Prisma } = await import("@prisma/client");
+    const p2002Error = new Prisma.PrismaClientKnownRequestError(
+      "Unique constraint failed on the fields: (`email`)",
+      { code: "P2002", clientVersion: "6.4.0" }
+    );
 
     prismaMock.$transaction.mockRejectedValueOnce(p2002Error);
 
@@ -129,7 +128,8 @@ describe("POST /api/register", () => {
     });
 
     const response = await POST(req);
-    // Should be 409 if Prisma error is recognized, or 500 otherwise
-    expect([409, 500]).toContain(response.status);
+    expect(response.status).toBe(409);
+    const data = await parseResponse(response);
+    expect(data.error).toContain("already exists");
   });
 });
