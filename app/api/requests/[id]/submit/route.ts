@@ -6,6 +6,7 @@ import { auditPhiAccess } from "@/lib/security/audit-log";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limit";
 import { dispatchNotification } from "@/lib/notifications/service";
 import { decryptPatientRecord } from "@/lib/security/phi-crypto";
+import { log } from "@/lib/logger";
 
 /**
  * POST /api/requests/[id]/submit
@@ -202,6 +203,8 @@ export async function POST(
         : undefined,
     }).catch(() => {});
 
+    log.info("PA submitted", { route: "/api/requests/[id]/submit", requestId: id, referenceNumber: updated.referenceNumber, userId: session.user.id, organizationId: session.user.organizationId });
+
     return NextResponse.json({
       submitted: true,
       id: updated.id,
@@ -211,7 +214,7 @@ export async function POST(
       auditResult,
     });
   } catch (error) {
-    console.error("Submit request error:", error);
+    log.error("Submit request error", { route: "/api/requests/[id]/submit", userId: session.user.id, error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json({ error: "Failed to submit request" }, { status: 500 });
   }
 }

@@ -9,6 +9,7 @@ import { auditPhiAccess } from "@/lib/security/audit-log";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limit";
 import { decryptPatientRecord, decryptInsuranceRecord } from "@/lib/security/phi-crypto";
 import { resolveTransport, getAdapter, getTransportEnvironment } from "@/lib/transport";
+import { log } from "@/lib/logger";
 
 /**
  * POST /api/fhir/submit-pa
@@ -257,6 +258,16 @@ export async function POST(request: NextRequest) {
         : []),
     ]);
 
+    log.info("Electronic PA submitted", {
+      route: "/api/fhir/submit-pa",
+      requestId: paRequest.id,
+      referenceNumber: paRequest.referenceNumber,
+      transportMethod: transport.method,
+      result: result.status,
+      userId: session.user.id,
+      organizationId: session.user.organizationId,
+    });
+
     return NextResponse.json({
       success: true,
       result: {
@@ -275,7 +286,7 @@ export async function POST(request: NextRequest) {
       transportMethod: transport.method,
     });
   } catch (error) {
-    console.error("PAS submission error:", error);
+    log.error("Electronic PA submission error", { route: "/api/fhir/submit-pa", userId: session?.user?.id, error: error instanceof Error ? error.message : String(error) });
     if (error instanceof SyntaxError) {
       return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
     }

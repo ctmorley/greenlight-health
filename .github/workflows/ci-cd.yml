@@ -1,3 +1,16 @@
+# CI/CD — Build, Test, Deploy to Azure
+#
+# Setup instructions:
+# 1. Get the publish profile:
+#    az webapp deployment list-publishing-profiles \
+#      --name greenlight-health-app \
+#      --resource-group greenlight-prod \
+#      --xml
+# 2. Copy the entire XML output
+# 3. Go to GitHub repo → Settings → Secrets → Actions
+# 4. Create secret: AZURE_WEBAPP_PUBLISH_PROFILE = (paste XML)
+# 5. Push to main — the deploy job will run automatically
+#
 name: CI/CD — Build, Test, Deploy to Azure
 
 on:

@@ -21,6 +21,25 @@ import type {
   ClearinghouseCredentials,
 } from "./types";
 
+// ─── Eligibility Response Type ───────────────────────────────
+
+export interface EligibilityResponse {
+  eligible: boolean;
+  status: "active" | "inactive" | "error";
+  planName?: string;
+  planStatus?: string;
+  subscriberName?: string;
+  groupNumber?: string;
+  effectiveDate?: string;
+  terminationDate?: string;
+  copay?: string;
+  coinsurance?: string;
+  deductible?: string;
+  outOfPocket?: string;
+  message: string;
+  rawResponse: unknown;
+}
+
 // ─── Configuration ──────────────────────────────────────────
 
 const DEFAULT_BASE_URL = "https://api.availity.com";
@@ -633,6 +652,149 @@ export class AvailityClient implements ClearinghouseClient {
         rawResponse: { error: error.message },
       };
     }
+  }
+
+  // ── Eligibility (270/271) ─────────────────────────────
+
+  /**
+   * Check patient insurance eligibility and benefits via Availity's
+   * HIPAA 270/271 transaction. Uses the same async polling pattern.
+   */
+  async checkEligibility(request: {
+    payerId: string;
+    provider: { npi: string; lastName: string; firstName?: string };
+    subscriber: { memberId: string; firstName: string; lastName: string; birthDate: string; genderCode: string };
+    serviceType?: string;
+    asOfDate?: string;
+    credentials: ClearinghouseCredentials;
+  }): Promise<EligibilityResponse> {
+    try {
+      const eligibilityPayload = {
+        payer: { id: request.payerId },
+        informationReceiverName: {
+          npi: request.provider.npi,
+          lastName: request.provider.lastName,
+          firstName: request.provider.firstName,
+        },
+        subscriber: {
+          memberId: request.subscriber.memberId,
+          firstName: request.subscriber.firstName,
+          lastName: request.subscriber.lastName,
+          birthDate: request.subscriber.birthDate,
+          genderCode: request.subscriber.genderCode,
+        },
+        ...(request.serviceType ? { serviceType: request.serviceType } : {}),
+        ...(request.asOfDate ? { asOfDate: request.asOfDate } : {}),
+      };
+
+      const response = await this.authenticatedFetch(
+        `${this.baseUrl}/v1/coverages`,
+        request.credentials,
+        {
+          method: "POST",
+          body: JSON.stringify(eligibilityPayload),
+        }
+      );
+
+      if (response.status === 400) {
+        const errorData = await response.json().catch(() => ({}));
+        return {
+          eligible: false,
+          status: "error",
+          message: errorData.userMessage || "Eligibility check failed",
+          rawResponse: errorData,
+        };
+      }
+
+      if (response.status !== 200 && response.status !== 202) {
+        const text = await response.text().catch(() => "");
+        return {
+          eligible: false,
+          status: "error",
+          message: `Unexpected response ${response.status}: ${text}`,
+          rawResponse: text,
+        };
+      }
+
+      const data = await response.json();
+
+      // If async (202), poll for result
+      if (response.status === 202 && data.id) {
+        const result = await this.pollEligibility(data.id, request.credentials);
+        return this.mapEligibilityResponse(result);
+      }
+
+      return this.mapEligibilityResponse(data);
+    } catch (err) {
+      const error = err as Error;
+      return {
+        eligible: false,
+        status: "error",
+        message: error.message,
+        rawResponse: { error: error.message },
+      };
+    }
+  }
+
+  private async pollEligibility(
+    coverageId: string,
+    credentials: ClearinghouseCredentials
+  ): Promise<Record<string, unknown>> {
+    let delay = this.initialPollDelayMs;
+
+    for (let attempt = 0; attempt < this.maxPollAttempts; attempt++) {
+      await new Promise((resolve) => setTimeout(resolve, delay));
+
+      const response = await this.authenticatedFetch(
+        `${this.baseUrl}/v1/coverages/${coverageId}`,
+        credentials,
+        { method: "GET" }
+      );
+
+      const data = await response.json();
+
+      if (data.statusCode !== "0") {
+        return data;
+      }
+
+      delay = Math.min(delay * 2, MAX_POLL_DELAY_MS);
+    }
+
+    return { statusCode: "504", status: "Timeout" };
+  }
+
+  private mapEligibilityResponse(data: Record<string, unknown>): EligibilityResponse {
+    const statusCode = data.statusCode as string | undefined;
+
+    if (statusCode === "504" || statusCode === "19") {
+      return {
+        eligible: false,
+        status: "error",
+        message: "Eligibility check failed or timed out",
+        rawResponse: data,
+      };
+    }
+
+    // Extract coverage status from response
+    const planStatus = data.planStatus as string | undefined;
+    const eligible = planStatus === "Active" || planStatus === "1";
+
+    return {
+      eligible,
+      status: eligible ? "active" : "inactive",
+      planName: (data.planName as string) || undefined,
+      planStatus: planStatus || undefined,
+      subscriberName: (data.subscriberName as string) || undefined,
+      groupNumber: (data.groupNumber as string) || undefined,
+      effectiveDate: (data.effectiveDate as string) || undefined,
+      terminationDate: (data.terminationDate as string) || undefined,
+      copay: (data.copay as string) || undefined,
+      coinsurance: (data.coinsurance as string) || undefined,
+      deductible: (data.deductible as string) || undefined,
+      outOfPocket: (data.outOfPocket as string) || undefined,
+      message: eligible ? "Coverage is active" : "Coverage is not active",
+      rawResponse: data,
+    };
   }
 
   // ── Internal ────────────────────────────────────────────

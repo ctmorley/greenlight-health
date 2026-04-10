@@ -5,6 +5,7 @@ import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { auditPhiAccess } from "@/lib/security/audit-log";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limit";
+import { log } from "@/lib/logger";
 import {
   encryptPatientFields,
   encryptInsuranceFields,
@@ -121,7 +122,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("Patients list error:", error);
+    log.error("Patients list error", { route: "/api/patients", userId: session.user.id, organizationId, error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json({ error: "Failed to fetch patients" }, { status: 500 });
   }
 }
@@ -296,7 +297,7 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     );
   } catch (error) {
-    console.error("Create patient error:", error);
+    log.error("Create patient error", { route: "/api/patients", userId: session.user.id, organizationId, error: error instanceof Error ? error.message : String(error) });
     if (error instanceof SyntaxError) {
       return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
     }
