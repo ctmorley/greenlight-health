@@ -3,6 +3,7 @@ import { hash } from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
+import { log } from "@/lib/logger";
 
 const registerSchema = z.object({
   organizationName: z.string().trim().min(2, "Organization name is required"),
@@ -86,7 +87,7 @@ export async function POST(req: NextRequest) {
         }
       } catch (err) {
         // Billing setup failure shouldn't block registration
-        console.error("Post-registration checkout error:", err);
+        log.error("Post-registration checkout error", { error: err instanceof Error ? err.message : String(err) });
       }
     }
 
@@ -119,7 +120,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (isDatabaseConnectionError(error)) {
-      console.error("Database connection error:", error);
+      log.error("Database connection error", { error: error instanceof Error ? error.message : String(error) });
       return NextResponse.json(
         {
           error: "Database unavailable. Please ensure PostgreSQL is running on localhost:5432. You can start it with: docker compose up -d",
@@ -128,7 +129,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    console.error("Registration error:", error);
+    log.error("Registration error", { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

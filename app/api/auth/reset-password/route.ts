@@ -4,6 +4,7 @@ import { hash } from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { findValidToken, consumeToken, revokeAllTokens } from "@/lib/auth-tokens";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limit";
+import { log } from "@/lib/logger";
 
 const schema = z.object({
   token: z.string().min(1),
@@ -83,7 +84,7 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-    console.error("Reset password error:", error);
+    log.error("Reset password error", { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json({ error: "Failed to reset password" }, { status: 500 });
   }
 }

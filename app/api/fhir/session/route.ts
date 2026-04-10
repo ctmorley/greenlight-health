@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { z } from "zod";
 import { auditPhiAccess } from "@/lib/security/audit-log";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limit";
+import { log } from "@/lib/logger";
 
 /**
  * POST /api/fhir/session
@@ -78,7 +79,7 @@ export async function POST(request: NextRequest) {
       fhirBaseUrl: connection.fhirBaseUrl,
     });
   } catch (error) {
-    console.error("FHIR session error:", error);
+    log.error("FHIR session error", { error: error instanceof Error ? error.message : String(error) });
     if (error instanceof SyntaxError) {
       return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
     }
@@ -124,7 +125,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ connections });
   } catch (error) {
-    console.error("FHIR connections list error:", error);
+    log.error("FHIR connections list error", { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json({ error: "Failed to fetch connections" }, { status: 500 });
   }
 }

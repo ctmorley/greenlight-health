@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { auditPhiAccess } from "@/lib/security/audit-log";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limit";
 import { checkPaStatus } from "@/lib/status-tracker/checker";
+import { log } from "@/lib/logger";
 
 /**
  * POST /api/requests/[id]/check-status
@@ -57,7 +58,7 @@ export async function POST(
       statusCheck: result,
     });
   } catch (error) {
-    console.error("Check status error:", error);
+    log.error("Check status error", { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json(
       { error: "Failed to check status" },
       { status: 500 }

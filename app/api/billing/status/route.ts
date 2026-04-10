@@ -9,6 +9,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getPlan, checkSubscriptionLimits } from "@/lib/billing";
+import { log } from "@/lib/logger";
 
 export async function GET() {
   const session = await auth();
@@ -54,7 +55,7 @@ export async function GET() {
       limits: limitCheck.limits,
     });
   } catch (error) {
-    console.error("Billing status error:", error);
+    log.error("Billing status error", { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json({ error: "Failed to fetch billing status" }, { status: 500 });
   }
 }

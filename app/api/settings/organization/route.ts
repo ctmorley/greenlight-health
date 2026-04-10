@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
+import { log } from "@/lib/logger";
 
 export async function GET() {
   const session = await auth();
@@ -24,7 +25,7 @@ export async function GET() {
 
     return NextResponse.json({ organization: org });
   } catch (error) {
-    console.error("Get organization error:", error);
+    log.error("Get organization error", { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json({ error: "Failed to fetch organization" }, { status: 500 });
   }
 }
@@ -69,7 +70,7 @@ export async function PATCH(request: NextRequest) {
 
     return NextResponse.json({ organization: org });
   } catch (error) {
-    console.error("Update organization error:", error);
+    log.error("Update organization error", { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json({ error: "Failed to update organization" }, { status: 500 });
   }
 }

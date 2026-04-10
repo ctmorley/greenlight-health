@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { z } from "zod";
 import { auditPhiAccess } from "@/lib/security/audit-log";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limit";
+import { log } from "@/lib/logger";
 
 /**
  * GET /api/payers
@@ -58,7 +59,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ payers });
   } catch (error) {
-    console.error("Payers list error:", error);
+    log.error("Payers list error", { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json({ error: "Failed to fetch payers" }, { status: 500 });
   }
 }
@@ -176,7 +177,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ payer }, { status: 201 });
   } catch (error) {
-    console.error("Create payer error:", error);
+    log.error("Create payer error", { error: error instanceof Error ? error.message : String(error) });
     if (error instanceof SyntaxError) {
       return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
     }

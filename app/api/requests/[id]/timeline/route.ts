@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { z } from "zod";
 import { auditPhiAccess } from "@/lib/security/audit-log";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limit";
+import { log } from "@/lib/logger";
 
 /** Roles allowed to add notes to the timeline. */
 const NOTE_WRITE_ROLES = ["admin", "pa_coordinator", "physician"];
@@ -63,7 +64,7 @@ export async function GET(
       })),
     });
   } catch (error) {
-    console.error("Timeline error:", error);
+    log.error("Timeline error", { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json({ error: "Failed to fetch timeline" }, { status: 500 });
   }
 }
@@ -174,7 +175,7 @@ export async function POST(
     if (error instanceof SyntaxError) {
       return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
     }
-    console.error("Add note error:", error instanceof Error ? error.message : error);
+    log.error("Add note error", { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json({ error: "Failed to add note" }, { status: 500 });
   }
 }

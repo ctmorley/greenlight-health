@@ -8,6 +8,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { createPortalSession, isStripeConfigured } from "@/lib/billing";
+import { log } from "@/lib/logger";
 
 export async function POST(request: NextRequest) {
   const session = await auth();
@@ -38,7 +39,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ url: portalUrl });
   } catch (error) {
-    console.error("Portal session error:", error);
+    log.error("Portal session error", { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json({ error: "Failed to create billing portal session" }, { status: 500 });
   }
 }

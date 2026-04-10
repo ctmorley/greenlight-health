@@ -12,6 +12,7 @@ import {
   decryptInsuranceRecord,
   blindIndex,
 } from "@/lib/security/phi-crypto";
+import { log } from "@/lib/logger";
 
 /**
  * POST /api/fhir/match-patient
@@ -235,7 +236,7 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     );
   } catch (error) {
-    console.error("FHIR patient match error:", error);
+    log.error("FHIR patient match error", { error: error instanceof Error ? error.message : String(error) });
     if (error instanceof SyntaxError) {
       return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
     }

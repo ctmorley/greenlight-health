@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { z } from "zod";
 import { auditPhiAccess } from "@/lib/security/audit-log";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limit";
+import { log } from "@/lib/logger";
 
 const updateAppealSchema = z.object({
   status: z.enum(["won", "lost", "withdrawn"]),
@@ -164,7 +165,7 @@ export async function PATCH(
       filedBy: `${updated.filedBy.firstName} ${updated.filedBy.lastName}`,
     });
   } catch (error) {
-    console.error("Update appeal error:", error);
+    log.error("Update appeal error", { error: error instanceof Error ? error.message : String(error) });
     if (error instanceof SyntaxError) {
       return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
     }

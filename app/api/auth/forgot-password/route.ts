@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { createAuthToken } from "@/lib/auth-tokens";
 import { sendResetEmail } from "@/lib/auth-email";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limit";
+import { log } from "@/lib/logger";
 
 const schema = z.object({
   email: z.string().email(),
@@ -47,7 +48,7 @@ export async function POST(request: NextRequest) {
       message: "If an account with that email exists, a password reset link has been sent.",
     });
   } catch (error) {
-    console.error("Forgot password error:", error);
+    log.error("Forgot password error", { error: error instanceof Error ? error.message : String(error) });
     // Even on error, return the same response to prevent information leakage
     return NextResponse.json({
       message: "If an account with that email exists, a password reset link has been sent.",

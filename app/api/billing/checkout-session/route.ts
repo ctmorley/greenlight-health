@@ -9,6 +9,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { createCheckoutSession, isStripeConfigured } from "@/lib/billing";
+import { log } from "@/lib/logger";
 
 const checkoutSchema = z.object({
   planId: z.enum(["starter", "professional"]),
@@ -57,7 +58,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ url: checkoutUrl });
   } catch (error) {
-    console.error("Checkout session error:", error);
+    log.error("Checkout session error", { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json({ error: "Failed to create checkout session" }, { status: 500 });
   }
 }

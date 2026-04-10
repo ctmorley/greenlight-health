@@ -6,6 +6,7 @@ import { VALID_TRANSITIONS, STATUS_CHANGE_ROLES } from "@/lib/status-transitions
 import { VALID_DENIAL_CATEGORY_VALUES, VALID_DENIAL_CODES, isValidCodeForCategory } from "@/lib/denial-reasons";
 import { auditPhiAccess } from "@/lib/security/audit-log";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limit";
+import { log } from "@/lib/logger";
 
 /**
  * GET /api/requests/[id]/status
@@ -66,7 +67,7 @@ export async function GET(
       updatedAt: paRequest.updatedAt.toISOString(),
     });
   } catch (error) {
-    console.error("Get status error:", error);
+    log.error("Get status error", { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json({ error: "Failed to fetch status" }, { status: 500 });
   }
 }
@@ -277,7 +278,7 @@ export async function PATCH(
       expiresAt: updated.expiresAt?.toISOString() || null,
     });
   } catch (error) {
-    console.error("Status update error:", error);
+    log.error("Status update error", { error: error instanceof Error ? error.message : String(error) });
     if (error instanceof SyntaxError) {
       return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
     }

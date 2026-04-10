@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { auditPhiAccess } from "@/lib/security/audit-log";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limit";
 import { decryptPatientRecord } from "@/lib/security/phi-crypto";
+import { log } from "@/lib/logger";
 
 export async function GET(request: NextRequest) {
   const rateLimited = checkRateLimit(request, RATE_LIMITS.api);
@@ -207,7 +208,7 @@ export async function GET(request: NextRequest) {
       topDenialReasons,
     });
   } catch (error) {
-    console.error("Dashboard stats error:", error);
+    log.error("Dashboard stats error", { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json({ error: "Failed to fetch dashboard stats" }, { status: 500 });
   }
 }

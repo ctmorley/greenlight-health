@@ -5,6 +5,7 @@ import { auth } from "@/lib/auth";
 import { z } from "zod";
 import { auditPhiAccess } from "@/lib/security/audit-log";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limit";
+import { log } from "@/lib/logger";
 
 const createTransportSchema = z.object({
   method: z.enum(["fhir_pas", "edi_278", "rpa_portal", "fax_manual", "simulated"]),
@@ -156,7 +157,7 @@ export async function POST(
         { status: 409 }
       );
     }
-    console.error("Create transport error:", error);
+    log.error("Create transport error", { error: error instanceof Error ? error.message : String(error) });
     if (error instanceof SyntaxError) {
       return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
     }

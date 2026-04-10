@@ -5,6 +5,7 @@ import { z } from "zod";
 import { auditPhiAccess } from "@/lib/security/audit-log";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limit";
 import { encryptPatientFields, decryptPatientRecord, decryptInsuranceRecord } from "@/lib/security/phi-crypto";
+import { log } from "@/lib/logger";
 
 export async function GET(
   request: NextRequest,
@@ -103,7 +104,7 @@ export async function GET(
       })),
     });
   } catch (error) {
-    console.error("Patient detail error:", error);
+    log.error("Patient detail error", { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json({ error: "Failed to fetch patient" }, { status: 500 });
   }
 }
@@ -221,7 +222,7 @@ export async function PATCH(
       updatedAt: du.updatedAt instanceof Date ? du.updatedAt.toISOString() : String(du.updatedAt),
     });
   } catch (error) {
-    console.error("Patient update error:", error);
+    log.error("Patient update error", { error: error instanceof Error ? error.message : String(error) });
     if (error instanceof SyntaxError) {
       return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
     }

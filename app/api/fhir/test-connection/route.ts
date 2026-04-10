@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { audit, extractRequestInfo } from "@/lib/security/audit-log";
 import { z } from "zod";
 import type { ConnectionTestResult } from "@/lib/fhir/vendors/types";
+import { log } from "@/lib/logger";
 
 /**
  * POST /api/fhir/test-connection
@@ -123,7 +124,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(result);
   } catch (error) {
-    console.error("FHIR connection test error:", error);
+    log.error("FHIR connection test error", { error: error instanceof Error ? error.message : String(error) });
     if (error instanceof SyntaxError) {
       return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
     }

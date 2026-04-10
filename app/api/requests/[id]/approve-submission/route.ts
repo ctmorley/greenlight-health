@@ -5,6 +5,7 @@ import { z } from "zod";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limit";
 import { auditPhiAccess } from "@/lib/security/audit-log";
 import { resolveTransport, getTransportEnvironment } from "@/lib/transport";
+import { log } from "@/lib/logger";
 
 const approveSchema = z.object({
   note: z.string().max(2000).optional(),
@@ -116,7 +117,7 @@ export async function POST(
       },
     });
   } catch (error) {
-    console.error("Approve submission error:", error);
+    log.error("Approve submission error", { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json(
       { error: "Failed to approve submission" },
       { status: 500 }

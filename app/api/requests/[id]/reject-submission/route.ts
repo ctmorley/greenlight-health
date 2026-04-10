@@ -5,6 +5,7 @@ import { z } from "zod";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limit";
 import { auditPhiAccess } from "@/lib/security/audit-log";
 import { resolveTransport, getTransportEnvironment } from "@/lib/transport";
+import { log } from "@/lib/logger";
 
 const rejectSchema = z.object({
   note: z.string().min(1, "Rejection reason is required").max(2000),
@@ -121,7 +122,7 @@ export async function POST(
       },
     });
   } catch (error) {
-    console.error("Reject submission error:", error);
+    log.error("Reject submission error", { error: error instanceof Error ? error.message : String(error) });
     if (error instanceof SyntaxError) {
       return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
     }

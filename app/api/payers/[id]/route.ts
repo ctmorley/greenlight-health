@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { z } from "zod";
 import { auditPhiAccess } from "@/lib/security/audit-log";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limit";
+import { log } from "@/lib/logger";
 
 /**
  * GET /api/payers/[id]
@@ -47,7 +48,7 @@ export async function GET(
 
     return NextResponse.json({ payer });
   } catch (error) {
-    console.error("Payer detail error:", error);
+    log.error("Payer detail error", { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json({ error: "Failed to fetch payer" }, { status: 500 });
   }
 }
@@ -141,7 +142,7 @@ export async function PATCH(
 
     return NextResponse.json({ payer: updated });
   } catch (error) {
-    console.error("Payer update error:", error);
+    log.error("Payer update error", { error: error instanceof Error ? error.message : String(error) });
     if (error instanceof SyntaxError) {
       return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
     }
@@ -190,7 +191,7 @@ export async function DELETE(
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Payer delete error:", error);
+    log.error("Payer delete error", { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json({ error: "Failed to delete payer" }, { status: 500 });
   }
 }

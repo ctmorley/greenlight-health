@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { log } from "@/lib/logger";
 
 /**
  * GET /api/cds-hooks/services
@@ -16,7 +17,7 @@ import { NextResponse } from "next/server";
  */
 
 export async function GET() {
-  console.warn(
+  log.warn(
     "[CDS Hooks] Discovery request to deprecated unscoped endpoint. " +
       "New integrations must use /api/cds-hooks/t/{tenantKey}/services."
   );

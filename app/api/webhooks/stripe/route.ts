@@ -11,6 +11,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { getStripe, syncSubscription, clearSubscription } from "@/lib/billing";
+import { log } from "@/lib/logger";
 
 export async function POST(request: NextRequest) {
   const body = await request.text();
@@ -22,7 +23,7 @@ export async function POST(request: NextRequest) {
 
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
   if (!webhookSecret) {
-    console.error("[STRIPE WEBHOOK] STRIPE_WEBHOOK_SECRET not configured");
+    log.error("[STRIPE WEBHOOK] STRIPE_WEBHOOK_SECRET not configured");
     return NextResponse.json({ error: "Webhook not configured" }, { status: 500 });
   }
 
@@ -33,7 +34,7 @@ export async function POST(request: NextRequest) {
     event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
-    console.error("[STRIPE WEBHOOK] Signature verification failed:", message);
+    log.error("[STRIPE WEBHOOK] Signature verification failed", { error: message });
     return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
   }
 
@@ -121,7 +122,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ received: true });
   } catch (error) {
-    console.error("[STRIPE WEBHOOK] Handler error:", error);
+    log.error("[STRIPE WEBHOOK] Handler error", { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json({ error: "Webhook handler failed" }, { status: 500 });
   }
 }

@@ -6,6 +6,7 @@ import { z } from "zod";
 import { auditPhiAccess } from "@/lib/security/audit-log";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limit";
 import { decryptPatientRecord, buildPatientHashSearch } from "@/lib/security/phi-crypto";
+import { log } from "@/lib/logger";
 
 const queryParamsSchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
@@ -229,7 +230,7 @@ export async function GET(request: NextRequest) {
       reasonCategoryCounts,
     });
   } catch (error) {
-    console.error("Denials list error:", error);
+    log.error("Denials list error", { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json({ error: "Failed to fetch denials" }, { status: 500 });
   }
 }

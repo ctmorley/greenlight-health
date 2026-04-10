@@ -5,6 +5,7 @@ import { z } from "zod";
 import { auditPhiAccess } from "@/lib/security/audit-log";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limit";
 import { decryptPatientRecord, decryptInsuranceRecord } from "@/lib/security/phi-crypto";
+import { log } from "@/lib/logger";
 
 const VALID_SERVICE_CATEGORIES = ["imaging", "surgical", "medical"] as const;
 const VALID_SERVICE_TYPES = [
@@ -224,7 +225,7 @@ export async function GET(
       })),
     });
   } catch (error) {
-    console.error("Request detail error:", error);
+    log.error("Request detail error", { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json({ error: "Failed to fetch request" }, { status: 500 });
   }
 }
@@ -385,7 +386,7 @@ export async function PATCH(
       updatedAt: updated.updatedAt.toISOString(),
     });
   } catch (error) {
-    console.error("Update request error:", error);
+    log.error("Update request error", { error: error instanceof Error ? error.message : String(error) });
     if (error instanceof SyntaxError) {
       return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
     }
@@ -438,7 +439,7 @@ export async function DELETE(
 
     return NextResponse.json({ deleted: true });
   } catch (error) {
-    console.error("Delete request error:", error);
+    log.error("Delete request error", { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json({ error: "Failed to delete request" }, { status: 500 });
   }
 }

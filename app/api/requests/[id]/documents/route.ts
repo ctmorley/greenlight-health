@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { getStorageProvider, buildBlobKey } from "@/lib/storage";
 import { auditPhiAccess } from "@/lib/security/audit-log";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limit";
+import { log } from "@/lib/logger";
 
 const VALID_CATEGORIES = [
   "clinical_notes",
@@ -73,7 +74,7 @@ export async function GET(
       })),
     });
   } catch (error) {
-    console.error("Get documents error:", error);
+    log.error("Get documents error", { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json({ error: "Failed to fetch documents" }, { status: 500 });
   }
 }
@@ -225,7 +226,7 @@ export async function POST(
       createdAt: document.createdAt.toISOString(),
     }, { status: 201 });
   } catch (error) {
-    console.error("Document POST error:", error);
+    log.error("Document POST error", { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json({ error: "Failed to process document request" }, { status: 500 });
   }
 }

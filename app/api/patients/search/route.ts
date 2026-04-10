@@ -6,6 +6,7 @@ import { z } from "zod";
 import { auditPhiAccess } from "@/lib/security/audit-log";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limit";
 import { buildPatientHashSearch, decryptPatientRecord } from "@/lib/security/phi-crypto";
+import { log } from "@/lib/logger";
 
 const searchQuerySchema = z.object({
   q: z.string().trim().min(2, "Search query must be at least 2 characters"),
@@ -91,7 +92,7 @@ export async function GET(request: NextRequest) {
       }),
     });
   } catch (error) {
-    console.error("Patient search error:", error);
+    log.error("Patient search error", { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json({ error: "Failed to search patients" }, { status: 500 });
   }
 }

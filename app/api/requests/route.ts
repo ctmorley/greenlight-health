@@ -8,6 +8,7 @@ import { auditPhiAccess } from "@/lib/security/audit-log";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limit";
 import { guardSubscription } from "@/lib/billing";
 import { decryptPatientRecord, buildPatientHashSearch } from "@/lib/security/phi-crypto";
+import { log } from "@/lib/logger";
 
 const VALID_STATUSES = [
   "draft", "submitted", "pending_review", "approved",
@@ -272,7 +273,7 @@ export async function GET(request: NextRequest) {
       statusCounts: statusCountsMap,
     });
   } catch (error) {
-    console.error("Requests list error:", error);
+    log.error("Requests list error", { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json({ error: "Failed to fetch requests" }, { status: 500 });
   }
 }
@@ -401,7 +402,7 @@ export async function POST(request: NextRequest) {
       status: newRequest.status,
     }, { status: 201 });
   } catch (error) {
-    console.error("Create request error:", error);
+    log.error("Create request error", { error: error instanceof Error ? error.message : String(error) });
     if (error instanceof SyntaxError) {
       return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
     }

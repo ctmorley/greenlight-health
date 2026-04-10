@@ -6,14 +6,14 @@ import { auditPhiAccess } from "@/lib/security/audit-log";
 import { decryptPatientRecord, decryptInsuranceRecord } from "@/lib/security/phi-crypto";
 import { log } from "@/lib/logger";
 import { AvailityClient, type EligibilityResponse } from "@/lib/transport/clearinghouse/availity-client";
+import { resolveTransport, getTransportEnvironment } from "@/lib/transport";
 import { resolveCredentials } from "@/lib/transport/clearinghouse/credentials";
 
 /**
  * POST /api/patients/[id]/eligibility
  *
  * Check real-time insurance eligibility for a patient via the clearinghouse.
- * Requires at least one insurance record with a payer that has an edi_278
- * or equivalent transport configured with credentials.
+ * Uses the transport registry to resolve the correct transport for the payer.
  *
  * Request body (optional):
  *   { insuranceId?: string }  — check a specific insurance; defaults to primary
@@ -48,27 +48,23 @@ export async function POST(
 
     auditPhiAccess(request, session, "view", "Patient", id, "Eligibility check").catch(() => {});
 
-    // Fetch patient with insurance + payer
-    const patient = await prisma.patient.findFirst({
-      where: { id, organizationId },
-      include: {
-        insurances: {
-          ...(insuranceId ? { where: { id: insuranceId } } : { where: { isPrimary: true } }),
-          include: {
-            payer: {
-              include: {
-                transports: {
-                  where: { isEnabled: true },
-                  orderBy: { priority: "asc" },
-                  take: 1,
-                },
-              },
-            },
+    // Fetch patient with insurance + payer, and the org for NPI
+    const [patient, organization] = await Promise.all([
+      prisma.patient.findFirst({
+        where: { id, organizationId },
+        include: {
+          insurances: {
+            ...(insuranceId ? { where: { id: insuranceId } } : { where: { isPrimary: true } }),
+            include: { payer: true },
+            take: 1,
           },
-          take: 1,
         },
-      },
-    });
+      }),
+      prisma.organization.findUnique({
+        where: { id: organizationId },
+        select: { npi: true, name: true },
+      }),
+    ]);
 
     if (!patient) {
       return NextResponse.json({ error: "Patient not found" }, { status: 404 });
@@ -82,8 +78,10 @@ export async function POST(
     const decryptedPatient = decryptPatientRecord(patient);
     const decryptedInsurance = decryptInsuranceRecord(insurance);
 
-    // Try clearinghouse eligibility check
-    const transport = insurance.payer.transports[0];
+    // Resolve transport via the canonical registry (org-aware, environment-aware, priority-ordered)
+    const environment = getTransportEnvironment();
+    const transport = await resolveTransport(insurance.payer.id, organizationId, environment);
+
     if (transport?.credentialRef) {
       try {
         const credentials = resolveCredentials(transport.credentialRef);
@@ -98,11 +96,13 @@ export async function POST(
           ? decryptedPatient.dob.toISOString().split("T")[0]
           : String(decryptedPatient.dob || "").split("T")[0];
 
+        const orgName = organization?.name || "";
+
         const result: EligibilityResponse = await client.checkEligibility({
           payerId: transport.clearinghousePayerId || insurance.payer.payerId,
           provider: {
-            npi: "", // Will be populated from org NPI when available
-            lastName: "Provider",
+            npi: organization?.npi || "",
+            lastName: orgName,
           },
           subscriber: {
             memberId: String(decryptedInsurance.memberId || ""),

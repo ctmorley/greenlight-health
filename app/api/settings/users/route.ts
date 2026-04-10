@@ -5,6 +5,7 @@ import { hash } from "bcryptjs";
 import crypto from "crypto";
 import { createAuthToken } from "@/lib/auth-tokens";
 import { sendInviteEmail } from "@/lib/auth-email";
+import { log } from "@/lib/logger";
 
 export async function GET() {
   const session = await auth();
@@ -37,7 +38,7 @@ export async function GET() {
 
     return NextResponse.json({ users });
   } catch (error) {
-    console.error("Get users error:", error);
+    log.error("Get users error", { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json({ error: "Failed to fetch users" }, { status: 500 });
   }
 }
@@ -120,12 +121,12 @@ export async function POST(request: NextRequest) {
         session.user.organizationName || "your organization",
       );
     } catch (err) {
-      console.error("Failed to send invite email:", err);
+      log.error("Failed to send invite email", { error: err instanceof Error ? err.message : String(err) });
     }
 
     return NextResponse.json({ user, inviteSent }, { status: 201 });
   } catch (error) {
-    console.error("Create user error:", error);
+    log.error("Create user error", { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json({ error: "Failed to create user" }, { status: 500 });
   }
 }
@@ -198,7 +199,7 @@ export async function PATCH(request: NextRequest) {
 
     return NextResponse.json({ user });
   } catch (error) {
-    console.error("Update user error:", error);
+    log.error("Update user error", { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json({ error: "Failed to update user" }, { status: 500 });
   }
 }

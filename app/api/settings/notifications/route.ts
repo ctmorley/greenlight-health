@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limit";
 import { NOTIFICATION_EVENTS, getNotificationEvents } from "@/lib/notifications/service";
+import { log } from "@/lib/logger";
 
 const updatePreferencesSchema = z.object({
   emailEnabled: z.boolean().optional(),
@@ -49,7 +50,7 @@ export async function GET() {
       availableEvents: getNotificationEvents(),
     });
   } catch (error) {
-    console.error("Get notification preferences error:", error);
+    log.error("Get notification preferences error", { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json(
       { error: "Failed to fetch notification preferences" },
       { status: 500 }
@@ -106,7 +107,7 @@ export async function PUT(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("Update notification preferences error:", error);
+    log.error("Update notification preferences error", { error: error instanceof Error ? error.message : String(error) });
     if (error instanceof SyntaxError) {
       return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
     }

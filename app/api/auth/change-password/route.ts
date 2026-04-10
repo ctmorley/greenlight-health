@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limit";
 import { revokeAllTokens } from "@/lib/auth-tokens";
+import { log } from "@/lib/logger";
 
 const schema = z.object({
   currentPassword: z.string().min(1),
@@ -68,7 +69,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ message: "Password changed successfully." });
   } catch (error) {
-    console.error("Change password error:", error);
+    log.error("Change password error", { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json({ error: "Failed to change password" }, { status: 500 });
   }
 }

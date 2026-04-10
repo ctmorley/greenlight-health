@@ -5,6 +5,7 @@ import { auth } from "@/lib/auth";
 import { z } from "zod";
 import { auditPhiAccess } from "@/lib/security/audit-log";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limit";
+import { log } from "@/lib/logger";
 
 const updateTransportSchema = z.object({
   isEnabled: z.boolean().optional(),
@@ -153,7 +154,7 @@ export async function PATCH(
 
     return NextResponse.json({ transport: updated });
   } catch (error) {
-    console.error("Update transport error:", error);
+    log.error("Update transport error", { error: error instanceof Error ? error.message : String(error) });
     if (error instanceof SyntaxError) {
       return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
     }

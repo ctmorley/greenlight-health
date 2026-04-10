@@ -6,6 +6,7 @@ import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limit";
 import { guardSubscription } from "@/lib/billing";
 import { isAiConfigured, NotFoundError } from "@/lib/ai";
 import { assembleSummaryContext } from "@/lib/ai/clinical-summarizer";
+import { log } from "@/lib/logger";
 
 const requestSchema = z.object({
   requestId: z.string().min(1, "requestId is required"),
@@ -71,7 +72,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(result);
   } catch (error) {
-    console.error("Summarize clinical error:", error);
+    log.error("Summarize clinical error", { error: error instanceof Error ? error.message : String(error) });
     if (error instanceof SyntaxError) {
       return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
     }

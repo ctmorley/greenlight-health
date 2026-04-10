@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { auditPhiAccess } from "@/lib/security/audit-log";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limit";
 import { decryptPatientRecord } from "@/lib/security/phi-crypto";
+import { log } from "@/lib/logger";
 
 /**
  * GET /api/analytics/summary
@@ -87,7 +88,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ rows });
   } catch (error) {
-    console.error("Analytics summary error:", error);
+    log.error("Analytics summary error", { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json({ error: "Failed to fetch summary data" }, { status: 500 });
   }
 }

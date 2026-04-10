@@ -5,6 +5,7 @@ import { z } from "zod";
 import { auditPhiAccess } from "@/lib/security/audit-log";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limit";
 import { dispatchNotification } from "@/lib/notifications/service";
+import { log } from "@/lib/logger";
 
 const createAppealSchema = z.object({
   denialId: z.string().min(1).optional(),
@@ -178,7 +179,7 @@ export async function POST(
       appeal: appealData,
     }, { status: 201 });
   } catch (error) {
-    console.error("File appeal error:", error);
+    log.error("File appeal error", { error: error instanceof Error ? error.message : String(error) });
     if (error instanceof SyntaxError) {
       return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
     }

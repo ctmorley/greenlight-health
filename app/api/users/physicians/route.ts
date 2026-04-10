@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
+import { log } from "@/lib/logger";
 
 /**
  * GET /api/users/physicians
@@ -41,7 +42,7 @@ export async function GET() {
       })),
     });
   } catch (error) {
-    console.error("Physicians list error:", error);
+    log.error("Physicians list error", { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json({ error: "Failed to fetch physicians" }, { status: 500 });
   }
 }

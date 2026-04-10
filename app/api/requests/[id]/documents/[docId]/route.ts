@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { getStorageProvider } from "@/lib/storage";
 import { auditPhiAccess } from "@/lib/security/audit-log";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limit";
+import { log } from "@/lib/logger";
 
 /**
  * GET /api/requests/[id]/documents/[docId]
@@ -82,7 +83,7 @@ export async function GET(
       },
     });
   } catch (error) {
-    console.error("Download document error:", error);
+    log.error("Download document error", { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json({ error: "Failed to download document" }, { status: 500 });
   }
 }
@@ -145,7 +146,7 @@ export async function DELETE(
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Delete document error:", error);
+    log.error("Delete document error", { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json({ error: "Failed to delete document" }, { status: 500 });
   }
 }

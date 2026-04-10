@@ -3,6 +3,7 @@ import type { CdsHookRequest, CdsHookResponse } from "@/lib/cds-hooks/types";
 import { checkPaRequirement } from "@/lib/cds-hooks/pa-check";
 import { buildPaCards } from "@/lib/cds-hooks/card-builder";
 import { resolveOrgFromTenantKey } from "@/lib/cds-tenant-key";
+import { log } from "@/lib/logger";
 
 /**
  * POST /api/cds-hooks/t/{tenantKey}/services/greenlight-appointment-check
@@ -31,9 +32,7 @@ export async function POST(
     const resolved = await resolveOrgFromTenantKey(tenantKey);
 
     if (!resolved) {
-      console.warn(
-        `[CDS Hooks] Invalid tenant key: key=${tenantKey}`
-      );
+      log.warn("[CDS Hooks] Invalid tenant key", { tenantKey });
       return NextResponse.json(
         { cards: [] } satisfies CdsHookResponse,
         { headers: corsHeaders() }
@@ -70,7 +69,7 @@ export async function POST(
       { headers: corsHeaders() }
     );
   } catch (error) {
-    console.error("CDS Hook appointment-book error:", error);
+    log.error("CDS Hook appointment-book error", { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json(
       { cards: [] } satisfies CdsHookResponse,
       { headers: corsHeaders() }

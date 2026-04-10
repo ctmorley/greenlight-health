@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limit";
+import { log } from "@/lib/logger";
 
 const querySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
@@ -88,7 +89,7 @@ export async function GET(request: NextRequest) {
       unreadCount,
     });
   } catch (error) {
-    console.error("Get notifications error:", error);
+    log.error("Get notifications error", { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json(
       { error: "Failed to fetch notifications" },
       { status: 500 }
@@ -144,7 +145,7 @@ export async function PATCH(request: NextRequest) {
       read: updated.read,
     });
   } catch (error) {
-    console.error("Update notification error:", error);
+    log.error("Update notification error", { error: error instanceof Error ? error.message : String(error) });
     if (error instanceof SyntaxError) {
       return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
     }

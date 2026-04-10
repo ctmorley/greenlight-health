@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limit";
+import { log } from "@/lib/logger";
 
 /**
  * GET /api/payers/[id]/rules/[ruleId]
@@ -56,7 +57,7 @@ export async function GET(
       },
     });
   } catch (error) {
-    console.error("Get rule error:", error);
+    log.error("Get rule error", { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json({ error: "Failed to fetch rule" }, { status: 500 });
   }
 }
@@ -121,7 +122,7 @@ export async function PATCH(
 
     return NextResponse.json({ rule: updated });
   } catch (error) {
-    console.error("Rule update error:", error);
+    log.error("Rule update error", { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json({ error: "Failed to update rule" }, { status: 500 });
   }
 }
@@ -171,7 +172,7 @@ export async function DELETE(
     await prisma.payerRule.delete({ where: { id: ruleId } });
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Rule delete error:", error);
+    log.error("Rule delete error", { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json({ error: "Failed to delete rule" }, { status: 500 });
   }
 }

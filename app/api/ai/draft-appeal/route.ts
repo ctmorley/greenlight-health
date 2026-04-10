@@ -7,6 +7,7 @@ import { guardSubscription } from "@/lib/billing";
 import { isAiConfigured, NotFoundError } from "@/lib/ai";
 import type { AppealLevel } from "@/lib/ai/types";
 import { assembleAppealContext } from "@/lib/ai/appeal-drafter";
+import { log } from "@/lib/logger";
 
 const requestSchema = z.object({
   denialId: z.string().min(1, "denialId is required"),
@@ -76,7 +77,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(result);
   } catch (error) {
-    console.error("Draft appeal error:", error);
+    log.error("Draft appeal error", { error: error instanceof Error ? error.message : String(error) });
     if (error instanceof SyntaxError) {
       return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
     }

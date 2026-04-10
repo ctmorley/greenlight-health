@@ -4,6 +4,7 @@ import { hash } from "bcryptjs";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
 import { DENIAL_REASON_CODES } from "../lib/denial-reasons";
+import { encryptPatientFields, encryptInsuranceFields } from "../lib/security/phi-crypto";
 
 const prisma = new PrismaClient();
 
@@ -365,17 +366,20 @@ async function main() {
     const gender = randomItem([Gender.male, Gender.female, Gender.other]);
     const dob = randomDate(new Date(1940, 0, 1), new Date(2005, 0, 1));
 
+    const mrn = `MRN${String(1000 + i).padStart(6, "0")}`;
+    const phone = `(${randomInt(200, 999)}) ${randomInt(200, 999)}-${String(randomInt(0, 9999)).padStart(4, "0")}`;
+    const email = `${fn.toLowerCase()}.${ln.toLowerCase()}${randomInt(1, 99)}@email.com`;
+    const address = `${randomInt(100, 9999)} ${randomItem(["Oak", "Elm", "Pine", "Maple", "Cedar"])} ${randomItem(["St", "Ave", "Blvd", "Dr", "Ln"])}, ${randomItem(["Chicago", "Milwaukee", "Madison", "Evanston"])}, ${randomItem(["IL", "WI"])} ${randomInt(53000, 60699)}`;
+
+    const phiFields = encryptPatientFields({
+      firstName: fn, lastName: ln, mrn, dob: dob.toISOString(), phone, email, address,
+    });
+
     const patient = await prisma.patient.create({
       data: {
         organizationId: org.id,
-        mrn: `MRN${String(1000 + i).padStart(6, "0")}`,
-        firstName: fn,
-        lastName: ln,
-        dob,
         gender,
-        phone: `(${randomInt(200, 999)}) ${randomInt(200, 999)}-${String(randomInt(0, 9999)).padStart(4, "0")}`,
-        email: `${fn.toLowerCase()}.${ln.toLowerCase()}${randomInt(1, 99)}@email.com`,
-        address: `${randomInt(100, 9999)} ${randomItem(["Oak", "Elm", "Pine", "Maple", "Cedar"])} ${randomItem(["St", "Ave", "Blvd", "Dr", "Ln"])}, ${randomItem(["Chicago", "Milwaukee", "Madison", "Evanston"])}, ${randomItem(["IL", "WI"])} ${randomInt(53000, 60699)}`,
+        ...phiFields,
       },
     });
     allPatients.push(patient);
@@ -387,14 +391,17 @@ async function main() {
       : payer.type === PayerType.tricare ? PlanType.tricare
       : randomItem([PlanType.ppo, PlanType.hmo, PlanType.epo, PlanType.pos]);
 
+    const memberId = `${payer.payerId.slice(0, 3)}${String(randomInt(100000, 999999))}`;
+    const groupNumber = `GRP${randomInt(10000, 99999)}`;
+    const insPhiFields = encryptInsuranceFields({ memberId, groupNumber });
+
     const ins = await prisma.patientInsurance.create({
       data: {
         patientId: patient.id,
         payerId: payer.id,
         planName: `${payer.name} ${randomItem(PLAN_NAMES)}`,
         planType,
-        memberId: `${payer.payerId.slice(0, 3)}${String(randomInt(100000, 999999))}`,
-        groupNumber: `GRP${randomInt(10000, 99999)}`,
+        ...insPhiFields,
         isPrimary: true,
         effectiveDate: new Date(2024, 0, 1),
       },
@@ -404,14 +411,17 @@ async function main() {
     // ~30% get secondary insurance
     if (Math.random() < 0.3) {
       const secPayer = payers[(i + 5) % payers.length];
+      const secMemberId = `${secPayer.payerId.slice(0, 3)}${String(randomInt(100000, 999999))}`;
+      const secGroupNumber = `GRP${randomInt(10000, 99999)}`;
+      const secInsPhiFields = encryptInsuranceFields({ memberId: secMemberId, groupNumber: secGroupNumber });
+
       const secIns = await prisma.patientInsurance.create({
         data: {
           patientId: patient.id,
           payerId: secPayer.id,
           planName: `${secPayer.name} ${randomItem(PLAN_NAMES)}`,
           planType: randomItem([PlanType.ppo, PlanType.hmo]),
-          memberId: `${secPayer.payerId.slice(0, 3)}${String(randomInt(100000, 999999))}`,
-          groupNumber: `GRP${randomInt(10000, 99999)}`,
+          ...secInsPhiFields,
           isPrimary: false,
           effectiveDate: new Date(2024, 0, 1),
         },

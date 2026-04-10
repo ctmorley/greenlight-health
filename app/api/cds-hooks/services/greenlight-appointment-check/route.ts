@@ -3,6 +3,7 @@ import type { CdsHookRequest, CdsHookResponse } from "@/lib/cds-hooks/types";
 import { checkPaRequirement } from "@/lib/cds-hooks/pa-check";
 import { buildPaCards } from "@/lib/cds-hooks/card-builder";
 import { resolveOrgFromFhirServer } from "@/lib/cds-tenant-key";
+import { log } from "@/lib/logger";
 
 /**
  * POST /api/cds-hooks/services/greenlight-appointment-check
@@ -36,7 +37,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (!organizationId) {
-      console.warn(
+      log.warn(
         "[CDS Hooks] Unscoped request to legacy endpoint. " +
           "Migrate to /api/cds-hooks/t/{tenantKey}/services/greenlight-appointment-check. " +
           `fhirServer=${hookRequest.fhirServer ?? "none"}`
@@ -74,7 +75,7 @@ export async function POST(request: NextRequest) {
       { headers }
     );
   } catch (error) {
-    console.error("CDS Hook appointment-book error:", error);
+    log.error("CDS Hook appointment-book error", { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json(
       { cards: [] } satisfies CdsHookResponse,
       { headers: corsHeaders() }

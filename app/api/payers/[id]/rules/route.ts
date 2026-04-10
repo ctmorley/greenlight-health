@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
+import { log } from "@/lib/logger";
 
 /**
  * GET /api/payers/[id]/rules
@@ -142,7 +143,7 @@ export async function GET(
       })),
     });
   } catch (error) {
-    console.error("Payer rules error:", error);
+    log.error("Payer rules error", { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json({ error: "Failed to fetch payer rules" }, { status: 500 });
   }
 }
@@ -202,7 +203,7 @@ export async function POST(
 
     return NextResponse.json({ rule }, { status: 201 });
   } catch (error) {
-    console.error("Create rule error:", error);
+    log.error("Create rule error", { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json({ error: "Failed to create rule" }, { status: 500 });
   }
 }
