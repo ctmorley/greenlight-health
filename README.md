@@ -4,7 +4,7 @@
 
 GreenLight automates the prior authorization (PA) lifecycle for healthcare providers — from submission through approval, denial management, and appeals. Built for imaging centers, surgical centers, and hospital systems.
 
-**Live site:** [greenlight-health.vercel.app](https://greenlight-health.vercel.app)
+**Production:** [greenlight-health-app.azurewebsites.net](https://greenlight-health-app.azurewebsites.net)
 
 ---
 
@@ -14,12 +14,17 @@ GreenLight automates the prior authorization (PA) lifecycle for healthcare provi
 |-------|-----------|
 | Framework | Next.js 15 (App Router) + TypeScript |
 | Styling | Tailwind CSS 4 (dark theme) |
-| Database | PostgreSQL + Prisma ORM |
-| Auth | NextAuth v5 (credentials) |
+| Database | Azure PostgreSQL 16 Flexible Server + Prisma ORM |
+| Auth | NextAuth v5 (credentials, invite-token flow) |
+| AI | Anthropic Claude (clinical summarization, LMN, appeal drafting) |
+| EHR | SMART on FHIR, Da Vinci CRD/DTR/PAS, 6 vendor adapters |
+| Storage | Azure Blob Storage (documents) |
+| Encryption | AES-256-GCM field-level PHI encryption + HMAC-SHA256 blind indexes |
+| Observability | Azure Application Insights (OpenTelemetry) |
 | Charts | Recharts |
 | Validation | Zod |
-| Testing | Playwright (e2e) |
-| Hosting | Vercel + Neon Postgres |
+| Testing | Vitest (API, 309 tests) + Playwright (e2e) |
+| Hosting | Azure App Service (Linux, Node 20, standalone output) |
 
 ---
 
