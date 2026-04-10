@@ -1,59 +1,39 @@
 import { NextResponse } from "next/server";
-import type { CdsService } from "@/lib/cds-hooks/types";
 
 /**
  * GET /api/cds-hooks/services
  *
- * CDS Hooks Discovery Endpoint (per CDS Hooks v2.0 spec).
- * Returns the catalog of CDS services that GreenLight offers.
+ * DEPRECATED — Legacy unscoped CDS Hooks Discovery Endpoint.
  *
- * EHR systems call this endpoint to discover what hooks are available.
+ * New integrations MUST use the tenant-scoped path:
+ *   GET /api/cds-hooks/t/{tenantKey}/services
+ *
+ * This endpoint returns an empty service list to prevent new EHR
+ * configurations from onboarding onto the unscoped (tenantless) path.
+ * Existing integrations using the legacy hook POST endpoints will
+ * continue to work with best-effort fhirServer resolution until
+ * they are migrated.
  */
 
-const SERVICES: CdsService[] = [
-  {
-    hook: "order-sign",
-    title: "GreenLight Prior Authorization Check",
-    description:
-      "Checks whether the signed order requires prior authorization based on payer rules, " +
-      "ACR Appropriateness Criteria, and historical denial patterns. Returns PA requirement " +
-      "status, clinical appropriateness rating, and documentation requirements.",
-    id: "greenlight-pa-check",
-    prefetch: {
-      patient: "Patient/{{context.patientId}}",
-      coverage: "Coverage?patient={{context.patientId}}&status=active",
-      conditions: "Condition?patient={{context.patientId}}&clinical-status=active",
-    },
-    usageRequirements:
-      "Requires patient context. Best results when Coverage (insurance) data is available.",
-  },
-  {
-    hook: "appointment-book",
-    title: "GreenLight Appointment PA Check",
-    description:
-      "Checks whether a scheduled procedure requires prior authorization before the " +
-      "appointment is confirmed. Prevents scheduling denials by catching missing PAs early.",
-    id: "greenlight-appointment-check",
-    prefetch: {
-      patient: "Patient/{{context.patientId}}",
-      coverage: "Coverage?patient={{context.patientId}}&status=active",
-    },
-    usageRequirements:
-      "Requires patient context and appointment details including service type.",
-  },
-];
-
 export async function GET() {
-  // CDS Hooks spec requires the response to have a "services" key
+  console.warn(
+    "[CDS Hooks] Discovery request to deprecated unscoped endpoint. " +
+      "New integrations must use /api/cds-hooks/t/{tenantKey}/services."
+  );
+
   return NextResponse.json(
-    { services: SERVICES },
+    {
+      services: [],
+      _deprecated:
+        "This endpoint is deprecated. Use /api/cds-hooks/t/{tenantKey}/services for tenant-scoped discovery.",
+    },
     {
       headers: {
         "Content-Type": "application/json",
-        // CORS headers required for cross-origin EHR calls
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Methods": "GET, OPTIONS",
         "Access-Control-Allow-Headers": "Content-Type, Authorization",
+        "X-GreenLight-Deprecated": "Use /api/cds-hooks/t/{tenantKey}/services",
       },
     }
   );

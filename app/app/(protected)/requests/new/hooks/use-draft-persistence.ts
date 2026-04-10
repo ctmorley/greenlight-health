@@ -113,9 +113,12 @@ export function useDraftPersistence({ editDraftId }: UseDraftPersistenceOptions)
 
   const saveToLocalStorage = useCallback((nextStep?: number) => {
     try {
+      // Only persist non-PHI wizard state (IDs, codes, step position).
+      // Patient details (name, DOB, MRN, phone, email, insurance) are
+      // fetched from the server when restoring, never stored in browser.
+      const { patientDetail: _phi, clinicalNotes: _notes, ...safeState } = state;
       const data = {
-        ...state,
-        patientDetail: state.patientDetail,
+        ...safeState,
         _savedStep: nextStep || currentStep,
         _savedAt: new Date().toISOString(),
       };

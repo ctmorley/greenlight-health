@@ -5,6 +5,7 @@ import { auth } from "@/lib/auth";
 import { auditPhiAccess } from "@/lib/security/audit-log";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limit";
 import { dispatchNotification } from "@/lib/notifications/service";
+import { decryptPatientRecord } from "@/lib/security/phi-crypto";
 
 /**
  * POST /api/requests/[id]/submit
@@ -183,6 +184,9 @@ export async function POST(
       return [req, statusChange] as const;
     });
 
+    // Dual-read: decrypt patient PHI for notification
+    const patient = paReq.patient ? decryptPatientRecord(paReq.patient) : null;
+
     // Dispatch notification (non-blocking)
     dispatchNotification({
       userId: session.user.id,
@@ -193,8 +197,8 @@ export async function POST(
       resourceType: "PriorAuthRequest",
       resourceId: updated.id,
       referenceNumber: updated.referenceNumber,
-      patientName: paReq.patient
-        ? `${paReq.patient.firstName} ${paReq.patient.lastName}`
+      patientName: patient
+        ? `${patient.firstName} ${patient.lastName}`
         : undefined,
     }).catch(() => {});
 

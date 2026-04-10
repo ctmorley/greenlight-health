@@ -22,13 +22,20 @@ interface PaCheckResult {
  * Builds CDS Cards from a PA check result.
  * Returns 1-3 cards depending on the complexity of the situation.
  */
-export function buildPaCards(result: PaCheckResult, appLaunchUrl: string): CdsCard[] {
+export function buildPaCards(
+  result: PaCheckResult,
+  appLaunchUrl: string,
+  organizationId?: string | null,
+): CdsCard[] {
   const cards: CdsCard[] = [];
+  const appContext = organizationId
+    ? `new-pa-request&org=${organizationId}`
+    : "new-pa-request";
   const launchLink: CdsLink = {
     label: "Open GreenLight",
     url: appLaunchUrl,
     type: "smart",
-    appContext: "new-pa-request",
+    appContext,
   };
 
   // ── Card 1: PA Requirement ──

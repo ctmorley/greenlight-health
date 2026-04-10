@@ -82,10 +82,14 @@ EHR System → [TLS] → /launch (OAuth 2.0 + PKCE)
 
 ### Flow 3: CDS Hooks (CRD)
 ```
-EHR System → [TLS] → /api/cds-hooks/services/greenlight-pa-check
-           → [internal] → PostgreSQL (ACR criteria, payer rules)
+EHR System → [TLS] → /api/cds-hooks/t/{tenantKey}/services/greenlight-pa-check
+           → [internal] → Resolve org from tenantKey
+           → [internal] → PostgreSQL (org-scoped payer rules, ACR criteria)
            → [TLS] → CDS Cards response (no PHI stored)
 ```
+Note: Legacy unscoped path `/api/cds-hooks/services/*` is deprecated. New EHR
+integrations must use the tenant-scoped path above. Tenant keys are managed via
+`/api/settings/cds-integration` (admin only).
 
 ### Flow 4: Electronic PA Submission (PAS)
 ```

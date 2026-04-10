@@ -33,6 +33,18 @@ interface PayerRuleData {
   requiresPA: boolean;
 }
 
+interface TransportData {
+  id: string;
+  method: string;
+  environment: string;
+  isEnabled: boolean;
+  priority: number;
+  endpointUrl: string | null;
+  requiresHumanReview: boolean;
+  supportsStatusCheck: boolean;
+  organizationId: string | null;
+}
+
 const payerTypeLabels: Record<string, string> = {
   commercial: "Commercial",
   medicare: "Medicare",
@@ -64,6 +76,16 @@ export function PayersTab() {
   const [editingRule, setEditingRule] = useState<PayerRuleData | null>(null);
   const [editRuleForm, setEditRuleForm] = useState({ serviceCategory: "imaging", cptCode: "", requiresPA: true });
   const [savingEditRule, setSavingEditRule] = useState(false);
+
+  // Transport state
+  const [transports, setTransports] = useState<TransportData[]>([]);
+  const [loadingTransports, setLoadingTransports] = useState(false);
+  const [addingTransport, setAddingTransport] = useState(false);
+  const [newTransport, setNewTransport] = useState({
+    method: "fhir_pas", environment: "sandbox", endpointUrl: "",
+    priority: 0, requiresHumanReview: true, supportsStatusCheck: false,
+  });
+  const [savingTransport, setSavingTransport] = useState(false);
 
   const fetchPayers = useCallback(async (includeInactive: boolean) => {
     try {
@@ -98,6 +120,7 @@ export function PayersTab() {
       rbmVendor: payer.rbmVendor || "",
     });
     setLoadingRules(true);
+    setLoadingTransports(true);
     try {
       const res = await fetch(`/api/payers/${payer.id}/rules`);
       if (!res.ok) {
@@ -110,6 +133,17 @@ export function PayersTab() {
       setRules([]);
     } finally {
       setLoadingRules(false);
+    }
+    try {
+      const res = await fetch(`/api/payers/${payer.id}/transports`);
+      if (!res.ok) throw new Error("Failed to load transports");
+      const data = await res.json();
+      setTransports(data.transports || []);
+    } catch (err) {
+      addToast(err instanceof Error ? err.message : "Failed to load transports", "error");
+      setTransports([]);
+    } finally {
+      setLoadingTransports(false);
     }
   };
 
@@ -226,6 +260,70 @@ export function PayersTab() {
       addToast(err instanceof Error ? err.message : "Failed to update rule", "error");
     } finally {
       setSavingEditRule(false);
+    }
+  };
+
+  // ── Transport handlers ──
+  const handleAddTransport = async () => {
+    if (!selectedPayer) return;
+    setSavingTransport(true);
+    try {
+      const res = await fetch(`/api/payers/${selectedPayer.id}/transports`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          method: newTransport.method,
+          environment: newTransport.environment,
+          endpointUrl: newTransport.endpointUrl || null,
+          priority: newTransport.priority,
+          requiresHumanReview: newTransport.requiresHumanReview,
+          supportsStatusCheck: newTransport.supportsStatusCheck,
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Failed to add transport");
+      }
+      const data = await res.json();
+      setTransports((prev) => [...prev, data.transport]);
+      setAddingTransport(false);
+      setNewTransport({ method: "fhir_pas", environment: "sandbox", endpointUrl: "", priority: 0, requiresHumanReview: true, supportsStatusCheck: false });
+      addToast("Transport added", "success");
+    } catch (err) {
+      addToast(err instanceof Error ? err.message : "Failed to add transport", "error");
+    } finally {
+      setSavingTransport(false);
+    }
+  };
+
+  const handleDeleteTransport = async (transportId: string) => {
+    if (!selectedPayer) return;
+    try {
+      const res = await fetch(`/api/payers/${selectedPayer.id}/transports/${transportId}`, { method: "DELETE" });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Failed to delete transport");
+      }
+      setTransports((prev) => prev.filter((t) => t.id !== transportId));
+      addToast("Transport deleted", "success");
+    } catch (err) {
+      addToast(err instanceof Error ? err.message : "Failed to delete transport", "error");
+    }
+  };
+
+  const handleToggleTransport = async (transport: TransportData) => {
+    if (!selectedPayer || !transport.organizationId) return;
+    try {
+      const res = await fetch(`/api/payers/${selectedPayer.id}/transports/${transport.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isEnabled: !transport.isEnabled }),
+      });
+      if (!res.ok) throw new Error("Failed to toggle transport");
+      const data = await res.json();
+      setTransports((prev) => prev.map((t) => t.id === transport.id ? data.transport : t));
+    } catch (err) {
+      addToast(err instanceof Error ? err.message : "Failed to toggle transport", "error");
     }
   };
 
@@ -562,6 +660,153 @@ export function PayersTab() {
                           </div>
                         </div>
                       )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Submission Transports */}
+            <div className="border-t border-white/10 pt-4">
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-sm font-medium text-text-primary">
+                  Submission Transports ({loadingTransports ? "..." : transports.length})
+                </h4>
+                <Button variant="ghost" size="sm" onClick={() => setAddingTransport(!addingTransport)}>
+                  {addingTransport ? "Cancel" : "+ Add Transport"}
+                </Button>
+              </div>
+
+              {/* Add Transport Form */}
+              {addingTransport && (
+                <div className="p-3 mb-3 rounded-xl bg-white/5 border border-white/10 space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <Select
+                      label="Method"
+                      options={[
+                        { value: "fhir_pas", label: "FHIR PAS" },
+                        { value: "edi_278", label: "EDI 278" },
+                        { value: "rpa_portal", label: "RPA Portal" },
+                        { value: "fax_manual", label: "Fax / Manual" },
+                        { value: "simulated", label: "Simulated" },
+                      ]}
+                      value={newTransport.method}
+                      onChange={(e) => setNewTransport({ ...newTransport, method: e.target.value })}
+                    />
+                    <Select
+                      label="Environment"
+                      options={[
+                        { value: "sandbox", label: "Sandbox" },
+                        { value: "production", label: "Production" },
+                      ]}
+                      value={newTransport.environment}
+                      onChange={(e) => setNewTransport({ ...newTransport, environment: e.target.value })}
+                    />
+                  </div>
+                  <Input
+                    label="Endpoint URL"
+                    placeholder="https://fhir.payer.com/Claim/$submit"
+                    value={newTransport.endpointUrl}
+                    onChange={(e) => setNewTransport({ ...newTransport, endpointUrl: e.target.value })}
+                  />
+                  <div className="grid grid-cols-2 gap-3">
+                    <Input
+                      label="Priority"
+                      type="number"
+                      value={String(newTransport.priority)}
+                      onChange={(e) => setNewTransport({ ...newTransport, priority: parseInt(e.target.value) || 0 })}
+                    />
+                    <div className="flex flex-col gap-2 pt-5">
+                      <label className="flex items-center gap-2 text-sm text-text-secondary cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={newTransport.requiresHumanReview}
+                          onChange={(e) => setNewTransport({ ...newTransport, requiresHumanReview: e.target.checked })}
+                          className="rounded border-white/20 bg-white/5 text-emerald-500 focus:ring-emerald-500/30"
+                        />
+                        Requires Human Review
+                      </label>
+                      <label className="flex items-center gap-2 text-sm text-text-secondary cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={newTransport.supportsStatusCheck}
+                          onChange={(e) => setNewTransport({ ...newTransport, supportsStatusCheck: e.target.checked })}
+                          className="rounded border-white/20 bg-white/5 text-emerald-500 focus:ring-emerald-500/30"
+                        />
+                        Supports Status Check
+                      </label>
+                    </div>
+                  </div>
+                  <div className="flex justify-end">
+                    <Button variant="primary" size="sm" onClick={handleAddTransport} isLoading={savingTransport}>Add Transport</Button>
+                  </div>
+                </div>
+              )}
+
+              {loadingTransports ? (
+                <div className="space-y-2">
+                  {Array.from({ length: 2 }).map((_, i) => (
+                    <div key={i} className="animate-pulse h-10 bg-white/5 rounded-lg" />
+                  ))}
+                </div>
+              ) : transports.length === 0 ? (
+                <p className="text-sm text-text-muted py-4 text-center">No transports configured</p>
+              ) : (
+                <div className="max-h-48 overflow-y-auto space-y-1.5">
+                  {transports.map((transport) => (
+                    <div key={transport.id} className="flex items-center justify-between p-2.5 rounded-lg bg-white/5 text-sm">
+                      <div className="flex items-center gap-2">
+                        <Badge
+                          variant={transport.method === "simulated" ? "default" : transport.method === "fhir_pas" ? "info" : "warning"}
+                          size="sm"
+                        >
+                          {transport.method.replace("_", " ").toUpperCase()}
+                        </Badge>
+                        <Badge
+                          variant={transport.environment === "production" ? "danger" : "warning"}
+                          size="sm"
+                        >
+                          {transport.environment}
+                        </Badge>
+                        {!transport.organizationId && (
+                          <Badge variant="default" size="sm">Global</Badge>
+                        )}
+                        {transport.requiresHumanReview && (
+                          <span className="text-xs text-amber-400" title="Human review required">Review</span>
+                        )}
+                        {transport.endpointUrl && (
+                          <span className="text-xs text-text-muted truncate max-w-[160px]" title={transport.endpointUrl}>
+                            {transport.endpointUrl}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge variant={transport.isEnabled ? "success" : "default"} size="sm">
+                          {transport.isEnabled ? "Active" : "Disabled"}
+                        </Badge>
+                        {transport.organizationId && (
+                          <>
+                            <button
+                              onClick={() => handleToggleTransport(transport)}
+                              className="p-1 text-text-muted hover:text-emerald-400 transition-colors"
+                              title={transport.isEnabled ? "Disable" : "Enable"}
+                            >
+                              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d={transport.isEnabled ? "M18.364 18.364A9 9 0 0 0 5.636 5.636m12.728 12.728A9 9 0 0 1 5.636 5.636m12.728 12.728L5.636 5.636" : "M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"} />
+                              </svg>
+                            </button>
+                            <button
+                              onClick={() => handleDeleteTransport(transport.id)}
+                              className="p-1 text-text-muted hover:text-red-400 transition-colors"
+                              title="Delete transport"
+                            >
+                              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+                              </svg>
+                            </button>
+                          </>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>

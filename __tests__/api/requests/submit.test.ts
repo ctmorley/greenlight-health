@@ -105,7 +105,7 @@ describe("POST /api/requests/[id]/submit", () => {
     expect(data.auditResult.passed).toBe(true);
   });
 
-  it("returns 422 when required fields are missing (no service category)", async () => {
+  it("returns 400 when required fields are missing (no service category)", async () => {
     const incompleteRequest = {
       ...createMockRequest({
         id: "req-1",
@@ -127,13 +127,13 @@ describe("POST /api/requests/[id]/submit", () => {
     const res = await POST(req, params);
     const data = await parseResponse(res);
 
-    expect(res.status).toBe(422);
+    expect(res.status).toBe(400);
     expect(data.submitted).toBe(false);
     expect(data.auditResult.passed).toBe(false);
     expect(data.auditResult.issues.some((i: { severity: string }) => i.severity === "error")).toBe(true);
   });
 
-  it("returns 422 when CPT codes are missing", async () => {
+  it("returns 400 when CPT codes are missing", async () => {
     const noCptRequest = {
       ...createMockRequest({
         id: "req-1",
@@ -155,7 +155,7 @@ describe("POST /api/requests/[id]/submit", () => {
     const res = await POST(req, params);
     const data = await parseResponse(res);
 
-    expect(res.status).toBe(422);
+    expect(res.status).toBe(400);
     const cptIssue = data.auditResult.issues.find(
       (i: { field: string; severity: string }) => i.field === "cptCodes" && i.severity === "error"
     );

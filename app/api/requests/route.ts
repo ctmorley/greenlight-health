@@ -7,6 +7,7 @@ import { generateReferenceNumber } from "@/lib/reference-number";
 import { auditPhiAccess } from "@/lib/security/audit-log";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limit";
 import { guardSubscription } from "@/lib/billing";
+import { decryptPatientRecord, buildPatientHashSearch } from "@/lib/security/phi-crypto";
 
 const VALID_STATUSES = [
   "draft", "submitted", "pending_review", "approved",
@@ -74,46 +75,20 @@ const createRequestSchema = z.object({
 
 /**
  * Build a Prisma OR condition that supports full-name search.
+ * Uses blind-index hash columns for patient PHI fields;
+ * referenceNumber stays as a plaintext contains search (not PHI).
  */
 function buildSearchCondition(search: string): Prisma.PriorAuthRequestWhereInput | undefined {
   if (!search) return undefined;
 
-  const tokens = search.split(/\s+/).filter(Boolean);
-
-  if (tokens.length >= 2) {
-    const firstToken = tokens[0];
-    const lastTokens = tokens.slice(1).join(" ");
-
-    return {
-      OR: [
-        {
-          patient: {
-            AND: [
-              { firstName: { contains: firstToken, mode: "insensitive" } },
-              { lastName: { contains: lastTokens, mode: "insensitive" } },
-            ],
-          },
-        },
-        {
-          patient: {
-            AND: [
-              { lastName: { contains: firstToken, mode: "insensitive" } },
-              { firstName: { contains: lastTokens, mode: "insensitive" } },
-            ],
-          },
-        },
-        { referenceNumber: { contains: search, mode: "insensitive" } },
-        { patient: { mrn: { contains: search, mode: "insensitive" } } },
-      ],
-    };
-  }
+  const patientHashConditions = buildPatientHashSearch(search);
 
   return {
     OR: [
       { referenceNumber: { contains: search, mode: "insensitive" } },
-      { patient: { firstName: { contains: search, mode: "insensitive" } } },
-      { patient: { lastName: { contains: search, mode: "insensitive" } } },
-      { patient: { mrn: { contains: search, mode: "insensitive" } } },
+      ...patientHashConditions.map((c) => ({
+        patient: c as Prisma.PatientWhereInput,
+      })),
     ],
   };
 }
@@ -204,7 +179,9 @@ export async function GET(request: NextRequest) {
         orderBy = { status: sortOrder };
         break;
       case "patientName":
-        orderBy = { patient: { lastName: sortOrder } };
+        // Sort by blind-index hash — deterministic and populated for all rows.
+        // Not alphabetical, but avoids NULL-sort issues from dropped plaintext columns.
+        orderBy = { patient: { lastNameHash: { sort: sortOrder, nulls: "last" } } };
         break;
       case "createdAt":
       default:
@@ -225,6 +202,9 @@ export async function GET(request: NextRequest) {
               firstName: true,
               lastName: true,
               mrn: true,
+              firstNameEncrypted: true,
+              lastNameEncrypted: true,
+              mrnEncrypted: true,
             },
           },
           payer: {
@@ -257,7 +237,9 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.json({
-      requests: requests.map((r) => ({
+      requests: requests.map((r) => {
+        const patient = decryptPatientRecord(r.patient);
+        return {
         id: r.id,
         referenceNumber: r.referenceNumber,
         status: r.status,
@@ -266,9 +248,9 @@ export async function GET(request: NextRequest) {
         serviceType: r.serviceType || null,
         cptCodes: r.cptCodes,
         patient: {
-          id: r.patient.id,
-          name: `${r.patient.firstName} ${r.patient.lastName}`,
-          mrn: r.patient.mrn,
+          id: patient.id,
+          name: `${patient.firstName} ${patient.lastName}`,
+          mrn: patient.mrn,
         },
         payer: r.payer ? {
           id: r.payer.id,
@@ -279,7 +261,8 @@ export async function GET(request: NextRequest) {
         dueDate: r.dueDate?.toISOString() || null,
         submittedAt: r.submittedAt?.toISOString() || null,
         scheduledDate: r.scheduledDate?.toISOString() || null,
-      })),
+      };
+      }),
       pagination: {
         page,
         pageSize,
@@ -301,6 +284,13 @@ export async function POST(request: NextRequest) {
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  if (session.user.role === "viewer") {
+    return NextResponse.json(
+      { error: "Insufficient permissions. Viewers cannot create PA requests." },
+      { status: 403 }
+    );
   }
 
   auditPhiAccess(request, session, "create", "PriorAuthRequest", null, "Created PA request").catch(() => {});
@@ -345,10 +335,15 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Verify payer exists (if provided)
+    // Verify payer exists and belongs to this org (or is global)
     let payer = null;
     if (data.payerId) {
-      payer = await prisma.payer.findUnique({ where: { id: data.payerId } });
+      payer = await prisma.payer.findFirst({
+        where: {
+          id: data.payerId,
+          OR: [{ organizationId }, { organizationId: null }],
+        },
+      });
       if (!payer) {
         return NextResponse.json({ error: "Payer not found" }, { status: 404 });
       }

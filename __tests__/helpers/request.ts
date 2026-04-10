@@ -107,6 +107,7 @@ export function createParams<T extends Record<string, string>>(params: T): { par
 /**
  * Parse the JSON body from a Response.
  */
-export async function parseResponse<T = Record<string, unknown>>(response: Response): Promise<T> {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function parseResponse<T = Record<string, any>>(response: Response): Promise<T> {
   return response.json() as Promise<T>;
 }

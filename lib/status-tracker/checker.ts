@@ -11,6 +11,8 @@
 import { prisma } from "@/lib/prisma";
 import { simulatePayerResponse } from "./simulator";
 import { dispatchNotification } from "@/lib/notifications/service";
+import { resolveTransport, getAdapter, getTransportEnvironment } from "@/lib/transport";
+import { decryptPatientRecord } from "@/lib/security/phi-crypto";
 import type { AuthStatus } from "@prisma/client";
 
 export interface StatusCheckResult {
@@ -48,7 +50,7 @@ export async function checkPaStatus(
   const paRequest = await prisma.priorAuthRequest.findUnique({
     where: { id: requestId },
     include: {
-      patient: { select: { firstName: true, lastName: true } },
+      patient: { select: { firstName: true, lastName: true, firstNameEncrypted: true, lastNameEncrypted: true } },
       payer: { select: { name: true } },
     },
   });
@@ -68,15 +70,42 @@ export async function checkPaStatus(
     acrRating = guideline?.rating ?? null;
   }
 
-  // Simulate payer response
-  const payerResponse = simulatePayerResponse({
-    status: paRequest.status,
-    submittedAt: paRequest.submittedAt,
-    urgency: paRequest.urgency,
-    cptCodes: paRequest.cptCodes,
-    serviceCategory: paRequest.serviceCategory,
-    acrRating,
-  });
+  // Resolve transport and check status
+  let payerResponse;
+  const environment = getTransportEnvironment();
+  const transport = paRequest.payerId
+    ? await resolveTransport(paRequest.payerId, paRequest.organizationId, environment)
+    : null;
+  const adapter = transport ? getAdapter(transport.method) : null;
+
+  // For real transports with status check support, query the payer
+  const lastSubmission = transport && adapter && transport.supportsStatusCheck
+    ? await prisma.submissionAttempt.findFirst({
+        where: { requestId, transportId: transport.id, externalSubmissionId: { not: null } },
+        orderBy: { createdAt: "desc" },
+        select: { externalSubmissionId: true },
+      })
+    : null;
+
+  if (adapter && transport && transport.supportsStatusCheck && lastSubmission?.externalSubmissionId) {
+    const checkResult = await adapter.checkStatus(transport, lastSubmission.externalSubmissionId);
+    payerResponse = {
+      responseCode: checkResult.responseCode || "TRANSPORT_CHECK",
+      message: checkResult.message || `Status check via ${transport.method}`,
+      newStatus: checkResult.currentStatus,
+      responseTimeMs: 0,
+    };
+  } else {
+    // Fallback to simulation (simulated transports, or no status check support)
+    payerResponse = simulatePayerResponse({
+      status: paRequest.status,
+      submittedAt: paRequest.submittedAt,
+      urgency: paRequest.urgency,
+      cptCodes: paRequest.cptCodes,
+      serviceCategory: paRequest.serviceCategory,
+      acrRating,
+    });
+  }
 
   const statusChanged =
     payerResponse.newStatus !== null &&
@@ -144,7 +173,8 @@ export async function checkPaStatus(
   if (statusChanged && payerResponse.newStatus) {
     const notificationType = mapStatusToNotificationType(payerResponse.newStatus);
     if (notificationType) {
-      const patientName = `${paRequest.patient.firstName} ${paRequest.patient.lastName}`;
+      const decryptedPatient = decryptPatientRecord(paRequest.patient);
+      const patientName = `${decryptedPatient.firstName || ""} ${decryptedPatient.lastName || ""}`.trim();
 
       dispatchNotification({
         userId: paRequest.createdById,

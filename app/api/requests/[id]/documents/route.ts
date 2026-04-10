@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
-import { writeFile, mkdir, readFile } from "fs/promises";
-import path from "path";
-import { resolveDocumentPath } from "@/lib/document-path";
+import { getStorageProvider, buildBlobKey } from "@/lib/storage";
 import { auditPhiAccess } from "@/lib/security/audit-log";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limit";
 
@@ -122,6 +120,7 @@ export async function POST(
     }
 
     const contentType = request.headers.get("content-type") || "";
+    const storage = getStorageProvider();
 
     // ─── JSON body → Download action ──────────────────────
     if (contentType.includes("application/json")) {
@@ -137,29 +136,32 @@ export async function POST(
 
       if (body.action === "download" && body.documentId) {
         const document = await prisma.authDocument.findFirst({
-          where: { id: body.documentId, priorAuthId: id },
+          where: { id: body.documentId as string, priorAuthId: id },
         });
 
         if (!document) {
           return NextResponse.json({ error: "Document not found" }, { status: 404 });
         }
 
-        let fileBuffer: Buffer;
-        try {
-          const absolutePath = resolveDocumentPath(document.filePath);
-          fileBuffer = await readFile(absolutePath);
-        } catch (err) {
-          if (err instanceof Error && err.message.includes("outside uploads")) {
-            return NextResponse.json({ error: "Invalid document path" }, { status: 400 });
-          }
-          return NextResponse.json(
-            { error: "File not found on disk" },
-            { status: 404 }
-          );
+        const disposition = body.disposition === "inline" ? "inline" as const : "attachment" as const;
+
+        // Try signed URL first, fall back to proxied download
+        const signedUrl = await storage.getSignedUrl(document.filePath, 300, {
+          disposition,
+          fileName: document.fileName,
+          contentType: document.fileType || "application/octet-stream",
+        });
+        if (signedUrl) {
+          return NextResponse.json({ url: signedUrl });
         }
 
-        // Support inline disposition for preview (e.g., body.disposition === "inline")
-        const disposition = body.disposition === "inline" ? "inline" : "attachment";
+        // Proxy the download
+        let fileBuffer: Buffer;
+        try {
+          fileBuffer = await storage.download(document.filePath);
+        } catch {
+          return NextResponse.json({ error: "File not found in storage" }, { status: 404 });
+        }
 
         return new NextResponse(new Uint8Array(fileBuffer), {
           status: 200,
@@ -194,30 +196,21 @@ export async function POST(
       ? (category as typeof VALID_CATEGORIES[number])
       : "other";
 
-    // Create upload directory
-    const uploadDir = path.join(process.cwd(), "uploads", organizationId, id);
-    await mkdir(uploadDir, { recursive: true });
+    // Build a stable, provider-agnostic blob key
+    const blobKey = buildBlobKey(organizationId, id, file.name);
 
-    // Generate a safe filename
-    const timestamp = Date.now();
-    const safeFileName = `${timestamp}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
-    const filePath = path.join(uploadDir, safeFileName);
-
-    // Write file to disk
+    // Upload to storage
     const bytes = await file.arrayBuffer();
-    await writeFile(filePath, Buffer.from(bytes));
+    await storage.upload(blobKey, Buffer.from(bytes), file.type || "application/octet-stream");
 
-    // Store relative path for portability
-    const relativePath = path.join("uploads", organizationId, id, safeFileName);
-
-    // Create database record
+    // Create database record with blob key (not a provider-specific URL)
     const document = await prisma.authDocument.create({
       data: {
         priorAuthId: id,
         uploadedById: session.user.id,
         fileName: file.name,
         fileType: file.type || "application/octet-stream",
-        filePath: relativePath,
+        filePath: blobKey,
         fileSize: file.size,
         category: validCategory,
       },

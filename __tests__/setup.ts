@@ -24,6 +24,21 @@ vi.mock("@/lib/auth", () => ({
   auth: vi.fn().mockResolvedValue(null),
 }));
 
+// ─── Mock @/lib/security/phi-crypto ─────────────────────────
+// In tests, encrypt/decrypt are identity functions and blindIndex returns a deterministic hash.
+vi.mock("@/lib/security/phi-crypto", () => ({
+  encryptField: vi.fn().mockImplementation((v: string) => `enc:${v}`),
+  decryptField: vi.fn().mockImplementation((v: string) => v.startsWith("enc:") ? v.slice(4) : v),
+  blindIndex: vi.fn().mockImplementation((v: string) => `hash:${v.toLowerCase().trim()}`),
+  encryptPatientFields: vi.fn().mockImplementation(() => ({})),
+  encryptInsuranceFields: vi.fn().mockImplementation(() => ({})),
+  decryptPatientRecord: vi.fn().mockImplementation(<T extends Record<string, unknown>>(r: T) => r),
+  decryptInsuranceRecord: vi.fn().mockImplementation(<T extends Record<string, unknown>>(r: T) => r),
+  buildPatientHashSearch: vi.fn().mockImplementation(() => []),
+  PATIENT_PHI_FIELDS: {},
+  INSURANCE_PHI_FIELDS: {},
+}));
+
 // ─── Mock @/lib/security/audit-log ───────────────────────────
 vi.mock("@/lib/security/audit-log", () => ({
   audit: vi.fn().mockResolvedValue(undefined),
@@ -80,6 +95,61 @@ vi.mock("@/lib/notifications/service", () => ({
   getNotificationEvents: vi.fn().mockReturnValue([]),
 }));
 
+// ─── Mock @/lib/transport ───────────────────────────────────
+vi.mock("@/lib/transport", () => ({
+  resolveTransport: vi.fn().mockResolvedValue({
+    id: "transport-sim-1",
+    payerId: "payer-1",
+    organizationId: null,
+    method: "simulated",
+    environment: "sandbox",
+    isEnabled: true,
+    priority: 99,
+    endpointUrl: null,
+    statusEndpointUrl: null,
+    externalPayerId: null,
+    clearinghousePayerId: null,
+    credentialRef: null,
+    supportsAttachments: false,
+    supportsStatusCheck: false,
+    requiresHumanReview: false,
+    metadata: null,
+  }),
+  getAdapter: vi.fn().mockReturnValue({
+    validate: vi.fn().mockResolvedValue({ valid: true, errors: [] }),
+    submit: vi.fn().mockResolvedValue({
+      accepted: true,
+      externalSubmissionId: "AUTH-SIM-001",
+      status: "accepted",
+      claimResponse: {
+        status: "approved",
+        authorizationNumber: "AUTH-SIM-001",
+        expiresAt: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+        approvedUnits: null,
+        approvedCptCodes: [],
+        denialReasonCode: null,
+        denialReasonDescription: null,
+        payerNotes: null,
+        rawResponse: { outcome: "complete" },
+      },
+      httpStatusCode: 200,
+      responseCode: null,
+      responseSummary: "Simulated: approved",
+      failureCategory: null,
+      responseTimeMs: 50,
+      rawResponse: { outcome: "complete" },
+    }),
+    checkStatus: vi.fn().mockResolvedValue({
+      found: false,
+      currentStatus: null,
+      responseCode: "SIMULATED_NO_OP",
+      message: "Simulated",
+      rawResponse: null,
+    }),
+  }),
+  getTransportEnvironment: vi.fn().mockReturnValue("sandbox"),
+}));
+
 // ─── Mock @/lib/status-tracker/checker ───────────────────────
 vi.mock("@/lib/status-tracker/checker", () => ({
   checkPaStatus: vi.fn().mockResolvedValue({
@@ -96,7 +166,23 @@ vi.mock("@/lib/status-tracker/checker", () => ({
   }),
 }));
 
-// ─── Mock @/lib/document-path ────────────────────────────────
+// ─── Mock @/lib/storage ─────────────────────────────────────
+const mockStorageProvider = {
+  upload: vi.fn().mockResolvedValue("documents/org-1/req-1/uuid-file.pdf"),
+  download: vi.fn().mockResolvedValue(Buffer.from("mock-file-content")),
+  delete: vi.fn().mockResolvedValue(undefined),
+  getSignedUrl: vi.fn().mockResolvedValue(null),
+};
+
+vi.mock("@/lib/storage", () => ({
+  getStorageProvider: vi.fn().mockReturnValue(mockStorageProvider),
+  buildBlobKey: vi.fn().mockImplementation(
+    (orgId: string, requestId: string, fileName: string) =>
+      `documents/${orgId}/${requestId}/mock-uuid-${fileName.replace(/[^a-zA-Z0-9._-]/g, "_")}`,
+  ),
+}));
+
+// ─── Mock @/lib/document-path (legacy, no longer used by routes) ──
 vi.mock("@/lib/document-path", () => ({
   resolveDocumentPath: vi.fn().mockImplementation((filePath: string) => `/mock/uploads/${filePath}`),
 }));
@@ -134,6 +220,21 @@ vi.mock("@anthropic-ai/sdk", () => {
     })),
   };
 });
+
+// ─── Mock @/lib/auth-tokens ─────────────────────────────────
+vi.mock("@/lib/auth-tokens", () => ({
+  createAuthToken: vi.fn().mockResolvedValue("mock-token-value"),
+  findValidToken: vi.fn().mockResolvedValue(null),
+  consumeToken: vi.fn().mockResolvedValue(true),
+  verifyAuthToken: vi.fn().mockResolvedValue(null),
+  revokeAllTokens: vi.fn().mockResolvedValue(undefined),
+}));
+
+// ─── Mock @/lib/auth-email ──────────────────────────────────
+vi.mock("@/lib/auth-email", () => ({
+  sendInviteEmail: vi.fn().mockResolvedValue(true),
+  sendResetEmail: vi.fn().mockResolvedValue(true),
+}));
 
 // ─── Mock resend ─────────────────────────────────────────────
 vi.mock("resend", () => ({

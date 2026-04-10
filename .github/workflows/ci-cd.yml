@@ -25,8 +25,14 @@ jobs:
 
       - run: npm ci
       - run: npx prisma generate
-      - run: npx tsc --noEmit
+      - run: npx tsc --noEmit -p tsconfig.check.json
+      - run: npm run test:api
       - run: npx next lint
+      - name: Build (catch build-only regressions)
+        run: npx next build
+        env:
+          DATABASE_URL: "postgresql://fake:fake@localhost:5432/fake"
+          AUTH_SECRET: "ci-build-secret"
 
   # ─── Security Scan ────────────────────────────────────────────
   security:

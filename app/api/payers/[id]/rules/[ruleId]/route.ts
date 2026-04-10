@@ -19,8 +19,21 @@ export async function GET(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const organizationId = session.user.organizationId;
+  if (!organizationId) {
+    return NextResponse.json({ error: "No organization context" }, { status: 403 });
+  }
+
   try {
     const { id, ruleId } = await params;
+
+    // Verify payer belongs to this org (or is global)
+    const payer = await prisma.payer.findFirst({
+      where: { id, OR: [{ organizationId }, { organizationId: null }] },
+    });
+    if (!payer) {
+      return NextResponse.json({ error: "Payer not found" }, { status: 404 });
+    }
 
     const rule = await prisma.payerRule.findFirst({
       where: { id: ruleId, payerId: id },
@@ -67,8 +80,21 @@ export async function PATCH(
     return NextResponse.json({ error: "Admin access required" }, { status: 403 });
   }
 
+  const organizationId = session.user.organizationId;
+  if (!organizationId) {
+    return NextResponse.json({ error: "No organization context" }, { status: 403 });
+  }
+
   try {
     const { id, ruleId } = await params;
+
+    // Verify payer belongs to this org (or is global)
+    const payer = await prisma.payer.findFirst({
+      where: { id, OR: [{ organizationId }, { organizationId: null }] },
+    });
+    if (!payer) {
+      return NextResponse.json({ error: "Payer not found" }, { status: 404 });
+    }
 
     const rule = await prisma.payerRule.findFirst({
       where: { id: ruleId, payerId: id },
@@ -119,8 +145,21 @@ export async function DELETE(
     return NextResponse.json({ error: "Admin access required" }, { status: 403 });
   }
 
+  const organizationId = session.user.organizationId;
+  if (!organizationId) {
+    return NextResponse.json({ error: "No organization context" }, { status: 403 });
+  }
+
   try {
     const { id, ruleId } = await params;
+
+    // Verify payer belongs to this org (or is global)
+    const payer = await prisma.payer.findFirst({
+      where: { id, OR: [{ organizationId }, { organizationId: null }] },
+    });
+    if (!payer) {
+      return NextResponse.json({ error: "Payer not found" }, { status: 404 });
+    }
 
     const rule = await prisma.payerRule.findFirst({
       where: { id: ruleId, payerId: id },

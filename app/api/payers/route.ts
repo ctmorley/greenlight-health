@@ -125,21 +125,53 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const payer = await prisma.payer.create({
-      data: {
-        organizationId,
-        name: data.name,
-        payerId: data.payerId,
-        type: data.type,
-        phone: data.phone || null,
-        fax: data.fax || null,
-        portalUrl: data.portalUrl || null,
-        electronicSubmission: data.electronicSubmission,
-        avgResponseDays: data.avgResponseDays,
-        rbmVendor: data.rbmVendor || null,
-        isActive: data.isActive,
-      },
-      include: { _count: { select: { rules: true } } },
+    // Atomic: create payer + simulated transports in one transaction
+    // so a transport provisioning failure can't leave an unsubmittable payer.
+    const payer = await prisma.$transaction(async (tx) => {
+      const created = await tx.payer.create({
+        data: {
+          organizationId,
+          name: data.name,
+          payerId: data.payerId,
+          type: data.type,
+          phone: data.phone || null,
+          fax: data.fax || null,
+          portalUrl: data.portalUrl || null,
+          electronicSubmission: data.electronicSubmission,
+          avgResponseDays: data.avgResponseDays,
+          rbmVendor: data.rbmVendor || null,
+          isActive: data.isActive,
+        },
+        include: { _count: { select: { rules: true } } },
+      });
+
+      // Auto-provision default simulated transports so the payer is
+      // immediately submittable in both sandbox and production environments.
+      // Ownership follows payer: org-scoped payers get org-scoped transports.
+      await tx.payerTransport.createMany({
+        data: [
+          {
+            payerId: created.id,
+            organizationId,
+            method: "simulated",
+            environment: "sandbox",
+            isEnabled: true,
+            priority: 99,
+            requiresHumanReview: false,
+          },
+          {
+            payerId: created.id,
+            organizationId,
+            method: "simulated",
+            environment: "production",
+            isEnabled: true,
+            priority: 99,
+            requiresHumanReview: false,
+          },
+        ],
+      });
+
+      return created;
     });
 
     return NextResponse.json({ payer }, { status: 201 });

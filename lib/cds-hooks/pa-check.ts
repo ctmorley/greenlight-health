@@ -7,6 +7,7 @@ interface PaCheckInput {
   payerName?: string | null;
   payerId?: string | null;
   serviceCategory?: string | null;
+  organizationId?: string | null;
 }
 
 export interface PaCheckResult {
@@ -45,18 +46,29 @@ export async function checkPaRequirement(input: PaCheckInput): Promise<PaCheckRe
     return result;
   }
 
-  // ── 1. Resolve payer ──
+  // ── 1. Resolve payer (scoped to org when available) ──
   let resolvedPayerId: string | null = input.payerId || null;
+
+  // Build org visibility filter: org-specific payers + global (organizationId=null)
+  const orgPayerFilter = input.organizationId
+    ? { OR: [{ organizationId: input.organizationId }, { organizationId: null }] }
+    : {};
 
   if (!resolvedPayerId && input.payerName) {
     const payer = await prisma.payer.findFirst({
       where: {
-        OR: [
-          { name: { contains: input.payerName, mode: "insensitive" } },
-          { payerId: input.payerName },
+        AND: [
+          orgPayerFilter,
+          {
+            OR: [
+              { name: { contains: input.payerName, mode: "insensitive" } },
+              { payerId: input.payerName },
+            ],
+          },
         ],
         isActive: true,
       },
+      orderBy: { organizationId: { sort: "asc", nulls: "last" } },
       select: { id: true, name: true, rbmVendor: true, avgResponseDays: true },
     });
     if (payer) {

@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
+import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { auditPhiAccess } from "@/lib/security/audit-log";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limit";
+import { decryptPatientRecord, buildPatientHashSearch } from "@/lib/security/phi-crypto";
 
 const queryParamsSchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
@@ -86,10 +88,12 @@ export async function GET(request: NextRequest) {
     }
 
     if (search) {
+      const patientHashConditions = buildPatientHashSearch(search);
       priorAuthWhere.OR = [
         { referenceNumber: { contains: search, mode: "insensitive" } },
-        { patient: { firstName: { contains: search, mode: "insensitive" } } },
-        { patient: { lastName: { contains: search, mode: "insensitive" } } },
+        ...patientHashConditions.map((c) => ({
+          patient: c as Prisma.PatientWhereInput,
+        })),
       ];
     }
 
@@ -137,7 +141,14 @@ export async function GET(request: NextRequest) {
             urgency: true,
             serviceType: true,
             patient: {
-              select: { firstName: true, lastName: true, mrn: true },
+              select: {
+                firstName: true,
+                lastName: true,
+                mrn: true,
+                firstNameEncrypted: true,
+                lastNameEncrypted: true,
+                mrnEncrypted: true,
+              },
             },
             payer: {
               select: { id: true, name: true },
@@ -158,7 +169,9 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    const result = denials.map((d) => ({
+    const result = denials.map((d) => {
+      const patient = decryptPatientRecord(d.priorAuth.patient);
+      return {
       id: d.id,
       denialDate: d.denialDate.toISOString(),
       reasonCode: d.reasonCode,
@@ -171,8 +184,8 @@ export async function GET(request: NextRequest) {
         status: d.priorAuth.status,
         urgency: d.priorAuth.urgency,
         serviceType: d.priorAuth.serviceType,
-        patientName: `${d.priorAuth.patient.firstName} ${d.priorAuth.patient.lastName}`,
-        patientMrn: d.priorAuth.patient.mrn,
+        patientName: `${patient.firstName} ${patient.lastName}`,
+        patientMrn: patient.mrn,
         payerName: d.priorAuth.payer?.name || null,
         payerId: d.priorAuth.payer?.id || null,
       },
@@ -185,7 +198,8 @@ export async function GET(request: NextRequest) {
             decisionDate: d.appeals[0].decisionDate?.toISOString() || null,
           }
         : null,
-    }));
+    };
+    });
 
     // Reason category counts for filter badges — also scoped to organization
     const categoryCounts = await prisma.denial.groupBy({

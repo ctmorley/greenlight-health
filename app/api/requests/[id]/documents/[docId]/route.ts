@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
-import { readFile, unlink } from "fs/promises";
-import { resolveDocumentPath } from "@/lib/document-path";
+import { getStorageProvider } from "@/lib/storage";
 import { auditPhiAccess } from "@/lib/security/audit-log";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limit";
 
 /**
  * GET /api/requests/[id]/documents/[docId]
  * Download a specific document for a PA request.
+ * Returns a signed URL redirect (Azure) or proxied binary stream (local).
  */
 export async function GET(
   request: NextRequest,
@@ -51,24 +51,27 @@ export async function GET(
       return NextResponse.json({ error: "Document not found" }, { status: 404 });
     }
 
-    // Read the file from disk (normalize path to handle leading slashes)
-    let fileBuffer: Buffer;
-    try {
-      const absolutePath = resolveDocumentPath(document.filePath);
-      fileBuffer = await readFile(absolutePath);
-    } catch (err) {
-      if (err instanceof Error && err.message.includes("outside uploads")) {
-        return NextResponse.json({ error: "Invalid document path" }, { status: 400 });
-      }
-      return NextResponse.json(
-        { error: "File not found on disk" },
-        { status: 404 }
-      );
+    const storage = getStorageProvider();
+    const dispositionParam = request.nextUrl.searchParams.get("disposition");
+    const disposition = dispositionParam === "inline" ? "inline" as const : "attachment" as const;
+
+    // Try signed URL first (Azure Blob), fall back to proxied download (local)
+    const signedUrl = await storage.getSignedUrl(document.filePath, 300, {
+      disposition,
+      fileName: document.fileName,
+      contentType: document.fileType || "application/octet-stream",
+    });
+    if (signedUrl) {
+      return NextResponse.redirect(signedUrl, 302);
     }
 
-    // Support inline disposition for preview (e.g., ?disposition=inline)
-    const dispositionParam = request.nextUrl.searchParams.get("disposition");
-    const disposition = dispositionParam === "inline" ? "inline" : "attachment";
+    // Proxy the download through the API
+    let fileBuffer: Buffer;
+    try {
+      fileBuffer = await storage.download(document.filePath);
+    } catch {
+      return NextResponse.json({ error: "File not found in storage" }, { status: 404 });
+    }
 
     return new NextResponse(new Uint8Array(fileBuffer), {
       status: 200,
@@ -129,12 +132,12 @@ export async function DELETE(
       return NextResponse.json({ error: "Document not found" }, { status: 404 });
     }
 
-    // Try to delete the physical file (non-blocking)
+    // Delete from storage (non-blocking — record deletion is authoritative)
+    const storage = getStorageProvider();
     try {
-      const absolutePath = resolveDocumentPath(document.filePath);
-      await unlink(absolutePath);
+      await storage.delete(document.filePath);
     } catch {
-      // File may not exist on disk — still delete the record
+      // Storage deletion failure is non-fatal — the record is still removed
     }
 
     // Delete the database record

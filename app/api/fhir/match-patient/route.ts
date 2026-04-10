@@ -5,6 +5,13 @@ import { z } from "zod";
 import type { PlanType } from "@prisma/client";
 import { auditPhiAccess } from "@/lib/security/audit-log";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limit";
+import {
+  encryptPatientFields,
+  encryptInsuranceFields,
+  decryptPatientRecord,
+  decryptInsuranceRecord,
+  blindIndex,
+} from "@/lib/security/phi-crypto";
 
 /**
  * POST /api/fhir/match-patient
@@ -71,10 +78,10 @@ export async function POST(request: NextRequest) {
 
     const data = parsed.data;
 
-    // Strategy 1: Match by MRN (strongest identifier)
+    // Strategy 1: Match by MRN via blind index (strongest identifier)
     if (data.mrn) {
       const mrnMatch = await prisma.patient.findFirst({
-        where: { organizationId, mrn: data.mrn },
+        where: { organizationId, mrnHash: blindIndex(data.mrn) },
         include: {
           insurances: {
             include: { payer: { select: { id: true, name: true } } },
@@ -108,14 +115,14 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Strategy 2: Match by name + DOB
+    // Strategy 2: Match by name + DOB via blind indexes
     const dobDate = new Date(data.dob);
     const nameMatch = await prisma.patient.findFirst({
       where: {
         organizationId,
-        firstName: { equals: data.firstName, mode: "insensitive" },
-        lastName: { equals: data.lastName, mode: "insensitive" },
-        dob: dobDate,
+        firstNameHash: blindIndex(data.firstName),
+        lastNameHash: blindIndex(data.lastName),
+        dobHash: blindIndex(dobDate.toISOString().split("T")[0]),
       },
       include: {
         insurances: {
@@ -125,13 +132,15 @@ export async function POST(request: NextRequest) {
     });
 
     if (nameMatch) {
+      // Dual-read: decrypt to check MRN value
+      const decryptedMatch = decryptPatientRecord(nameMatch);
       // Update MRN if we have one from FHIR and the patient doesn't have one
-      if (data.mrn && nameMatch.mrn.startsWith("AUTO-")) {
+      if (data.mrn && String(decryptedMatch.mrn).startsWith("AUTO-")) {
+        const mrnEncryptedFields = encryptPatientFields({ mrn: data.mrn });
         await prisma.patient.update({
           where: { id: nameMatch.id },
-          data: { mrn: data.mrn },
+          data: { ...mrnEncryptedFields },
         });
-        nameMatch.mrn = data.mrn;
       }
 
       // Sync insurance if patient has none but FHIR has coverage
@@ -160,22 +169,39 @@ export async function POST(request: NextRequest) {
     // Strategy 3: Create new patient
     const mrn = data.mrn || `EHR-${Date.now()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
 
+    // Dual-write: encrypt patient PHI fields
+    const patientPhiEncrypted = encryptPatientFields({
+      firstName: data.firstName,
+      lastName: data.lastName,
+      mrn,
+      dob: dobDate.toISOString(),
+      phone: data.phone || null,
+      email: data.email || null,
+    });
+
     // Try to match payer by name for insurance creation
     let payerMatch = null;
     if (data.coverage?.payerName) {
-      payerMatch = await fuzzyMatchPayer(data.coverage.payerName, data.coverage.payerIdentifier || null);
+      payerMatch = await fuzzyMatchPayer(
+        data.coverage.payerName,
+        data.coverage.payerIdentifier || null,
+        organizationId
+      );
     }
 
+    // Dual-write: encrypt insurance PHI fields if creating insurance
+    const insuranceMemberId = data.coverage?.memberId || data.coverage?.subscriberId || "PENDING";
+    const insuranceGroupNumber = data.coverage?.groupNumber || null;
+    const insurancePhiEncrypted = (data.coverage && payerMatch)
+      ? encryptInsuranceFields({ memberId: insuranceMemberId, groupNumber: insuranceGroupNumber })
+      : {};
+
+    // Plaintext PHI columns are no longer written — encrypted + hash only
     const newPatient = await prisma.patient.create({
       data: {
         organizationId,
-        firstName: data.firstName,
-        lastName: data.lastName,
-        mrn,
-        dob: dobDate,
         gender: data.gender,
-        phone: data.phone || null,
-        email: data.email || null,
+        ...patientPhiEncrypted,
         // Create insurance record if we have coverage data AND matched a payer
         ...(data.coverage && payerMatch
           ? {
@@ -184,10 +210,9 @@ export async function POST(request: NextRequest) {
                   payerId: payerMatch.id,
                   planName: data.coverage.planName || `${payerMatch.name} Plan`,
                   planType: detectPlanType(data.coverage.planName || null, payerMatch.name),
-                  memberId: data.coverage.memberId || data.coverage.subscriberId || "PENDING",
-                  groupNumber: data.coverage.groupNumber || null,
                   isPrimary: true,
                   effectiveDate: new Date(),
+                  ...insurancePhiEncrypted,
                 },
               },
             }
@@ -220,48 +245,33 @@ export async function POST(request: NextRequest) {
 
 // ─── Helpers ─────────────────────────────────────────────────
 
-interface PatientWithInsurances {
-  id: string;
-  firstName: string;
-  lastName: string;
-  mrn: string;
-  dob: Date;
-  gender: string;
-  phone: string | null;
-  email: string | null;
-  insurances: Array<{
-    id: string;
-    planName: string;
-    planType: string;
-    memberId: string;
-    groupNumber: string | null;
-    isPrimary: boolean;
-    effectiveDate: Date;
-    payer: { id: string; name: string };
-  }>;
-}
-
-function formatPatient(p: PatientWithInsurances) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function formatPatient(p: Record<string, any>) {
+  // Dual-read: decrypt patient and insurance PHI fields
+  const dp = decryptPatientRecord(p);
   return {
-    id: p.id,
-    firstName: p.firstName,
-    lastName: p.lastName,
-    name: `${p.firstName} ${p.lastName}`,
-    mrn: p.mrn,
-    dob: p.dob.toISOString(),
-    gender: p.gender,
-    phone: p.phone,
-    email: p.email,
-    insurances: p.insurances.map((ins) => ({
-      id: ins.id,
-      planName: ins.planName,
-      planType: ins.planType,
-      memberId: ins.memberId,
-      groupNumber: ins.groupNumber,
-      isPrimary: ins.isPrimary,
-      effectiveDate: ins.effectiveDate.toISOString(),
-      payer: ins.payer,
-    })),
+    id: dp.id,
+    firstName: dp.firstName,
+    lastName: dp.lastName,
+    name: `${dp.firstName} ${dp.lastName}`,
+    mrn: dp.mrn,
+    dob: dp.dob instanceof Date ? dp.dob.toISOString() : String(dp.dob),
+    gender: dp.gender,
+    phone: dp.phone,
+    email: dp.email,
+    insurances: (p.insurances || []).map((ins: Record<string, unknown>) => {
+      const di = decryptInsuranceRecord(ins);
+      return {
+        id: di.id,
+        planName: di.planName,
+        planType: di.planType,
+        memberId: di.memberId,
+        groupNumber: di.groupNumber,
+        isPrimary: di.isPrimary,
+        effectiveDate: di.effectiveDate instanceof Date ? di.effectiveDate.toISOString() : String(di.effectiveDate),
+        payer: di.payer,
+      };
+    }),
   };
 }
 
@@ -272,9 +282,13 @@ function formatPatient(p: PatientWithInsurances) {
 async function syncInsuranceFromCoverage(
   patientId: string,
   coverage: { payerName: string; payerIdentifier?: string | null; planName?: string | null; memberId?: string | null; groupNumber?: string | null; subscriberId?: string | null },
-  _organizationId: string
+  organizationId: string
 ) {
-  const payerMatch = await fuzzyMatchPayer(coverage.payerName, coverage.payerIdentifier || null);
+  const payerMatch = await fuzzyMatchPayer(
+    coverage.payerName,
+    coverage.payerIdentifier || null,
+    organizationId
+  );
   if (!payerMatch) return;
 
   // Check if patient already has insurance with this payer
@@ -283,27 +297,33 @@ async function syncInsuranceFromCoverage(
   });
 
   if (existing) {
+    // Dual-read: decrypt to check memberId value
+    const decrypted = decryptInsuranceRecord(existing);
     // Update member ID if FHIR has one and existing is placeholder
-    if (coverage.memberId && existing.memberId === "PENDING") {
+    if (coverage.memberId && decrypted.memberId === "PENDING") {
+      const memberEncrypted = encryptInsuranceFields({ memberId: coverage.memberId });
       await prisma.patientInsurance.update({
         where: { id: existing.id },
-        data: { memberId: coverage.memberId },
+        data: { ...memberEncrypted },
       });
     }
     return;
   }
 
-  // Create new insurance record
+  // Create new insurance record — plaintext PHI columns no longer written
+  const newMemberId = coverage.memberId || coverage.subscriberId || "PENDING";
+  const newGroupNumber = coverage.groupNumber || null;
+  const insEncrypted = encryptInsuranceFields({ memberId: newMemberId, groupNumber: newGroupNumber });
+
   await prisma.patientInsurance.create({
     data: {
       patientId,
       payerId: payerMatch.id,
       planName: coverage.planName || `${payerMatch.name} Plan`,
       planType: detectPlanType(coverage.planName || null, payerMatch.name),
-      memberId: coverage.memberId || coverage.subscriberId || "PENDING",
-      groupNumber: coverage.groupNumber || null,
       isPrimary: true,
       effectiveDate: new Date(),
+      ...insEncrypted,
     },
   });
 }
@@ -327,13 +347,23 @@ function detectPlanType(planName: string | null, payerName: string): PlanType {
 
 /**
  * Fuzzy match a FHIR payer name to a GreenLight Payer record.
+ * Restricts matches to the current organization plus global payers.
  * Tries exact match first, then case-insensitive contains, then word overlap.
  */
-async function fuzzyMatchPayer(payerName: string, payerIdentifier: string | null) {
+async function fuzzyMatchPayer(
+  payerName: string,
+  payerIdentifier: string | null,
+  organizationId: string
+) {
+  const visibilityFilter = {
+    OR: [{ organizationId }, { organizationId: null }],
+    isActive: true,
+  };
+
   // Try exact payerIdentifier match first
   if (payerIdentifier) {
     const idMatch = await prisma.payer.findFirst({
-      where: { payerId: payerIdentifier, isActive: true },
+      where: { ...visibilityFilter, payerId: payerIdentifier },
       select: { id: true, name: true },
     });
     if (idMatch) return idMatch;
@@ -341,14 +371,20 @@ async function fuzzyMatchPayer(payerName: string, payerIdentifier: string | null
 
   // Try case-insensitive exact name match
   const exactMatch = await prisma.payer.findFirst({
-    where: { name: { equals: payerName, mode: "insensitive" }, isActive: true },
+    where: {
+      ...visibilityFilter,
+      name: { equals: payerName, mode: "insensitive" },
+    },
     select: { id: true, name: true },
   });
   if (exactMatch) return exactMatch;
 
   // Try case-insensitive contains (e.g., "Aetna" matches "Aetna Health Plans")
   const containsMatch = await prisma.payer.findFirst({
-    where: { name: { contains: payerName, mode: "insensitive" }, isActive: true },
+    where: {
+      ...visibilityFilter,
+      name: { contains: payerName, mode: "insensitive" },
+    },
     select: { id: true, name: true },
   });
   if (containsMatch) return containsMatch;
@@ -361,7 +397,10 @@ async function fuzzyMatchPayer(payerName: string, payerIdentifier: string | null
 
   for (const word of words) {
     const wordMatch = await prisma.payer.findFirst({
-      where: { name: { contains: word, mode: "insensitive" }, isActive: true },
+      where: {
+        ...visibilityFilter,
+        name: { contains: word, mode: "insensitive" },
+      },
       select: { id: true, name: true },
     });
     if (wordMatch) return wordMatch;

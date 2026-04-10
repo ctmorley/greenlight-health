@@ -2,22 +2,23 @@ import { NextRequest, NextResponse } from "next/server";
 import type { CdsHookRequest, CdsHookResponse } from "@/lib/cds-hooks/types";
 import { checkPaRequirement } from "@/lib/cds-hooks/pa-check";
 import { buildPaCards } from "@/lib/cds-hooks/card-builder";
+import { resolveOrgFromFhirServer } from "@/lib/cds-tenant-key";
 
 /**
  * POST /api/cds-hooks/services/greenlight-pa-check
  *
- * CDS Hooks order-sign service endpoint.
- * Called by the EHR when a clinician signs an imaging/surgical order.
+ * LEGACY unscoped CDS Hooks order-sign endpoint.
+ * Prefer the tenant-scoped path: /api/cds-hooks/t/{tenantKey}/services/greenlight-pa-check
  *
- * Receives the order context + prefetched FHIR resources, checks PA
- * requirements against payer rules and ACR criteria, returns CDS Cards.
+ * This endpoint attempts best-effort org resolution via fhirServer.
+ * If no org resolves, it still returns results (backward compat) but
+ * without org-scoped payer filtering.
  */
 
 export async function POST(request: NextRequest) {
   try {
     const hookRequest: CdsHookRequest = await request.json();
 
-    // Validate hook type
     if (hookRequest.hook !== "order-sign") {
       return NextResponse.json(
         { cards: [], systemActions: [] },
@@ -25,37 +26,55 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Extract order data from context
+    // Best-effort org resolution via fhirServer
+    let organizationId: string | undefined;
+    if (hookRequest.fhirServer) {
+      const resolved = await resolveOrgFromFhirServer(hookRequest.fhirServer);
+      if (resolved) {
+        organizationId = resolved.organizationId;
+      }
+    }
+
+    if (!organizationId) {
+      console.warn(
+        "[CDS Hooks] Unscoped request to legacy endpoint. " +
+          "Migrate to /api/cds-hooks/t/{tenantKey}/services/greenlight-pa-check. " +
+          `fhirServer=${hookRequest.fhirServer ?? "none"}`
+      );
+    }
+
     const { cptCodes, icd10Codes, payerName, serviceCategory } =
       extractOrderContext(hookRequest);
 
     if (cptCodes.length === 0) {
-      // No codes to check — return empty response
       return NextResponse.json(
         { cards: [] } satisfies CdsHookResponse,
         { headers: corsHeaders() }
       );
     }
 
-    // Run PA check
     const result = await checkPaRequirement({
       cptCodes,
       icd10Codes,
       payerName,
       serviceCategory,
+      organizationId,
     });
 
-    // Build CDS Cards
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://greenlight-health.vercel.app";
-    const launchUrl = `${appUrl}/launch`;
-    const cards = buildPaCards(result, launchUrl);
+    const cards = buildPaCards(result, `${appUrl}/launch`, organizationId);
 
-    const response: CdsHookResponse = { cards };
+    const headers: Record<string, string> = corsHeaders();
+    if (!organizationId) {
+      headers["X-GreenLight-Tenant"] = "unresolved";
+    }
 
-    return NextResponse.json(response, { headers: corsHeaders() });
+    return NextResponse.json(
+      { cards } satisfies CdsHookResponse,
+      { headers }
+    );
   } catch (error) {
     console.error("CDS Hook order-sign error:", error);
-    // CDS Hooks spec: return 200 with empty cards on error (don't block the clinician)
     return NextResponse.json(
       { cards: [] } satisfies CdsHookResponse,
       { headers: corsHeaders() }

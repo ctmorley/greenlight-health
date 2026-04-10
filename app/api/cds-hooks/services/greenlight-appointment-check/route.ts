@@ -2,15 +2,17 @@ import { NextRequest, NextResponse } from "next/server";
 import type { CdsHookRequest, CdsHookResponse } from "@/lib/cds-hooks/types";
 import { checkPaRequirement } from "@/lib/cds-hooks/pa-check";
 import { buildPaCards } from "@/lib/cds-hooks/card-builder";
+import { resolveOrgFromFhirServer } from "@/lib/cds-tenant-key";
 
 /**
  * POST /api/cds-hooks/services/greenlight-appointment-check
  *
- * CDS Hooks appointment-book service endpoint.
- * Called by the EHR when scheduling a procedure that may require PA.
+ * LEGACY unscoped CDS Hooks appointment-book endpoint.
+ * Prefer the tenant-scoped path: /api/cds-hooks/t/{tenantKey}/services/greenlight-appointment-check
  *
- * Catches missing PAs before the appointment is confirmed,
- * preventing scheduling denials.
+ * This endpoint attempts best-effort org resolution via fhirServer.
+ * If no org resolves, it still returns results (backward compat) but
+ * without org-scoped payer filtering.
  */
 
 export async function POST(request: NextRequest) {
@@ -24,7 +26,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Extract appointment context
+    // Best-effort org resolution via fhirServer
+    let organizationId: string | undefined;
+    if (hookRequest.fhirServer) {
+      const resolved = await resolveOrgFromFhirServer(hookRequest.fhirServer);
+      if (resolved) {
+        organizationId = resolved.organizationId;
+      }
+    }
+
+    if (!organizationId) {
+      console.warn(
+        "[CDS Hooks] Unscoped request to legacy endpoint. " +
+          "Migrate to /api/cds-hooks/t/{tenantKey}/services/greenlight-appointment-check. " +
+          `fhirServer=${hookRequest.fhirServer ?? "none"}`
+      );
+    }
+
     const { cptCodes, icd10Codes, payerName, serviceCategory } =
       extractAppointmentContext(hookRequest);
 
@@ -40,14 +58,20 @@ export async function POST(request: NextRequest) {
       icd10Codes,
       payerName,
       serviceCategory,
+      organizationId,
     });
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://greenlight-health.vercel.app";
-    const cards = buildPaCards(result, `${appUrl}/launch`);
+    const cards = buildPaCards(result, `${appUrl}/launch`, organizationId);
+
+    const headers: Record<string, string> = corsHeaders();
+    if (!organizationId) {
+      headers["X-GreenLight-Tenant"] = "unresolved";
+    }
 
     return NextResponse.json(
       { cards } satisfies CdsHookResponse,
-      { headers: corsHeaders() }
+      { headers }
     );
   } catch (error) {
     console.error("CDS Hook appointment-book error:", error);

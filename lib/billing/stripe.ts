@@ -157,7 +157,7 @@ export async function syncSubscription(
   // we derive the next period from the anchor + monthly interval.
   const anchorMs = subscription.billing_cycle_anchor * 1000;
   const now = Date.now();
-  let periodEnd = new Date(anchorMs);
+  const periodEnd = new Date(anchorMs);
   // Advance to the next future billing anchor
   while (periodEnd.getTime() <= now) {
     periodEnd.setMonth(periodEnd.getMonth() + 1);

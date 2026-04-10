@@ -19,11 +19,15 @@ export const authConfig: NextAuthConfig = {
         token.role = user.role ?? "";
         token.organizationId = user.organizationId ?? "";
         token.organizationName = user.organizationName ?? "";
+        token.mustChangePassword = user.mustChangePassword ?? false;
       }
       // When session.update() is called from the client, merge updated fields
       if (trigger === "update" && session) {
         if (session.organizationName) {
           token.organizationName = session.organizationName;
+        }
+        if (session.mustChangePassword !== undefined) {
+          token.mustChangePassword = session.mustChangePassword;
         }
       }
       return token;
@@ -34,6 +38,7 @@ export const authConfig: NextAuthConfig = {
         session.user.role = token.role;
         session.user.organizationId = token.organizationId;
         session.user.organizationName = token.organizationName;
+        session.user.mustChangePassword = token.mustChangePassword;
       }
       return session;
     },
@@ -41,7 +46,7 @@ export const authConfig: NextAuthConfig = {
       const { pathname } = request.nextUrl;
       const isLoggedIn = !!auth;
 
-      // Login and register pages: redirect to dashboard if already authenticated
+      // Auth pages: redirect to dashboard if already authenticated
       if (pathname === "/app/login" || pathname === "/app/register") {
         if (isLoggedIn) {
           return Response.redirect(new URL("/app/dashboard", request.nextUrl.origin));
@@ -49,10 +54,26 @@ export const authConfig: NextAuthConfig = {
         return true;
       }
 
-      // All other /app/* routes require authentication
-      // Returning false triggers the signIn page redirect configured above
-      if (pathname.startsWith("/app")) {
+      // Public auth pages (no login required)
+      if (pathname === "/app/set-password" || pathname === "/app/forgot-password") {
+        return true;
+      }
+
+      // The change-password page is allowed even with mustChangePassword
+      if (pathname === "/app/change-password") {
         return isLoggedIn;
+      }
+
+      // All other /app/* routes require authentication
+      if (pathname.startsWith("/app")) {
+        if (!isLoggedIn) return false;
+
+        // Enforce password change — redirect to change-password page
+        if (auth?.user?.mustChangePassword) {
+          return Response.redirect(new URL("/app/change-password", request.nextUrl.origin));
+        }
+
+        return true;
       }
 
       return true;

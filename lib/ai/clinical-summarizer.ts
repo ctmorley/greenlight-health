@@ -54,7 +54,7 @@ export async function assembleSummaryContext(
     icd10Codes: paRequest.icd10Codes,
     clinicalNotes: sanitizedNotes,
     documentMetadata: paRequest.documents.map(
-      (d) => `${d.category}: ${d.fileName}`
+      (d) => `${d.category.replace(/_/g, " ")} document attached`
     ),
   });
 

@@ -4,9 +4,11 @@ import { auth } from "@/lib/auth";
 import { z } from "zod";
 import type { Prisma, AuthStatus } from "@prisma/client";
 import { assemblePasBundle } from "@/lib/pas/bundle-assembler";
-import { parseClaimResponse, simulateClaimResponse } from "@/lib/pas/claim-response-parser";
+import { parseClaimResponse } from "@/lib/pas/claim-response-parser";
 import { auditPhiAccess } from "@/lib/security/audit-log";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limit";
+import { decryptPatientRecord, decryptInsuranceRecord } from "@/lib/security/phi-crypto";
+import { resolveTransport, getAdapter, getTransportEnvironment } from "@/lib/transport";
 
 /**
  * POST /api/fhir/submit-pa
@@ -77,18 +79,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // ── Dual-read: decrypt patient and insurance PHI ──
+    const patient = decryptPatientRecord(paRequest.patient);
+    const insurance = paRequest.insurance ? decryptInsuranceRecord(paRequest.insurance) : null;
+
     // ── Assemble PAS Bundle ──
     const bundle = assemblePasBundle({
-      patientId: paRequest.patient.id,
-      patientFirstName: paRequest.patient.firstName,
-      patientLastName: paRequest.patient.lastName,
-      patientDob: paRequest.patient.dob.toISOString().split("T")[0],
-      patientGender: paRequest.patient.gender,
-      patientMrn: paRequest.patient.mrn,
+      patientId: patient.id,
+      patientFirstName: String(patient.firstName || ""),
+      patientLastName: String(patient.lastName || ""),
+      patientDob: patient.dob instanceof Date ? patient.dob.toISOString().split("T")[0] : String(patient.dob || "").split("T")[0],
+      patientGender: patient.gender,
+      patientMrn: String(patient.mrn || ""),
       payerName: paRequest.payer?.name || "Unknown",
       payerId: paRequest.payer?.payerId || "",
-      memberId: paRequest.insurance?.memberId || "",
-      groupNumber: paRequest.insurance?.groupNumber,
+      memberId: insurance?.memberId || "",
+      groupNumber: insurance?.groupNumber,
       serviceCategory: paRequest.serviceCategory || "imaging",
       serviceType: paRequest.serviceType || "",
       cptCodes: paRequest.cptCodes,
@@ -109,26 +115,86 @@ export async function POST(request: NextRequest) {
       referenceNumber: paRequest.referenceNumber,
     });
 
-    // ── Submit to Payer (simulated for now) ──
-    // In production: POST bundle to payer's Claim/$submit endpoint
-    // const payerFhirUrl = await getPayerFhirEndpoint(paRequest.payerId);
-    // const fhirResponse = await fetch(`${payerFhirUrl}/Claim/$submit`, {
-    //   method: "POST", body: JSON.stringify(bundle), headers: {...}
-    // });
+    // ── Resolve transport and submit ──
+    const environment = getTransportEnvironment();
+    const transport = paRequest.payerId
+      ? await resolveTransport(paRequest.payerId, organizationId, environment)
+      : null;
 
-    // Check ACR rating for simulation quality
-    let acrRating: number | null = null;
-    if (paRequest.cptCodes.length > 0) {
-      const guideline = await prisma.clinicalGuideline.findFirst({
-        where: { cptCodes: { hasSome: paRequest.cptCodes } },
-        orderBy: { rating: "desc" },
-        select: { rating: true },
-      });
-      acrRating = guideline?.rating || null;
+    if (!transport) {
+      return NextResponse.json(
+        { error: "No transport configured for this payer. Configure a submission method in payer settings." },
+        { status: 422 }
+      );
     }
 
-    const simulatedResponse = simulateClaimResponse(paRequest.urgency, acrRating);
-    const result = parseClaimResponse(simulatedResponse);
+    const adapter = getAdapter(transport.method);
+    if (!adapter) {
+      return NextResponse.json(
+        { error: `No adapter available for transport method: ${transport.method}` },
+        { status: 422 }
+      );
+    }
+
+    // Preflight validation — let the adapter reject bad config before attempting submission
+    const validation = await adapter.validate(transport, paRequest);
+    if (!validation.valid) {
+      return NextResponse.json(
+        { error: "Transport validation failed", details: validation.errors },
+        { status: 422 }
+      );
+    }
+
+    // Human review guardrail — check SubmissionApproval for non-simulated transports
+    if (transport.requiresHumanReview && transport.method !== "simulated") {
+      const approval = await prisma.submissionApproval.findUnique({
+        where: {
+          requestId_transportId: { requestId, transportId: transport.id },
+        },
+      });
+      if (!approval || approval.status !== "approved") {
+        return NextResponse.json({
+          error: "Human review required",
+          approvalStatus: approval?.status ?? "none",
+          transportId: transport.id,
+          transportMethod: transport.method,
+        }, { status: 422 });
+      }
+    }
+
+    const submissionResult = await adapter.submit(transport, bundle, paRequest);
+
+    // Record the submission attempt
+    await prisma.submissionAttempt.create({
+      data: {
+        requestId,
+        transportId: transport.id,
+        transportMethod: transport.method,
+        environment: transport.environment,
+        externalSubmissionId: submissionResult.externalSubmissionId,
+        status: submissionResult.status,
+        httpStatusCode: submissionResult.httpStatusCode,
+        responseCode: submissionResult.responseCode,
+        responseSummary: submissionResult.responseSummary,
+        failureCategory: submissionResult.failureCategory,
+        respondedAt: new Date(),
+        responseTimeMs: submissionResult.responseTimeMs,
+      },
+    });
+
+    // If the transport returned a hard error, surface it
+    if (submissionResult.status === "error") {
+      return NextResponse.json({
+        success: false,
+        error: submissionResult.responseSummary || "Transport error during submission",
+        failureCategory: submissionResult.failureCategory,
+        simulated: transport.method === "simulated",
+      }, { status: 502 });
+    }
+
+    // Parse result — adapter may return a pre-parsed claimResponse
+    const result = submissionResult.claimResponse
+      ?? parseClaimResponse(submissionResult.rawResponse as Record<string, unknown>);
 
     // ── Update PA request with result ──
     const statusMap: Record<string, AuthStatus> = {
@@ -152,9 +218,10 @@ export async function POST(request: NextRequest) {
           // Store PAS bundle and response in draftMetadata for audit
           draftMetadata: JSON.parse(JSON.stringify({
             pasBundle: bundle,
-            pasResponse: simulatedResponse,
+            pasResponse: submissionResult.rawResponse,
             pasSubmittedAt: new Date().toISOString(),
-            pasSimulated: true,
+            transportMethod: transport.method,
+            transportEnvironment: transport.environment,
           })) as Prisma.InputJsonValue,
         },
       }),
@@ -167,9 +234,9 @@ export async function POST(request: NextRequest) {
           toStatus: statusMap[result.status],
           note: `Electronic submission via Da Vinci PAS${result.authorizationNumber ? ` — Auth #${result.authorizationNumber}` : ""}`,
           metadata: JSON.parse(JSON.stringify({
-            submissionMethod: "fhir-pas",
-            simulated: true,
-            claimResponseOutcome: simulatedResponse.outcome,
+            submissionMethod: transport.method,
+            transportEnvironment: transport.environment,
+            claimResponseOutcome: (submissionResult.rawResponse as Record<string, unknown>)?.outcome,
           })) as Prisma.InputJsonValue,
         },
       }),
@@ -204,7 +271,8 @@ export async function POST(request: NextRequest) {
         resourceCount: (bundle.entry as unknown[]).length,
         timestamp: bundle.timestamp,
       },
-      simulated: true,
+      simulated: transport.method === "simulated",
+      transportMethod: transport.method,
     });
   } catch (error) {
     console.error("PAS submission error:", error);

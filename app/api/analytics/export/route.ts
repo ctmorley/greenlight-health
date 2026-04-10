@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { auditPhiAccess } from "@/lib/security/audit-log";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limit";
+import { decryptPatientRecord } from "@/lib/security/phi-crypto";
 
 export async function GET(request: NextRequest) {
   const rateLimited = checkRateLimit(request, RATE_LIMITS.api);
@@ -59,7 +60,10 @@ export async function GET(request: NextRequest) {
           : {}),
       },
       include: {
-        patient: { select: { firstName: true, lastName: true, mrn: true } },
+        patient: { select: {
+          firstName: true, lastName: true, mrn: true,
+          firstNameEncrypted: true, lastNameEncrypted: true, mrnEncrypted: true,
+        } },
         payer: { select: { name: true } },
         createdBy: { select: { firstName: true, lastName: true } },
         denials: { select: { reasonCategory: true, reasonCode: true, denialDate: true }, take: 1 },
@@ -93,6 +97,7 @@ export async function GET(request: NextRequest) {
     const rows = requests.map((r) => {
       const denial = r.denials[0];
       const appeal = r.appeals[0];
+      const patient = decryptPatientRecord(r.patient);
       return [
         r.referenceNumber,
         r.status,
@@ -101,8 +106,8 @@ export async function GET(request: NextRequest) {
         r.serviceType || "",
         r.cptCodes.join("; "),
         r.icd10Codes.join("; "),
-        `${r.patient.firstName} ${r.patient.lastName}`,
-        r.patient.mrn,
+        `${patient.firstName} ${patient.lastName}`,
+        patient.mrn,
         r.payer?.name || "",
         `${r.createdBy.firstName} ${r.createdBy.lastName}`,
         r.createdAt.toISOString().split("T")[0],

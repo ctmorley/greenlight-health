@@ -32,6 +32,13 @@ interface MatchPatientResult {
   payerMatched?: { id: string; name: string } | null;
 }
 
+/** IDs resolved during the EHR callback (no PHI stored in browser) */
+interface FhirMatchedIds {
+  matchedPatientId: string | null;
+  matchedInsuranceId: string | null;
+  matchedPayerId: string | null;
+}
+
 interface UseFhirContextResult {
   /** The raw FHIR context from the EHR launch (null if not an EHR launch) */
   fhirContext: FhirContext | null;
@@ -45,6 +52,8 @@ interface UseFhirContextResult {
   matchPatient: () => Promise<MatchPatientResult | null>;
   /** Clear the stored FHIR context (e.g., when the user wants to start fresh) */
   clearFhirContext: () => void;
+  /** Server-matched IDs from EHR callback (no PHI in browser) */
+  matchedIds: FhirMatchedIds | null;
 }
 
 /**
@@ -57,21 +66,31 @@ interface UseFhirContextResult {
  */
 export function useFhirContext(): UseFhirContextResult {
   const [fhirContext, setFhirContext] = useState<FhirContext | null>(null);
+  const [matchedIds, setMatchedIds] = useState<FhirMatchedIds | null>(null);
   const [fhirFilledFields, setFhirFilledFields] = useState<Set<string>>(
     new Set()
   );
 
   // Read FHIR context from sessionStorage on mount
+  // Note: patient and coverage fields are null (PHI stripped at callback time).
+  // Server-matched IDs are stored instead.
   useEffect(() => {
     try {
       const stored = sessionStorage.getItem(FHIR_CONTEXT_KEY);
       if (stored) {
-        const parsed: FhirContext = JSON.parse(stored);
+        const parsed = JSON.parse(stored);
         // Verify it's recent (within last 30 minutes)
         const age =
           Date.now() - new Date(parsed.createdAt).getTime();
         if (age < 30 * 60 * 1000) {
-          setFhirContext(parsed);
+          setFhirContext(parsed as FhirContext);
+          if (parsed.matchedPatientId || parsed.matchedInsuranceId || parsed.matchedPayerId) {
+            setMatchedIds({
+              matchedPatientId: parsed.matchedPatientId || null,
+              matchedInsuranceId: parsed.matchedInsuranceId || null,
+              matchedPayerId: parsed.matchedPayerId || null,
+            });
+          }
         } else {
           // Expired — clean up
           sessionStorage.removeItem(FHIR_CONTEXT_KEY);
@@ -183,44 +202,40 @@ export function useFhirContext(): UseFhirContextResult {
   );
 
   /**
-   * Calls the server-side match-patient API to find or create a GreenLight
-   * patient record from the FHIR data. This handles MRN matching, name+DOB
-   * matching, payer fuzzy matching, and patient creation in one call.
+   * Returns the patient that was matched/created during the EHR callback.
+   * Patient matching now happens eagerly at callback time — no PHI is stored
+   * in the browser. This fetches the matched patient record by ID.
    */
   const matchPatient = useCallback(async (): Promise<MatchPatientResult | null> => {
-    if (!fhirContext?.patient) return null;
+    if (!matchedIds?.matchedPatientId) return null;
 
     try {
-      const res = await fetch("/api/fhir/match-patient", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          fhirPatientId: fhirContext.patient.fhirId,
-          firstName: fhirContext.patient.firstName,
-          lastName: fhirContext.patient.lastName,
-          mrn: fhirContext.patient.mrn,
-          dob: fhirContext.patient.dob,
-          gender: fhirContext.patient.gender,
-          phone: fhirContext.patient.phone,
-          email: fhirContext.patient.email,
-          coverage: fhirContext.coverage
-            ? {
-                payerName: fhirContext.coverage.payerName,
-                payerIdentifier: fhirContext.coverage.payerIdentifier,
-                planName: fhirContext.coverage.planName,
-                memberId: fhirContext.coverage.memberId,
-                groupNumber: fhirContext.coverage.groupNumber,
-              }
-            : null,
-        }),
-      });
-
+      const res = await fetch(`/api/patients/${matchedIds.matchedPatientId}`);
       if (!res.ok) return null;
-      return await res.json();
+      const patient = await res.json();
+      return {
+        matched: true,
+        matchType: "mrn" as const,
+        patient: {
+          id: patient.id,
+          firstName: patient.firstName,
+          lastName: patient.lastName,
+          name: `${patient.firstName} ${patient.lastName}`,
+          mrn: patient.mrn,
+          dob: patient.dob,
+          gender: patient.gender,
+          phone: patient.phone,
+          email: patient.email,
+          insurances: patient.insurances || [],
+        },
+        payerMatched: matchedIds.matchedPayerId
+          ? { id: matchedIds.matchedPayerId, name: "" }
+          : null,
+      };
     } catch {
       return null;
     }
-  }, [fhirContext]);
+  }, [matchedIds]);
 
   const clearFhirContext = useCallback(() => {
     sessionStorage.removeItem(FHIR_CONTEXT_KEY);
@@ -235,5 +250,6 @@ export function useFhirContext(): UseFhirContextResult {
     applyFhirData,
     matchPatient,
     clearFhirContext,
+    matchedIds,
   };
 }

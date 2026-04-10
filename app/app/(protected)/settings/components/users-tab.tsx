@@ -69,7 +69,8 @@ export function UsersTab({ isAdmin }: { isAdmin: boolean }) {
     npiNumber: "",
   });
   const [addingUser, setAddingUser] = useState(false);
-  const [tempPassword, setTempPassword] = useState<string | null>(null);
+  const [userCreated, setUserCreated] = useState(false);
+  const [inviteSent, setInviteSent] = useState(false);
 
   const fetchUsers = useCallback(async () => {
     try {
@@ -111,7 +112,8 @@ export function UsersTab({ isAdmin }: { isAdmin: boolean }) {
 
       const data = await res.json();
       setUsers((prev) => [...prev, { ...data.user, lastLoginAt: null }]);
-      setTempPassword(data.tempPassword);
+      setUserCreated(true);
+      setInviteSent(data.inviteSent === true);
       addToast(`User ${data.user.firstName} ${data.user.lastName} created successfully`, "success");
     } catch (err) {
       addToast(err instanceof Error ? err.message : "Failed to create user", "error");
@@ -180,7 +182,8 @@ export function UsersTab({ isAdmin }: { isAdmin: boolean }) {
               size="sm"
               onClick={() => {
                 setNewUserForm({ email: "", firstName: "", lastName: "", role: "viewer", title: "", npiNumber: "" });
-                setTempPassword(null);
+                setUserCreated(false);
+                setInviteSent(false);
                 setShowAddModal(true);
               }}
             >
@@ -308,26 +311,26 @@ export function UsersTab({ isAdmin }: { isAdmin: boolean }) {
 
       {/* Add User Modal */}
       <Modal isOpen={showAddModal} onClose={() => setShowAddModal(false)} title="Add New User" size="md">
-        {tempPassword ? (
+        {userCreated ? (
           <div className="space-y-4">
             <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4">
               <p className="text-sm text-emerald-300 font-medium mb-2">User created successfully!</p>
-              <p className="text-xs text-text-secondary mb-3">
-                Share this temporary password with the new user. They should change it upon first login.
-              </p>
-              <div className="flex items-center gap-2 bg-dark-800 rounded-lg p-3">
-                <code className="text-sm font-mono text-emerald-400 flex-1">{tempPassword}</code>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    navigator.clipboard.writeText(tempPassword);
-                    addToast("Password copied to clipboard", "info");
-                  }}
-                >
-                  Copy
-                </Button>
-              </div>
+              {inviteSent ? (
+                <p className="text-xs text-text-secondary">
+                  An invite email has been sent with a link to set their password.
+                  The link expires in 24 hours.
+                </p>
+              ) : (
+                <div>
+                  <p className="text-xs text-yellow-400">
+                    The invite email could not be sent. The user account was created,
+                    but they will need a new invite to set their password.
+                  </p>
+                  <p className="text-xs text-text-muted mt-1">
+                    Check that the email service is configured (RESEND_API_KEY).
+                  </p>
+                </div>
+              )}
             </div>
             <div className="flex justify-end">
               <Button variant="secondary" onClick={() => setShowAddModal(false)}>

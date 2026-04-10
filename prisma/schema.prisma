@@ -1,5 +1,6 @@
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
 }
 
 datasource db {
@@ -27,6 +28,7 @@ model Organization {
   fax       String?
   email     String?
   settings  Json?
+  cdsTenantKey String?  @unique // Opaque key for CDS Hooks tenant-scoped endpoints
   createdAt DateTime         @default(now())
   updatedAt DateTime         @updatedAt
 
@@ -37,13 +39,14 @@ model Organization {
   planPeriodEnd        DateTime?
   trialEndsAt          DateTime?
 
-  users          User[]
-  patients       Patient[]
-  requests       PriorAuthRequest[]
-  ehrConnections EhrConnection[]
-  notifications  Notification[]
-  statusChecks   PaStatusCheck[]
-  payers         Payer[]
+  users            User[]
+  patients         Patient[]
+  requests         PriorAuthRequest[]
+  ehrConnections   EhrConnection[]
+  notifications    Notification[]
+  statusChecks     PaStatusCheck[]
+  payers           Payer[]
+  payerTransports  PayerTransport[]
 
   @@map("organizations")
 }
@@ -58,19 +61,20 @@ enum UserRole {
 }
 
 model User {
-  id             String    @id @default(cuid())
-  organizationId String
-  email          String    @unique
-  passwordHash   String
-  firstName      String
-  lastName       String
-  role           UserRole  @default(viewer)
-  title          String?
-  npiNumber      String?
-  isActive       Boolean   @default(true)
-  lastLoginAt    DateTime?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  id                 String    @id @default(cuid())
+  organizationId     String
+  email              String    @unique
+  passwordHash       String
+  firstName          String
+  lastName           String
+  role               UserRole  @default(viewer)
+  title              String?
+  npiNumber          String?
+  isActive           Boolean   @default(true)
+  mustChangePassword Boolean   @default(false)
+  lastLoginAt        DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 
   organization Organization @relation(fields: [organizationId], references: [id])
 
@@ -83,8 +87,31 @@ model User {
   notificationPreference   NotificationPreference?
   notifications            Notification[]
   statusChecks             PaStatusCheck[]
+  authTokens               AuthToken[]
+  submissionReviews        SubmissionApproval[]
 
   @@map("users")
+}
+
+enum AuthTokenType {
+  invite
+  reset
+}
+
+model AuthToken {
+  id        String        @id @default(cuid())
+  userId    String
+  tokenHash String
+  type      AuthTokenType
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime      @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([tokenHash])
+  @@index([userId, type])
+  @@map("auth_tokens")
 }
 
 // ─── Patient ─────────────────────────────────────────────────
@@ -99,14 +126,30 @@ enum Gender {
 model Patient {
   id             String  @id @default(cuid())
   organizationId String
-  mrn            String
-  firstName      String
-  lastName       String
-  dob            DateTime
+  // Plaintext columns (nullable after cutover — will be dropped after soak period)
+  mrn            String?
+  firstName      String?
+  lastName       String?
+  dob            DateTime?
   gender         Gender  @default(unknown)
   phone          String?
   email          String?
   address        String?
+  // Encrypted columns (AES-256-GCM via HKDF-derived key)
+  mrnEncrypted       String?
+  firstNameEncrypted String?
+  lastNameEncrypted  String?
+  dobEncrypted       String?
+  phoneEncrypted     String?
+  emailEncrypted     String?
+  addressEncrypted   String?
+  // Blind indexes (HMAC-SHA256 via HKDF-derived key, lowercase normalized)
+  mrnHash       String?
+  firstNameHash String?
+  lastNameHash  String?
+  dobHash       String?
+  emailHash     String?
+
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
@@ -114,7 +157,10 @@ model Patient {
   insurances   PatientInsurance[]
   requests     PriorAuthRequest[]
 
-  @@unique([organizationId, mrn])
+  @@unique([organizationId, mrnHash])
+  @@index([organizationId, lastNameHash])
+  @@index([organizationId, emailHash])
+  @@index([organizationId, lastNameHash, firstNameHash])
   @@map("patients")
 }
 
@@ -137,8 +183,15 @@ model PatientInsurance {
   payerId         String
   planName        String
   planType        PlanType  @default(other)
-  memberId        String
+  // Plaintext columns (nullable after cutover — will be dropped after soak period)
+  memberId        String?
   groupNumber     String?
+  // Encrypted columns
+  memberIdEncrypted   String?
+  groupNumberEncrypted String?
+  // Blind index
+  memberIdHash    String?
+
   isPrimary       Boolean   @default(true)
   effectiveDate   DateTime
   terminationDate DateTime?
@@ -147,6 +200,7 @@ model PatientInsurance {
   payer    Payer    @relation(fields: [payerId], references: [id])
   requests PriorAuthRequest[]
 
+  @@index([memberIdHash])
   @@map("patient_insurances")
 }
 
@@ -188,6 +242,7 @@ model Payer {
   clinicalPolicies   PayerClinicalPolicy[]
   docRequirements    DocumentationRequirement[]
   denialPatterns     DenialPattern[]
+  transports         PayerTransport[]
 
   @@map("payers")
 }
@@ -342,6 +397,21 @@ model DenialPattern {
   @@map("denial_patterns")
 }
 
+// ─── Transport Enums ────────────────────────────────────────
+
+enum TransportMethod {
+  fhir_pas
+  edi_278
+  rpa_portal
+  fax_manual
+  simulated
+}
+
+enum TransportEnvironment {
+  sandbox
+  production
+}
+
 // ─── Prior Auth Request ──────────────────────────────────────
 
 enum AuthStatus {
@@ -429,6 +499,8 @@ model PriorAuthRequest {
   denials       Denial[]
   appeals       Appeal[]
   statusChecks  PaStatusCheck[]
+  submissions   SubmissionAttempt[]
+  approvals     SubmissionApproval[]
 
   @@map("prior_auth_requests")
 }
@@ -679,4 +751,105 @@ model PaStatusCheck {
   @@index([requestId])
   @@index([organizationId])
   @@map("pa_status_checks")
+}
+
+// ─── Payer Transport ────────────────────────────────────────
+
+model PayerTransport {
+  id                    String               @id @default(cuid())
+  payerId               String
+  organizationId        String?
+  method                TransportMethod
+  environment           TransportEnvironment @default(sandbox)
+  isEnabled             Boolean              @default(true)
+  priority              Int                  @default(0)
+
+  endpointUrl           String?
+  statusEndpointUrl     String?
+  externalPayerId       String?
+  clearinghousePayerId  String?
+  credentialRef         String?
+
+  supportsAttachments   Boolean              @default(false)
+  supportsStatusCheck   Boolean              @default(false)
+  requiresHumanReview   Boolean              @default(true)
+
+  metadata              Json?
+  createdAt             DateTime             @default(now())
+  updatedAt             DateTime             @updatedAt
+
+  payer        Payer              @relation(fields: [payerId], references: [id])
+  organization Organization?      @relation(fields: [organizationId], references: [id])
+  submissions  SubmissionAttempt[]
+  approvals    SubmissionApproval[]
+
+  // Uniqueness enforced at DB level via COALESCE index (Postgres NULL semantics
+  // mean @@unique can't prevent duplicate global rows). See migration SQL.
+  @@index([payerId, isEnabled])
+  @@map("payer_transports")
+}
+
+// ─── Submission Attempt ─────────────────────────────────────
+
+model SubmissionAttempt {
+  id                   String               @id @default(cuid())
+  requestId            String
+  transportId          String
+
+  transportMethod      TransportMethod
+  environment          TransportEnvironment
+  externalSubmissionId String?
+
+  status               String               // pending, accepted, rejected, error, timeout
+  httpStatusCode       Int?
+  responseCode         String?
+  responseSummary      String?
+  failureCategory      String?
+
+  submittedAt          DateTime             @default(now())
+  respondedAt          DateTime?
+  responseTimeMs       Int?
+
+  attemptNumber        Int                  @default(1)
+  retryOf              String?
+
+  bundleRef            String?
+  responseRef          String?
+
+  createdAt            DateTime             @default(now())
+
+  request   PriorAuthRequest @relation(fields: [requestId], references: [id])
+  transport PayerTransport   @relation(fields: [transportId], references: [id])
+
+  @@index([requestId])
+  @@index([transportId])
+  @@index([externalSubmissionId])
+  @@map("submission_attempts")
+}
+
+// ─── Submission Approval ────────────────────────────────────
+
+enum ApprovalStatus {
+  pending
+  approved
+  rejected
+}
+
+model SubmissionApproval {
+  id           String         @id @default(cuid())
+  requestId    String
+  transportId  String
+  status       ApprovalStatus @default(pending)
+  reviewedById String?
+  reviewedAt   DateTime?
+  note         String?
+  createdAt    DateTime       @default(now())
+
+  request    PriorAuthRequest @relation(fields: [requestId], references: [id])
+  transport  PayerTransport   @relation(fields: [transportId], references: [id])
+  reviewedBy User?            @relation(fields: [reviewedById], references: [id])
+
+  @@unique([requestId, transportId])
+  @@index([requestId])
+  @@map("submission_approvals")
 }

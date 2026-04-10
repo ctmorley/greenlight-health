@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { auditPhiAccess } from "@/lib/security/audit-log";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limit";
+import { decryptPatientRecord } from "@/lib/security/phi-crypto";
 
 export async function GET(request: NextRequest) {
   const rateLimited = checkRateLimit(request, RATE_LIMITS.api);
@@ -94,22 +95,25 @@ export async function GET(request: NextRequest) {
         priorAuth: {
           select: {
             referenceNumber: true,
-            patient: { select: { firstName: true, lastName: true } },
+            patient: { select: { firstName: true, lastName: true, firstNameEncrypted: true, lastNameEncrypted: true } },
           },
         },
       },
     });
 
-    const activityFeed = recentActivity.map((a) => ({
+    const activityFeed = recentActivity.map((a) => {
+      const patient = decryptPatientRecord(a.priorAuth.patient);
+      return {
       id: a.id,
       user: `${a.changedBy.firstName} ${a.changedBy.lastName}`,
       referenceNumber: a.priorAuth.referenceNumber,
-      patientName: `${a.priorAuth.patient.firstName} ${a.priorAuth.patient.lastName}`,
+      patientName: `${patient.firstName} ${patient.lastName}`,
       fromStatus: a.fromStatus,
       toStatus: a.toStatus,
       note: a.note,
       createdAt: a.createdAt.toISOString(),
-    }));
+    };
+    });
 
     // ── Turnaround Trend (last 12 weeks) ─────────────────────
     const twelveWeeksAgo = new Date();

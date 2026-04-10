@@ -1,7 +1,7 @@
 /**
  * Tests for GET/POST /api/patients
  */
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { prismaMock, resetPrismaMocks } from "../../helpers/mock-prisma";
 import {
   createGetRequest,
@@ -65,6 +65,13 @@ describe("GET /api/patients", () => {
   });
 
   it("filters patients by search term", async () => {
+    // Mock buildPatientHashSearch to return conditions for this search
+    const { buildPatientHashSearch } = await import("@/lib/security/phi-crypto");
+    vi.mocked(buildPatientHashSearch).mockReturnValueOnce([
+      { lastNameHash: "hash:john" },
+      { firstNameHash: "hash:john" },
+    ]);
+
     prismaMock.patient.findMany.mockResolvedValueOnce([]);
     prismaMock.patient.count.mockResolvedValueOnce(0);
 

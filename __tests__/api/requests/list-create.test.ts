@@ -122,7 +122,7 @@ describe("POST /api/requests", () => {
     const payer = createMockPayer({ id: "py1" });
 
     prismaMock.patient.findFirst.mockResolvedValueOnce(patient);
-    prismaMock.payer.findUnique.mockResolvedValueOnce(payer);
+    prismaMock.payer.findFirst.mockResolvedValueOnce(payer);
 
     const created = createMockRequest({ id: "new-req", patientId: "p1", payerId: "py1" });
     const statusChange = { id: "sc1" };

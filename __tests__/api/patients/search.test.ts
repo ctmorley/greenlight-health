@@ -1,7 +1,9 @@
 /**
  * Tests for GET /api/patients/search
+ *
+ * Search now uses blind-index exact match (not fuzzy contains).
  */
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { prismaMock, resetPrismaMocks } from "../../helpers/mock-prisma";
 import {
   createGetRequest,
@@ -9,12 +11,20 @@ import {
   parseResponse,
 } from "../../helpers/request";
 import { createMockSession, createMockPatient } from "../../helpers/factories";
+import { buildPatientHashSearch } from "@/lib/security/phi-crypto";
 import { GET } from "@/app/api/patients/search/route";
 
 describe("GET /api/patients/search", () => {
   beforeEach(() => {
     resetPrismaMocks();
     mockSession(createMockSession());
+    // Default: return a hash condition so search actually queries the DB
+    vi.mocked(buildPatientHashSearch).mockReturnValue([
+      { lastNameHash: "hash:search-term" },
+      { firstNameHash: "hash:search-term" },
+      { mrnHash: "hash:search-term" },
+      { emailHash: "hash:search-term" },
+    ]);
   });
 
   it("returns 401 when unauthenticated", async () => {
@@ -24,7 +34,7 @@ describe("GET /api/patients/search", () => {
     expect(res.status).toBe(401);
   });
 
-  it("searches patients by name", async () => {
+  it("searches patients via blind index and returns results", async () => {
     const patient = {
       ...createMockPatient({ id: "p1", firstName: "John", lastName: "Doe" }),
       insurances: [
@@ -43,9 +53,10 @@ describe("GET /api/patients/search", () => {
     expect(res.status).toBe(200);
     expect(data.patients).toHaveLength(1);
     expect(data.patients[0].name).toBe("John Doe");
+    expect(buildPatientHashSearch).toHaveBeenCalledWith("John");
   });
 
-  it("searches patients by MRN", async () => {
+  it("searches patients by MRN via blind index", async () => {
     const patient = {
       ...createMockPatient({ id: "p1", mrn: "MRN-12345" }),
       insurances: [],
@@ -70,7 +81,7 @@ describe("GET /api/patients/search", () => {
     expect(data.patients).toEqual([]);
   });
 
-  it("verifies org scoping in search query", async () => {
+  it("passes hash conditions as OR clause in where", async () => {
     prismaMock.patient.findMany.mockResolvedValueOnce([]);
 
     const req = createGetRequest("/api/patients/search", { q: "John" });
@@ -78,6 +89,8 @@ describe("GET /api/patients/search", () => {
 
     const call = prismaMock.patient.findMany.mock.calls[0][0];
     expect(call.where.organizationId).toBe("org-1");
+    expect(call.where.OR).toBeDefined();
+    expect(call.where.OR.length).toBeGreaterThan(0);
   });
 
   it("returns patients with primary insurance info", async () => {
@@ -100,19 +113,19 @@ describe("GET /api/patients/search", () => {
     expect(data.patients[0].primaryInsurance.payerName).toBe("Aetna");
   });
 
-  it("handles full-name search with two tokens", async () => {
-    prismaMock.patient.findMany.mockResolvedValueOnce([]);
+  it("returns empty when buildPatientHashSearch returns no conditions", async () => {
+    vi.mocked(buildPatientHashSearch).mockReturnValueOnce([]);
 
-    const req = createGetRequest("/api/patients/search", { q: "John Doe" });
-    await GET(req);
+    const req = createGetRequest("/api/patients/search", { q: "xx" });
+    const res = await GET(req);
+    const data = await parseResponse(res);
 
-    const call = prismaMock.patient.findMany.mock.calls[0][0];
-    // With 2 tokens, should use AND conditions for first/last name
-    expect(call.where.OR).toBeDefined();
+    expect(data.patients).toEqual([]);
+    // Should not call findMany when there are no hash conditions
+    expect(prismaMock.patient.findMany).not.toHaveBeenCalled();
   });
 
   it("cross-org patient not returned (org scoping verified)", async () => {
-    // Simulate patient from different org - findMany returns empty
     prismaMock.patient.findMany.mockResolvedValueOnce([]);
 
     mockSession(createMockSession({ organizationId: "org-A" }));

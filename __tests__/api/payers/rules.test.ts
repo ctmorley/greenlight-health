@@ -40,7 +40,7 @@ describe("GET /api/payers/[id]/rules", () => {
       avgResponseDays: 5,
       electronicSubmission: true,
     };
-    prismaMock.payer.findUnique.mockResolvedValueOnce(payer);
+    prismaMock.payer.findFirst.mockResolvedValueOnce(payer);
 
     const rule = createMockPayerRule({ id: "rule-1", payerId: "payer-1" });
     prismaMock.payerRule.findMany.mockResolvedValueOnce([rule]);
@@ -58,7 +58,7 @@ describe("GET /api/payers/[id]/rules", () => {
   });
 
   it("returns 404 for non-existent payer", async () => {
-    prismaMock.payer.findUnique.mockResolvedValueOnce(null);
+    prismaMock.payer.findFirst.mockResolvedValueOnce(null);
 
     const req = createGetRequest("/api/payers/nonexistent/rules");
     const res = await GET(req, createParams({ id: "nonexistent" }));
@@ -73,7 +73,7 @@ describe("GET /api/payers/[id]/rules", () => {
       avgResponseDays: 5,
       electronicSubmission: true,
     };
-    prismaMock.payer.findUnique.mockResolvedValueOnce(payer);
+    prismaMock.payer.findFirst.mockResolvedValueOnce(payer);
     prismaMock.payerRule.findMany.mockResolvedValueOnce([]);
 
     const req = createGetRequest("/api/payers/payer-1/rules", { serviceCategory: "imaging" });
@@ -95,7 +95,7 @@ describe("GET /api/payers/[id]/rules", () => {
       avgResponseDays: 5,
       electronicSubmission: true,
     };
-    prismaMock.payer.findUnique.mockResolvedValueOnce(payer);
+    prismaMock.payer.findFirst.mockResolvedValueOnce(payer);
 
     const rule = createMockPayerRule({ requiresPA: true });
     prismaMock.payerRule.findMany.mockResolvedValueOnce([rule]);
@@ -134,7 +134,7 @@ describe("POST /api/payers/[id]/rules", () => {
 
   it("creates a new rule successfully", async () => {
     const payer = createMockPayer({ id: "payer-1" });
-    prismaMock.payer.findUnique.mockResolvedValueOnce(payer);
+    prismaMock.payer.findFirst.mockResolvedValueOnce(payer);
 
     const rule = createMockPayerRule({ id: "new-rule", payerId: "payer-1" });
     prismaMock.payerRule.create.mockResolvedValueOnce(rule);
@@ -152,7 +152,7 @@ describe("POST /api/payers/[id]/rules", () => {
   });
 
   it("returns 404 when payer does not exist", async () => {
-    prismaMock.payer.findUnique.mockResolvedValueOnce(null);
+    prismaMock.payer.findFirst.mockResolvedValueOnce(null);
 
     const req = createPostRequest("/api/payers/payer-1/rules", {
       serviceCategory: "imaging",
@@ -163,7 +163,7 @@ describe("POST /api/payers/[id]/rules", () => {
 
   it("returns 400 for missing serviceCategory", async () => {
     const payer = createMockPayer({ id: "payer-1" });
-    prismaMock.payer.findUnique.mockResolvedValueOnce(payer);
+    prismaMock.payer.findFirst.mockResolvedValueOnce(payer);
 
     const req = createPostRequest("/api/payers/payer-1/rules", {
       cptCode: "70553",
@@ -174,7 +174,7 @@ describe("POST /api/payers/[id]/rules", () => {
 
   it("returns 400 for invalid serviceCategory", async () => {
     const payer = createMockPayer({ id: "payer-1" });
-    prismaMock.payer.findUnique.mockResolvedValueOnce(payer);
+    prismaMock.payer.findFirst.mockResolvedValueOnce(payer);
 
     const req = createPostRequest("/api/payers/payer-1/rules", {
       serviceCategory: "invalid_category",

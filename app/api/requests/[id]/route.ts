@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { z } from "zod";
 import { auditPhiAccess } from "@/lib/security/audit-log";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limit";
+import { decryptPatientRecord, decryptInsuranceRecord } from "@/lib/security/phi-crypto";
 
 const VALID_SERVICE_CATEGORIES = ["imaging", "surgical", "medical"] as const;
 const VALID_SERVICE_TYPES = [
@@ -66,6 +67,12 @@ export async function GET(
             gender: true,
             phone: true,
             email: true,
+            firstNameEncrypted: true,
+            lastNameEncrypted: true,
+            mrnEncrypted: true,
+            dobEncrypted: true,
+            phoneEncrypted: true,
+            emailEncrypted: true,
           },
         },
         payer: {
@@ -85,6 +92,8 @@ export async function GET(
             memberId: true,
             groupNumber: true,
             payerId: true,
+            memberIdEncrypted: true,
+            groupNumberEncrypted: true,
           },
         },
         createdBy: {
@@ -124,6 +133,10 @@ export async function GET(
       return NextResponse.json({ error: "Request not found" }, { status: 404 });
     }
 
+    // Dual-read: decrypt patient and insurance PHI fields
+    const patient = decryptPatientRecord(paReq.patient);
+    const insurance = paReq.insurance ? decryptInsuranceRecord(paReq.insurance) : null;
+
     return NextResponse.json({
       id: paReq.id,
       referenceNumber: paReq.referenceNumber,
@@ -144,18 +157,18 @@ export async function GET(
       aiAuditResult: paReq.aiAuditResult,
       draftMetadata: paReq.draftMetadata,
       patient: {
-        id: paReq.patient.id,
-        name: `${paReq.patient.firstName} ${paReq.patient.lastName}`,
-        firstName: paReq.patient.firstName,
-        lastName: paReq.patient.lastName,
-        mrn: paReq.patient.mrn,
-        dob: paReq.patient.dob.toISOString(),
-        gender: paReq.patient.gender,
-        phone: paReq.patient.phone,
-        email: paReq.patient.email,
+        id: patient.id,
+        name: `${patient.firstName} ${patient.lastName}`,
+        firstName: patient.firstName,
+        lastName: patient.lastName,
+        mrn: patient.mrn,
+        dob: patient.dob instanceof Date ? patient.dob.toISOString() : String(patient.dob),
+        gender: patient.gender,
+        phone: patient.phone,
+        email: patient.email,
       },
       payer: paReq.payer,
-      insurance: paReq.insurance,
+      insurance,
       createdBy: `${paReq.createdBy.firstName} ${paReq.createdBy.lastName}`,
       assignedTo: paReq.assignedTo
         ? `${paReq.assignedTo.firstName} ${paReq.assignedTo.lastName}`
@@ -228,6 +241,13 @@ export async function PATCH(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  if (session.user.role === "viewer") {
+    return NextResponse.json(
+      { error: "Insufficient permissions. Viewers cannot update PA requests." },
+      { status: 403 }
+    );
+  }
+
   const organizationId = session.user.organizationId;
   if (!organizationId) {
     return NextResponse.json({ error: "No organization context" }, { status: 403 });
@@ -290,7 +310,12 @@ export async function PATCH(
 
     // Handle payer/insurance updates
     if (data.payerId !== undefined) {
-      const payer = await prisma.payer.findUnique({ where: { id: data.payerId } });
+      const payer = await prisma.payer.findFirst({
+        where: {
+          id: data.payerId,
+          OR: [{ organizationId }, { organizationId: null }],
+        },
+      });
       if (!payer) {
         return NextResponse.json({ error: "Payer not found" }, { status: 404 });
       }
@@ -332,9 +357,25 @@ export async function PATCH(
       updateData.draftMetadata = { ...existingMeta, currentStep: data.currentStep };
     }
 
-    const updated = await prisma.priorAuthRequest.update({
-      where: { id },
-      data: updateData,
+    // Check if material fields are changing — if so, invalidate approvals
+    const materialFields = [
+      "cptCodes", "icd10Codes", "clinicalNotes", "payerId",
+      "serviceType", "serviceCategory",
+    ];
+    const materialChange = materialFields.some((f) => f in updateData);
+
+    // Atomic: update request + clear approvals if material fields changed
+    const updated = await prisma.$transaction(async (tx) => {
+      const result = await tx.priorAuthRequest.update({
+        where: { id },
+        data: updateData,
+      });
+
+      if (materialChange) {
+        await tx.submissionApproval.deleteMany({ where: { requestId: id } });
+      }
+
+      return result;
     });
 
     return NextResponse.json({

@@ -134,6 +134,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             role: user.role,
             organizationId: user.organizationId,
             organizationName: user.organization.name,
+            mustChangePassword: user.mustChangePassword,
           };
         } catch (error) {
           console.error("Authentication error (database may be unavailable):", error);

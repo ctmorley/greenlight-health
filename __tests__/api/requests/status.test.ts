@@ -1,18 +1,81 @@
 /**
- * Tests for PATCH /api/requests/[id]/status
+ * Tests for GET/PATCH /api/requests/[id]/status
  */
 import { describe, it, expect, beforeEach } from "vitest";
 import { prismaMock, resetPrismaMocks } from "../../helpers/mock-prisma";
 import {
+  createGetRequest,
   createPatchRequest,
   mockSession,
   createParams,
   parseResponse,
 } from "../../helpers/request";
 import { createMockSession, createMockRequest } from "../../helpers/factories";
-import { PATCH } from "@/app/api/requests/[id]/status/route";
+import { GET, PATCH } from "@/app/api/requests/[id]/status/route";
 
 const params = createParams({ id: "req-1" });
+
+// ─── GET /api/requests/[id]/status ───────────────────────────
+
+describe("GET /api/requests/[id]/status", () => {
+  beforeEach(() => {
+    resetPrismaMocks();
+    mockSession(createMockSession());
+  });
+
+  it("returns 401 when unauthenticated", async () => {
+    mockSession(null);
+    const req = createGetRequest("/api/requests/req-1/status");
+    const res = await GET(req, params);
+    expect(res.status).toBe(401);
+  });
+
+  it("returns current status info", async () => {
+    const paRequest = {
+      id: "req-1",
+      referenceNumber: "GL-20260330-00001",
+      status: "submitted",
+      urgency: "routine",
+      submittedAt: new Date("2026-03-28"),
+      decidedAt: null,
+      expiresAt: null,
+      dueDate: new Date("2026-04-11"),
+      createdAt: new Date("2026-03-28"),
+      updatedAt: new Date("2026-03-28"),
+    };
+    prismaMock.priorAuthRequest.findFirst.mockResolvedValueOnce(paRequest);
+
+    const req = createGetRequest("/api/requests/req-1/status");
+    const res = await GET(req, params);
+    const data = await parseResponse(res);
+
+    expect(res.status).toBe(200);
+    expect(data.status).toBe("submitted");
+    expect(data.referenceNumber).toBe("GL-20260330-00001");
+    expect(data.urgency).toBe("routine");
+  });
+
+  it("returns 404 for non-existent request", async () => {
+    prismaMock.priorAuthRequest.findFirst.mockResolvedValueOnce(null);
+
+    const req = createGetRequest("/api/requests/nonexistent/status");
+    const res = await GET(req, createParams({ id: "nonexistent" }));
+    expect(res.status).toBe(404);
+  });
+
+  it("scopes to current organization", async () => {
+    prismaMock.priorAuthRequest.findFirst.mockResolvedValueOnce(null);
+
+    const req = createGetRequest("/api/requests/req-1/status");
+    await GET(req, params);
+
+    const call = prismaMock.priorAuthRequest.findFirst.mock.calls[0][0];
+    expect(call.where.organizationId).toBe("org-1");
+    expect(call.where.id).toBe("req-1");
+  });
+});
+
+// ─── PATCH /api/requests/[id]/status ─────────────────────────
 
 describe("PATCH /api/requests/[id]/status", () => {
   beforeEach(() => {

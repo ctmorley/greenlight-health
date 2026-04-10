@@ -1,19 +1,75 @@
 /**
- * Tests for PATCH/DELETE /api/payers/[id]/rules/[ruleId]
+ * Tests for GET/PATCH/DELETE /api/payers/[id]/rules/[ruleId]
  */
 import { describe, it, expect, beforeEach } from "vitest";
 import { prismaMock, resetPrismaMocks } from "../../helpers/mock-prisma";
 import {
+  createGetRequest,
   createPatchRequest,
   createDeleteRequest,
   mockSession,
   createParams,
   parseResponse,
 } from "../../helpers/request";
-import { createMockSession, createMockPayerRule } from "../../helpers/factories";
-import { PATCH, DELETE } from "@/app/api/payers/[id]/rules/[ruleId]/route";
+import { createMockSession, createMockPayer, createMockPayerRule } from "../../helpers/factories";
+import { GET, PATCH, DELETE } from "@/app/api/payers/[id]/rules/[ruleId]/route";
 
 const params = createParams({ id: "payer-1", ruleId: "rule-1" });
+
+// ─── GET /api/payers/[id]/rules/[ruleId] ─────────────────────
+
+describe("GET /api/payers/[id]/rules/[ruleId]", () => {
+  beforeEach(() => {
+    resetPrismaMocks();
+    mockSession(createMockSession());
+  });
+
+  it("returns 401 when unauthenticated", async () => {
+    mockSession(null);
+    const req = createGetRequest("/api/payers/payer-1/rules/rule-1");
+    const res = await GET(req, params);
+    expect(res.status).toBe(401);
+  });
+
+  it("returns a single rule", async () => {
+    prismaMock.payer.findFirst.mockResolvedValueOnce(createMockPayer({ id: "payer-1" }));
+    const rule = createMockPayerRule({ id: "rule-1", payerId: "payer-1" });
+    prismaMock.payerRule.findFirst.mockResolvedValueOnce(rule);
+
+    const req = createGetRequest("/api/payers/payer-1/rules/rule-1");
+    const res = await GET(req, params);
+    const data = await parseResponse(res);
+
+    expect(res.status).toBe(200);
+    expect(data.rule).toBeDefined();
+    expect(data.rule.id).toBe("rule-1");
+    expect(data.rule.payerId).toBe("payer-1");
+    expect(data.rule.serviceCategory).toBe("imaging");
+  });
+
+  it("returns 404 when rule not found", async () => {
+    prismaMock.payer.findFirst.mockResolvedValueOnce(createMockPayer({ id: "payer-1" }));
+    prismaMock.payerRule.findFirst.mockResolvedValueOnce(null);
+
+    const req = createGetRequest("/api/payers/payer-1/rules/nonexistent");
+    const res = await GET(req, createParams({ id: "payer-1", ruleId: "nonexistent" }));
+    expect(res.status).toBe(404);
+  });
+
+  it("verifies rule belongs to the specified payer", async () => {
+    prismaMock.payer.findFirst.mockResolvedValueOnce(createMockPayer({ id: "payer-1" }));
+    prismaMock.payerRule.findFirst.mockResolvedValueOnce(null);
+
+    const req = createGetRequest("/api/payers/payer-1/rules/rule-1");
+    await GET(req, params);
+
+    const call = prismaMock.payerRule.findFirst.mock.calls[0][0];
+    expect(call.where.payerId).toBe("payer-1");
+    expect(call.where.id).toBe("rule-1");
+  });
+});
+
+// ─── PATCH /api/payers/[id]/rules/[ruleId] ───────────────────
 
 describe("PATCH /api/payers/[id]/rules/[ruleId]", () => {
   beforeEach(() => {
@@ -36,6 +92,7 @@ describe("PATCH /api/payers/[id]/rules/[ruleId]", () => {
   });
 
   it("updates a rule successfully", async () => {
+    prismaMock.payer.findFirst.mockResolvedValueOnce(createMockPayer({ id: "payer-1" }));
     const rule = createMockPayerRule({ id: "rule-1", payerId: "payer-1" });
     prismaMock.payerRule.findFirst.mockResolvedValueOnce(rule);
 
@@ -51,6 +108,7 @@ describe("PATCH /api/payers/[id]/rules/[ruleId]", () => {
   });
 
   it("returns 404 when rule not found", async () => {
+    prismaMock.payer.findFirst.mockResolvedValueOnce(createMockPayer({ id: "payer-1" }));
     prismaMock.payerRule.findFirst.mockResolvedValueOnce(null);
 
     const req = createPatchRequest("/api/payers/payer-1/rules/rule-1", { requiresPA: false });
@@ -59,6 +117,7 @@ describe("PATCH /api/payers/[id]/rules/[ruleId]", () => {
   });
 
   it("verifies rule belongs to the specified payer", async () => {
+    prismaMock.payer.findFirst.mockResolvedValueOnce(createMockPayer({ id: "payer-1" }));
     prismaMock.payerRule.findFirst.mockResolvedValueOnce(null);
 
     const req = createPatchRequest("/api/payers/payer-1/rules/rule-1", { requiresPA: false });
@@ -69,6 +128,8 @@ describe("PATCH /api/payers/[id]/rules/[ruleId]", () => {
     expect(call.where.id).toBe("rule-1");
   });
 });
+
+// ─── DELETE /api/payers/[id]/rules/[ruleId] ──────────────────
 
 describe("DELETE /api/payers/[id]/rules/[ruleId]", () => {
   beforeEach(() => {
@@ -91,6 +152,7 @@ describe("DELETE /api/payers/[id]/rules/[ruleId]", () => {
   });
 
   it("deletes a rule successfully", async () => {
+    prismaMock.payer.findFirst.mockResolvedValueOnce(createMockPayer({ id: "payer-1" }));
     const rule = createMockPayerRule({ id: "rule-1", payerId: "payer-1" });
     prismaMock.payerRule.findFirst.mockResolvedValueOnce(rule);
     prismaMock.payerRule.delete.mockResolvedValueOnce(rule);
@@ -104,6 +166,7 @@ describe("DELETE /api/payers/[id]/rules/[ruleId]", () => {
   });
 
   it("returns 404 when rule not found", async () => {
+    prismaMock.payer.findFirst.mockResolvedValueOnce(createMockPayer({ id: "payer-1" }));
     prismaMock.payerRule.findFirst.mockResolvedValueOnce(null);
 
     const req = createDeleteRequest("/api/payers/payer-1/rules/rule-1");

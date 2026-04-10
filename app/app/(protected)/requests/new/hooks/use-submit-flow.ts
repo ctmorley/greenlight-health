@@ -58,9 +58,14 @@ export function useSubmitFlow({ state, saveDraft, setAuditIssues }: UseSubmitFlo
       });
       const data = await res.json();
 
-      if (res.status === 422) {
+      if (
+        (res.status === 400 || res.status === 422) &&
+        data?.submitted === false &&
+        data?.auditResult
+      ) {
         // Audit failed — show issues
         setAuditIssues(data.auditResult?.issues || []);
+        setSubmitError("Resolve the blocking issues before submitting this request.");
         return;
       }
 

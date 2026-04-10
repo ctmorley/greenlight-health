@@ -5,48 +5,11 @@ import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { auditPhiAccess } from "@/lib/security/audit-log";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limit";
+import { buildPatientHashSearch, decryptPatientRecord } from "@/lib/security/phi-crypto";
 
 const searchQuerySchema = z.object({
   q: z.string().trim().min(2, "Search query must be at least 2 characters"),
 });
-
-/**
- * Build search condition supporting full-name search for patients.
- */
-function buildPatientSearchCondition(q: string): Prisma.PatientWhereInput {
-  const tokens = q.split(/\s+/).filter(Boolean);
-
-  if (tokens.length >= 2) {
-    const firstToken = tokens[0];
-    const lastTokens = tokens.slice(1).join(" ");
-
-    return {
-      OR: [
-        {
-          AND: [
-            { firstName: { contains: firstToken, mode: "insensitive" } },
-            { lastName: { contains: lastTokens, mode: "insensitive" } },
-          ],
-        },
-        {
-          AND: [
-            { lastName: { contains: firstToken, mode: "insensitive" } },
-            { firstName: { contains: lastTokens, mode: "insensitive" } },
-          ],
-        },
-        { mrn: { contains: q, mode: "insensitive" } },
-      ],
-    };
-  }
-
-  return {
-    OR: [
-      { firstName: { contains: q, mode: "insensitive" } },
-      { lastName: { contains: q, mode: "insensitive" } },
-      { mrn: { contains: q, mode: "insensitive" } },
-    ],
-  };
-}
 
 export async function GET(request: NextRequest) {
   const rateLimited = checkRateLimit(request, RATE_LIMITS.api);
@@ -69,7 +32,6 @@ export async function GET(request: NextRequest) {
   const parsed = searchQuerySchema.safeParse(rawParams);
 
   if (!parsed.success) {
-    // Return empty results for too-short queries (graceful degradation)
     const qVal = searchParams.get("q")?.trim() || "";
     if (qVal.length < 2) {
       return NextResponse.json({ patients: [] });
@@ -83,15 +45,23 @@ export async function GET(request: NextRequest) {
   const { q } = parsed.data;
 
   try {
-    const searchCondition = buildPatientSearchCondition(q);
+    // Search via blind indexes (exact match on MRN, email, first+last name)
+    const hashConditions = buildPatientHashSearch(q);
+
+    const where: Prisma.PatientWhereInput = {
+      organizationId,
+    };
+
+    if (hashConditions.length > 0) {
+      where.OR = hashConditions as Prisma.PatientWhereInput[];
+    } else {
+      return NextResponse.json({ patients: [] });
+    }
 
     const patients = await prisma.patient.findMany({
-      where: {
-        organizationId,
-        ...searchCondition,
-      },
+      where,
       take: 10,
-      orderBy: { lastName: "asc" },
+      orderBy: { createdAt: "desc" },
       include: {
         insurances: {
           where: { isPrimary: true },
@@ -104,18 +74,21 @@ export async function GET(request: NextRequest) {
     });
 
     return NextResponse.json({
-      patients: patients.map((p) => ({
-        id: p.id,
-        name: `${p.firstName} ${p.lastName}`,
-        mrn: p.mrn,
-        dob: p.dob.toISOString(),
-        primaryInsurance: p.insurances[0]
-          ? {
-              planName: p.insurances[0].planName,
-              payerName: p.insurances[0].payer.name,
-            }
-          : null,
-      })),
+      patients: patients.map((p) => {
+        const d = decryptPatientRecord(p);
+        return {
+          id: d.id,
+          name: `${d.firstName} ${d.lastName}`,
+          mrn: d.mrn,
+          dob: d.dob instanceof Date ? d.dob.toISOString() : String(d.dob),
+          primaryInsurance: p.insurances[0]
+            ? {
+                planName: p.insurances[0].planName,
+                payerName: p.insurances[0].payer.name,
+              }
+            : null,
+        };
+      }),
     });
   } catch (error) {
     console.error("Patient search error:", error);

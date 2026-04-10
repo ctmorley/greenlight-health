@@ -50,6 +50,9 @@ export const prismaMock = {
   notificationPreference: createModelMock(),
   notification: createModelMock(),
   paStatusCheck: createModelMock(),
+  payerTransport: createModelMock(),
+  submissionAttempt: createModelMock(),
+  submissionApproval: createModelMock(),
   // Transaction support: runs the callback with the same mock client
   $transaction: vi.fn().mockImplementation(async (fn: (tx: typeof prismaMock) => Promise<unknown>) => {
     return fn(prismaMock);

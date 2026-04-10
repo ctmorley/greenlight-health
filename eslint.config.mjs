@@ -8,6 +8,7 @@ export default [
   {
     ignores: [
       ".next/**",
+      ".claude/**",
       "node_modules/**",
       "public/**",
       "*.js",

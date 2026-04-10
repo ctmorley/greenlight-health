@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { auditPhiAccess } from "@/lib/security/audit-log";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limit";
+import { decryptPatientRecord } from "@/lib/security/phi-crypto";
 
 /**
  * GET /api/analytics/summary
@@ -64,22 +65,25 @@ export async function GET(request: NextRequest) {
           : {}),
       },
       include: {
-        patient: { select: { firstName: true, lastName: true } },
+        patient: { select: { firstName: true, lastName: true, firstNameEncrypted: true, lastNameEncrypted: true } },
         payer: { select: { name: true } },
       },
       orderBy: { createdAt: "desc" },
       take: 50,
     });
 
-    const rows = requests.map((r) => ({
+    const rows = requests.map((r) => {
+      const patient = decryptPatientRecord(r.patient);
+      return {
       referenceNumber: r.referenceNumber,
       status: r.status,
       serviceType: r.serviceType || "",
-      patientName: `${r.patient.firstName} ${r.patient.lastName}`,
+      patientName: `${patient.firstName} ${patient.lastName}`,
       payer: r.payer?.name || "",
       createdDate: r.createdAt.toISOString().split("T")[0],
       decidedDate: r.decidedAt?.toISOString().split("T")[0] || "",
-    }));
+    };
+    });
 
     return NextResponse.json({ rows });
   } catch (error) {

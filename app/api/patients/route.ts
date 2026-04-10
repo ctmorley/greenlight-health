@@ -5,54 +5,20 @@ import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { auditPhiAccess } from "@/lib/security/audit-log";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limit";
+import {
+  encryptPatientFields,
+  encryptInsuranceFields,
+  decryptPatientRecord,
+  decryptInsuranceRecord,
+  buildPatientHashSearch,
+  blindIndex,
+} from "@/lib/security/phi-crypto";
 
 const patientsQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(100).default(20),
   search: z.string().trim().optional().default(""),
 });
-
-/**
- * Build search condition supporting full-name search for patients.
- */
-function buildPatientSearchCondition(search: string): Prisma.PatientWhereInput | undefined {
-  if (!search) return undefined;
-
-  const tokens = search.split(/\s+/).filter(Boolean);
-
-  if (tokens.length >= 2) {
-    const firstToken = tokens[0];
-    const lastTokens = tokens.slice(1).join(" ");
-
-    return {
-      OR: [
-        {
-          AND: [
-            { firstName: { contains: firstToken, mode: "insensitive" } },
-            { lastName: { contains: lastTokens, mode: "insensitive" } },
-          ],
-        },
-        {
-          AND: [
-            { lastName: { contains: firstToken, mode: "insensitive" } },
-            { firstName: { contains: lastTokens, mode: "insensitive" } },
-          ],
-        },
-        { mrn: { contains: search, mode: "insensitive" } },
-        { email: { contains: search, mode: "insensitive" } },
-      ],
-    };
-  }
-
-  return {
-    OR: [
-      { firstName: { contains: search, mode: "insensitive" } },
-      { lastName: { contains: search, mode: "insensitive" } },
-      { mrn: { contains: search, mode: "insensitive" } },
-      { email: { contains: search, mode: "insensitive" } },
-    ],
-  };
-}
 
 export async function GET(request: NextRequest) {
   const rateLimited = checkRateLimit(request, RATE_LIMITS.api);
@@ -91,15 +57,18 @@ export async function GET(request: NextRequest) {
       organizationId,
     };
 
-    const searchCondition = buildPatientSearchCondition(search);
-    if (searchCondition) {
-      Object.assign(where, searchCondition);
+    // Search via blind indexes (exact match on MRN, email, first+last name)
+    if (search) {
+      const hashConditions = buildPatientHashSearch(search);
+      if (hashConditions.length > 0) {
+        where.OR = hashConditions as Prisma.PatientWhereInput[];
+      }
     }
 
     const [patients, totalCount] = await Promise.all([
       prisma.patient.findMany({
         where,
-        orderBy: { lastName: "asc" },
+        orderBy: { createdAt: "desc" },
         skip,
         take: pageSize,
         include: {
@@ -121,25 +90,29 @@ export async function GET(request: NextRequest) {
     const totalPages = Math.ceil(totalCount / pageSize);
 
     return NextResponse.json({
-      patients: patients.map((p) => ({
-        id: p.id,
-        firstName: p.firstName,
-        lastName: p.lastName,
-        name: `${p.firstName} ${p.lastName}`,
-        mrn: p.mrn,
-        dob: p.dob.toISOString(),
-        gender: p.gender,
-        phone: p.phone,
-        email: p.email,
-        primaryInsurance: p.insurances[0]
-          ? {
-              planName: p.insurances[0].planName,
-              payerName: p.insurances[0].payer.name,
-              memberId: p.insurances[0].memberId,
-            }
-          : null,
-        paCount: p._count.requests,
-      })),
+      patients: patients.map((p) => {
+        // Dual-read: decrypt if encrypted fields present, fall back to plaintext
+        const d = decryptPatientRecord(p);
+        return {
+          id: d.id,
+          firstName: d.firstName,
+          lastName: d.lastName,
+          name: `${d.firstName} ${d.lastName}`,
+          mrn: d.mrn,
+          dob: d.dob instanceof Date ? d.dob.toISOString() : String(d.dob),
+          gender: d.gender,
+          phone: d.phone,
+          email: d.email,
+          primaryInsurance: p.insurances[0]
+            ? {
+                planName: p.insurances[0].planName,
+                payerName: p.insurances[0].payer.name,
+                memberId: decryptInsuranceRecord(p.insurances[0]).memberId,
+              }
+            : null,
+          paCount: p._count.requests,
+        };
+      }),
       pagination: {
         page,
         pageSize,
@@ -198,6 +171,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  if (session.user.role === "viewer") {
+    return NextResponse.json(
+      { error: "Insufficient permissions. Viewers cannot create patients." },
+      { status: 403 }
+    );
+  }
+
   auditPhiAccess(request, session, "create", "Patient", null, "Created patient").catch(() => {});
 
   const organizationId = session.user.organizationId;
@@ -221,10 +201,13 @@ export async function POST(request: NextRequest) {
     // Auto-generate MRN if not provided
     const mrn = data.mrn || `AUTO-${Date.now()}-${Math.random().toString(36).slice(2, 7).toUpperCase()}`;
 
-    // Check if MRN already exists for this org
+    // Check if MRN already exists for this org (via blind-index hash)
     if (data.mrn) {
       const existingPatient = await prisma.patient.findFirst({
-        where: { organizationId, mrn },
+        where: {
+          organizationId,
+          mrnHash: blindIndex(mrn),
+        },
       });
 
       if (existingPatient) {
@@ -235,18 +218,31 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Dual-write: plaintext + encrypted/hash columns
+    const phiFields = encryptPatientFields({
+      firstName: data.firstName,
+      lastName: data.lastName,
+      mrn,
+      dob: data.dob,
+      phone: data.phone || null,
+      email: data.email || null,
+      address: data.address || null,
+    });
+
+    const insurancePhiFields = data.insurance
+      ? encryptInsuranceFields({
+          memberId: data.insurance.memberId,
+          groupNumber: data.insurance.groupNumber || null,
+        })
+      : {};
+
     // Create patient (and insurance if provided)
+    // Plaintext PHI columns are no longer written — encrypted + hash only
     const patient = await prisma.patient.create({
       data: {
         organizationId,
-        firstName: data.firstName,
-        lastName: data.lastName,
-        mrn,
-        dob: new Date(data.dob),
         gender: data.gender,
-        phone: data.phone || null,
-        email: data.email || null,
-        address: data.address || null,
+        ...phiFields,
         ...(data.insurance
           ? {
               insurances: {
@@ -254,8 +250,7 @@ export async function POST(request: NextRequest) {
                   payerId: data.insurance.payerId,
                   planName: data.insurance.planName,
                   planType: data.insurance.planType,
-                  memberId: data.insurance.memberId,
-                  groupNumber: data.insurance.groupNumber || null,
+                  ...insurancePhiFields,
                   isPrimary: true,
                   effectiveDate: new Date(data.insurance.effectiveDate),
                 },
@@ -272,26 +267,31 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    // Dual-read: decrypt the freshly created patient + insurance records
+    const dp = decryptPatientRecord(patient);
     return NextResponse.json(
       {
-        id: patient.id,
-        firstName: patient.firstName,
-        lastName: patient.lastName,
-        name: `${patient.firstName} ${patient.lastName}`,
-        mrn: patient.mrn,
-        dob: patient.dob.toISOString(),
-        gender: patient.gender,
-        insurances: patient.insurances.map((ins) => ({
-          id: ins.id,
-          payerId: ins.payerId,
-          payerName: ins.payer.name,
-          planName: ins.planName,
-          planType: ins.planType,
-          memberId: ins.memberId,
-          groupNumber: ins.groupNumber,
-          isPrimary: ins.isPrimary,
-          effectiveDate: ins.effectiveDate.toISOString(),
-        })),
+        id: dp.id,
+        firstName: dp.firstName,
+        lastName: dp.lastName,
+        name: `${dp.firstName} ${dp.lastName}`,
+        mrn: dp.mrn,
+        dob: dp.dob instanceof Date ? dp.dob.toISOString() : String(dp.dob),
+        gender: dp.gender,
+        insurances: patient.insurances.map((ins) => {
+          const di = decryptInsuranceRecord(ins);
+          return {
+            id: di.id,
+            payerId: di.payerId,
+            payerName: ins.payer.name,
+            planName: di.planName,
+            planType: di.planType,
+            memberId: di.memberId,
+            groupNumber: di.groupNumber,
+            isPrimary: di.isPrimary,
+            effectiveDate: di.effectiveDate instanceof Date ? di.effectiveDate.toISOString() : String(di.effectiveDate),
+          };
+        }),
       },
       { status: 201 }
     );

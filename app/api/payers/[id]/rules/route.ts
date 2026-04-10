@@ -16,15 +16,23 @@ export async function GET(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const organizationId = session.user.organizationId;
+  if (!organizationId) {
+    return NextResponse.json({ error: "No organization context" }, { status: 403 });
+  }
+
   try {
     const { id } = await params;
     const { searchParams } = new URL(request.url);
     const serviceCategory = searchParams.get("serviceCategory");
     const cptCode = searchParams.get("cptCode");
 
-    // Verify payer exists
-    const payer = await prisma.payer.findUnique({
-      where: { id },
+    // Verify payer exists and belongs to this org (or is global)
+    const payer = await prisma.payer.findFirst({
+      where: {
+        id,
+        OR: [{ organizationId }, { organizationId: null }],
+      },
       select: {
         id: true,
         name: true,
@@ -155,10 +163,20 @@ export async function POST(
     return NextResponse.json({ error: "Admin access required" }, { status: 403 });
   }
 
+  const organizationId = session.user.organizationId;
+  if (!organizationId) {
+    return NextResponse.json({ error: "No organization context" }, { status: 403 });
+  }
+
   try {
     const { id } = await params;
 
-    const payer = await prisma.payer.findUnique({ where: { id } });
+    const payer = await prisma.payer.findFirst({
+      where: {
+        id,
+        OR: [{ organizationId }, { organizationId: null }],
+      },
+    });
     if (!payer) {
       return NextResponse.json({ error: "Payer not found" }, { status: 404 });
     }

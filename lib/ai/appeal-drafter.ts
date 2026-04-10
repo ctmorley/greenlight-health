@@ -57,9 +57,15 @@ export async function assembleAppealContext(
 
   const paRequest = denial.priorAuth;
 
-  // De-identify clinical notes
+  // De-identify both stored notes and operator-supplied evidence so
+  // manually entered PHI never bypasses the redaction step.
   const clinicalText = paRequest.clinicalNotes || "";
-  const { sanitized: sanitizedNotes, mappings } = deIdentify(clinicalText);
+  const extraEvidenceText = additionalEvidence || "";
+  const sectionBreak = "\n\n__GREENLIGHT_ADDITIONAL_EVIDENCE__\n\n";
+  const combinedText = `${clinicalText}${sectionBreak}${extraEvidenceText}`;
+  const { sanitized: sanitizedCombined, mappings } = deIdentify(combinedText);
+  const [sanitizedNotes, sanitizedAdditionalEvidence = ""] =
+    sanitizedCombined.split(sectionBreak);
 
   // Determine appeal level: use requested level, or infer from existing appeals
   const existingAppeals = paRequest.appeals.length;
@@ -87,7 +93,7 @@ export async function assembleAppealContext(
       (a) => `${a.appealLevel} — ${a.status}: ${a.appealReason}`
     ),
     appealLevel,
-    additionalEvidence: additionalEvidence || undefined,
+    additionalEvidence: sanitizedAdditionalEvidence || undefined,
   });
 
   // Call Claude
@@ -121,6 +127,9 @@ export async function assembleAppealContext(
 
   // Re-identify PHI in the generated letter
   const letter = reIdentify(rawLetter, mappings);
+  const reidentifiedSuggestedEvidence = suggestedEvidence.map((item) =>
+    reIdentify(item, mappings)
+  );
 
   const tokensUsed =
     (response.usage?.input_tokens || 0) +
@@ -128,7 +137,7 @@ export async function assembleAppealContext(
 
   return {
     letter,
-    suggestedEvidence,
+    suggestedEvidence: reidentifiedSuggestedEvidence,
     metadata: {
       model: AI_MODEL,
       tokensUsed,

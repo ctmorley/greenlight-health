@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { hash } from "bcryptjs";
+import crypto from "crypto";
+import { createAuthToken } from "@/lib/auth-tokens";
+import { sendInviteEmail } from "@/lib/auth-email";
 
 export async function GET() {
   const session = await auth();
@@ -76,9 +79,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "A user with this email already exists" }, { status: 409 });
     }
 
-    // Generate a temporary password
-    const tempPassword = generateTempPassword();
-    const passwordHash = await hash(tempPassword, 12);
+    // Create user with a random unusable password — the invite token
+    // flow lets the user set their own password.
+    const randomPassword = crypto.randomBytes(32).toString("base64");
+    const passwordHash = await hash(randomPassword, 12);
 
     const user = await prisma.user.create({
       data: {
@@ -90,6 +94,7 @@ export async function POST(request: NextRequest) {
         role,
         title: title?.trim() || null,
         npiNumber: npiNumber?.trim() || null,
+        mustChangePassword: true,
       },
       select: {
         id: true,
@@ -104,7 +109,21 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    return NextResponse.json({ user, tempPassword }, { status: 201 });
+    // Issue invite token and send email
+    let inviteSent = false;
+    try {
+      const token = await createAuthToken(user.id, "invite");
+      inviteSent = await sendInviteEmail(
+        user.email,
+        user.firstName,
+        token,
+        session.user.organizationName || "your organization",
+      );
+    } catch (err) {
+      console.error("Failed to send invite email:", err);
+    }
+
+    return NextResponse.json({ user, inviteSent }, { status: 201 });
   } catch (error) {
     console.error("Create user error:", error);
     return NextResponse.json({ error: "Failed to create user" }, { status: 500 });
@@ -182,13 +201,4 @@ export async function PATCH(request: NextRequest) {
     console.error("Update user error:", error);
     return NextResponse.json({ error: "Failed to update user" }, { status: 500 });
   }
-}
-
-function generateTempPassword(): string {
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$%";
-  let password = "";
-  for (let i = 0; i < 12; i++) {
-    password += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return password;
 }

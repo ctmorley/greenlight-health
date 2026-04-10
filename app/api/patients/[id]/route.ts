@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { z } from "zod";
 import { auditPhiAccess } from "@/lib/security/audit-log";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rate-limit";
+import { encryptPatientFields, decryptPatientRecord, decryptInsuranceRecord } from "@/lib/security/phi-crypto";
 
 export async function GET(
   request: NextRequest,
@@ -55,30 +56,36 @@ export async function GET(
       return NextResponse.json({ error: "Patient not found" }, { status: 404 });
     }
 
+    // Dual-read: decrypt if encrypted fields are present
+    const d = decryptPatientRecord(patient);
+
     return NextResponse.json({
-      id: patient.id,
-      firstName: patient.firstName,
-      lastName: patient.lastName,
-      name: `${patient.firstName} ${patient.lastName}`,
-      mrn: patient.mrn,
-      dob: patient.dob.toISOString(),
-      gender: patient.gender,
-      phone: patient.phone,
-      email: patient.email,
-      address: patient.address,
+      id: d.id,
+      firstName: d.firstName,
+      lastName: d.lastName,
+      name: `${d.firstName} ${d.lastName}`,
+      mrn: d.mrn,
+      dob: d.dob instanceof Date ? d.dob.toISOString() : String(d.dob),
+      gender: d.gender,
+      phone: d.phone,
+      email: d.email,
+      address: d.address,
       organization: patient.organization,
       createdAt: patient.createdAt.toISOString(),
-      insurances: patient.insurances.map((ins) => ({
-        id: ins.id,
-        planName: ins.planName,
-        planType: ins.planType,
-        memberId: ins.memberId,
-        groupNumber: ins.groupNumber,
-        isPrimary: ins.isPrimary,
-        effectiveDate: ins.effectiveDate.toISOString(),
-        terminationDate: ins.terminationDate?.toISOString() || null,
-        payer: ins.payer,
-      })),
+      insurances: patient.insurances.map((ins) => {
+        const di = decryptInsuranceRecord(ins);
+        return {
+          id: di.id,
+          planName: di.planName,
+          planType: di.planType,
+          memberId: di.memberId,
+          groupNumber: di.groupNumber,
+          isPrimary: di.isPrimary,
+          effectiveDate: ins.effectiveDate.toISOString(),
+          terminationDate: ins.terminationDate?.toISOString() || null,
+          payer: ins.payer,
+        };
+      }),
       requests: patient.requests.map((r) => ({
         id: r.id,
         referenceNumber: r.referenceNumber,
@@ -137,6 +144,13 @@ export async function PATCH(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  if (session.user.role === "viewer") {
+    return NextResponse.json(
+      { error: "Insufficient permissions. Viewers cannot update patients." },
+      { status: 403 }
+    );
+  }
+
   const organizationId = session.user.organizationId;
   if (!organizationId) {
     return NextResponse.json({ error: "No organization context" }, { status: 403 });
@@ -166,37 +180,45 @@ export async function PATCH(
     auditPhiAccess(request, session, "update", "Patient", id, "Updated patient demographics").catch(() => {});
 
     const data = parsed.data;
-    const updateData: Record<string, unknown> = {};
 
-    if (data.firstName !== undefined) updateData.firstName = data.firstName;
-    if (data.lastName !== undefined) updateData.lastName = data.lastName;
-    if (data.dob !== undefined) updateData.dob = new Date(data.dob);
-    if (data.gender !== undefined) updateData.gender = data.gender;
-    if (data.phone !== undefined) updateData.phone = data.phone;
-    if (data.email !== undefined) updateData.email = data.email;
-    if (data.address !== undefined) updateData.address = data.address;
+    // Build encrypted update — plaintext PHI columns are no longer written
+    const phiUpdates: Record<string, string | null | undefined> = {};
+    if (data.firstName !== undefined) phiUpdates.firstName = data.firstName;
+    if (data.lastName !== undefined) phiUpdates.lastName = data.lastName;
+    if (data.dob !== undefined) phiUpdates.dob = data.dob;
+    if (data.phone !== undefined) phiUpdates.phone = data.phone ?? null;
+    if (data.email !== undefined) phiUpdates.email = data.email ?? null;
+    if (data.address !== undefined) phiUpdates.address = data.address ?? null;
 
-    if (Object.keys(updateData).length === 0) {
+    // Gender is not PHI — written directly
+    const nonPhiUpdates: Record<string, unknown> = {};
+    if (data.gender !== undefined) nonPhiUpdates.gender = data.gender;
+
+    if (Object.keys(phiUpdates).length === 0 && Object.keys(nonPhiUpdates).length === 0) {
       return NextResponse.json({ error: "No valid fields to update" }, { status: 400 });
     }
 
+    const encryptedUpdates = encryptPatientFields(phiUpdates);
+
     const updated = await prisma.patient.update({
       where: { id },
-      data: updateData,
+      data: { ...nonPhiUpdates, ...encryptedUpdates },
     });
 
+    // Dual-read: decrypt the updated record before returning
+    const du = decryptPatientRecord(updated);
     return NextResponse.json({
-      id: updated.id,
-      firstName: updated.firstName,
-      lastName: updated.lastName,
-      name: `${updated.firstName} ${updated.lastName}`,
-      mrn: updated.mrn,
-      dob: updated.dob.toISOString(),
-      gender: updated.gender,
-      phone: updated.phone,
-      email: updated.email,
-      address: updated.address,
-      updatedAt: updated.updatedAt.toISOString(),
+      id: du.id,
+      firstName: du.firstName,
+      lastName: du.lastName,
+      name: `${du.firstName} ${du.lastName}`,
+      mrn: du.mrn,
+      dob: du.dob instanceof Date ? du.dob.toISOString() : String(du.dob),
+      gender: du.gender,
+      phone: du.phone,
+      email: du.email,
+      address: du.address,
+      updatedAt: du.updatedAt instanceof Date ? du.updatedAt.toISOString() : String(du.updatedAt),
     });
   } catch (error) {
     console.error("Patient update error:", error);

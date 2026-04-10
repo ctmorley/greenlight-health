@@ -71,13 +71,20 @@ export async function assembleLmnContext(
     .map((p) => `${p.policyName}: ${p.requiredDocuments.join(", ")}`)
     .join("\n");
 
-  // De-identify clinical notes
+  // De-identify both the stored notes and any user-supplied extra context
+  // so ad hoc PHI does not bypass the redaction pipeline.
   const clinicalText = paRequest.clinicalNotes || "";
-  const { sanitized: sanitizedNotes, mappings } = deIdentify(clinicalText);
+  const extraContextText = additionalContext || "";
+  const sectionBreak = "\n\n__GREENLIGHT_ADDITIONAL_CONTEXT__\n\n";
+  const combinedText = `${clinicalText}${sectionBreak}${extraContextText}`;
+  const { sanitized: sanitizedCombined, mappings } = deIdentify(combinedText);
+  const [sanitizedNotes, sanitizedAdditionalContext = ""] =
+    sanitizedCombined.split(sectionBreak);
 
-  // Calculate patient age
+  // Calculate patient age (dob may be null post-cutover if read from non-decrypted record)
   const now = new Date();
-  const dob = new Date(paRequest.patient.dob);
+  const rawDob = paRequest.patient.dob;
+  const dob = rawDob ? new Date(rawDob) : new Date();
   const patientAge = Math.floor(
     (now.getTime() - dob.getTime()) / (365.25 * 24 * 60 * 60 * 1000)
   );
@@ -94,7 +101,7 @@ export async function assembleLmnContext(
     clinicalNotes: sanitizedNotes,
     payerName: paRequest.payer?.name || "Unknown Payer",
     payerRequirements: payerRequirements || undefined,
-    additionalContext: additionalContext || undefined,
+    additionalContext: sanitizedAdditionalContext || undefined,
   });
 
   // Call Claude

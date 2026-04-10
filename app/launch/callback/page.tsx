@@ -33,11 +33,99 @@ function CallbackHandler() {
         setStatus("Reading patient data from EHR...");
         const fhirContext = await extractFhirContext(client);
 
-        // Step 3: Store in sessionStorage for the wizard
+        // Step 3: Match patient server-side now, then store only non-PHI
+        // context in sessionStorage. Patient demographics (name, DOB, MRN,
+        // phone, email) and coverage details (memberId, groupNumber) are
+        // sent to the server for matching but never persisted in the browser.
+        setStatus("Matching patient...");
+        let matchedPatientId: string | null = null;
+        let matchedInsuranceId: string | null = null;
+        let matchedPayerId: string | null = null;
+        try {
+          const matchRes = await fetch("/api/fhir/match-patient", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              fhirPatientId: fhirContext.patient?.fhirId,
+              firstName: fhirContext.patient?.firstName,
+              lastName: fhirContext.patient?.lastName,
+              mrn: fhirContext.patient?.mrn,
+              dob: fhirContext.patient?.dob,
+              gender: fhirContext.patient?.gender,
+              phone: fhirContext.patient?.phone,
+              email: fhirContext.patient?.email,
+              coverage: fhirContext.coverage
+                ? {
+                    payerName: fhirContext.coverage.payerName,
+                    payerIdentifier: fhirContext.coverage.payerIdentifier,
+                    planName: fhirContext.coverage.planName,
+                    memberId: fhirContext.coverage.memberId,
+                    groupNumber: fhirContext.coverage.groupNumber,
+                  }
+                : null,
+            }),
+          });
+          if (matchRes.ok) {
+            const matchData = await matchRes.json();
+            matchedPatientId = matchData.patient?.id || null;
+            if (matchData.patient?.insurances?.[0]?.id) {
+              matchedInsuranceId = matchData.patient.insurances[0].id;
+            }
+            matchedPayerId = matchData.payerMatched?.id || null;
+          }
+        } catch { /* match is best-effort */ }
+
         setStatus("Preparing auto-fill data...");
+        // Store only the minimum fields consumed by applyFhirData().
+        // All FHIR resource IDs, patient/coverage demographics, and
+        // non-essential metadata are stripped to minimize identifiable
+        // clinical context in browser storage.
+        const safeContext = {
+          fhirBaseUrl: fhirContext.fhirBaseUrl,
+          patientId: fhirContext.patientId,
+          patient: null,
+          coverage: null,
+          // conditions: only ICD-10 codes (no display text, no dates, no FHIR IDs)
+          conditions: fhirContext.conditions.map((c) => ({ code: c.code })),
+          // serviceRequest: only codes, description, priority, date, reason codes
+          serviceRequest: fhirContext.serviceRequest
+            ? {
+                cptCodes: fhirContext.serviceRequest.cptCodes,
+                procedureDescription: fhirContext.serviceRequest.procedureDescription,
+                priority: fhirContext.serviceRequest.priority,
+                occurrenceDate: fhirContext.serviceRequest.occurrenceDate,
+                reasonCodes: fhirContext.serviceRequest.reasonCodes,
+              }
+            : null,
+          // practitioner: only NPI (no name, no FHIR ID)
+          practitioner: fhirContext.practitioner
+            ? { npi: fhirContext.practitioner.npi }
+            : null,
+          // documents: only type, description, date (no FHIR IDs, no content URLs)
+          documents: fhirContext.documents.slice(0, 5).map((d) => ({
+            type: d.type,
+            description: d.description,
+            date: d.date,
+          })),
+          // observations: only display, value, unit, date (no FHIR IDs, no codes)
+          observations: fhirContext.observations
+            .filter((o) => o.value)
+            .slice(0, 10)
+            .map((o) => ({
+              display: o.display,
+              value: o.value,
+              unit: o.unit,
+              date: o.date,
+            })),
+          createdAt: fhirContext.createdAt,
+          // Server-matched IDs (no PHI)
+          matchedPatientId,
+          matchedInsuranceId,
+          matchedPayerId,
+        };
         sessionStorage.setItem(
           FHIR_CONTEXT_KEY,
-          JSON.stringify(fhirContext)
+          JSON.stringify(safeContext)
         );
 
         // Step 4: Record FHIR session server-side (best-effort, don't block)
